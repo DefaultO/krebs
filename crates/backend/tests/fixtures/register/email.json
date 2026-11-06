@@ -1,0 +1,1 @@
+[["a@b.cd",true],["a@b.c",false],["a@.cd",false],["a@bcd",false],["@b.cd",false],["a.b+c&d-e_f@x-y.z.ab",true],["a@b..cd",true],["a@b.c.d",true],["a b@c.de",false],["a@b@c.de",false],["é@b.cd",false],["a@b.cé",false],["A@B.CD",true],["a@b.cd ",false],["a@-.--",true],["a@b.cd\n",false],["a+@b&.c&",true],["a@b.c_",true]]

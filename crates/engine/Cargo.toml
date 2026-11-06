@@ -1,0 +1,9 @@
+[package]
+name = "engine"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+util = { path = "../util" }
+pathfinder = { path = "../pathfinder" }

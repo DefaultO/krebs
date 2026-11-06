@@ -1,0 +1,332 @@
+{
+ "name": "assembly-fuzz-10",
+ "tags": [
+  "runtime/data.js:113",
+  "game/game.js:260"
+ ],
+ "substituted": [],
+ "ticks": [
+  {
+   "newVm": true,
+   "input": {
+    "meta": "{\"time\":2010,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W0N0\",1,4],[\"W3N1\",1,6],[\"W2N2\",1,0],[\"W1N1\",1,10],[\"W2N0\",1,5],[\"W2N3\",1,2],[\"W9N9\",1,-1],[\"W1N2\",1,1]],\"flags\":[{\"_id\":\"fl0\",\"user\":\"5a1b2c3d4e5f601\",\"room\":\"W2N1\",\"data\":\"F0a~1~2~3~4|F0b~5~5~6~7\"},{\"_id\":\"fl1\",\"user\":\"5a1b2c3d4e5f601\",\"room\":\"W0N0\",\"data\":\"F1a~1~2~3~4|F1b~5~5~6~7\"},{\"_id\":\"fl2\",\"user\":\"5a1b2c3d4e5f601\",\"room\":\"W3N1\",\"data\":\"F2a~1~2~3~4|F2b~5~5~6~7\"},{\"_id\":\"fl3\",\"user\":\"5a1b2c3d4e5f601\",\"room\":\"W3N0\",\"data\":\"F3a~1~2~3~4|F3b~5~5~6~7\"},{\"_id\":\"fl4\",\"user\":\"5a1b2c3d4e5f601\",\"room\":\"W3N2\",\"data\":\"F4a~1~2~3~4|F4b~5~5~6~7\"},{\"_id\":\"fl5\",\"user\":\"5a1b2c3d4e5f601\",\"room\":\"W1N0\",\"data\":\"F5a~1~2~3~4|F5b~5~5~6~7\"}],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W0N0\",\"status\":\"normal\"},\"seq\":[0,3],\"objects\":[{\"_id\":\"a00000000000115\",\"type\":\"spawn\",\"room\":\"W0N0\",\"x\":33,\"y\":3,\"name\":\"s0\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300},\"off\":false},{\"_id\":\"c00000000000118\",\"type\":\"controller\",\"room\":\"W0N0\",\"x\":16,\"y\":47,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"}]}",
+     "{\"room\":{\"_id\":\"W3N1\",\"status\":\"normal\"},\"seq\":[4,8,20],\"objects\":[{\"_id\":\"c00000000000119\",\"type\":\"controller\",\"room\":\"W3N1\",\"x\":11,\"y\":40,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"e0000000000011d\",\"type\":\"extension\",\"room\":\"W3N1\",\"x\":25,\"y\":14,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50},\"off\":false},{\"_id\":\"k00000000000129\",\"type\":\"creep\",\"room\":\"W3N1\",\"x\":37,\"y\":44,\"name\":\"c4\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50}]}",
+     "{\"room\":{\"_id\":\"W2N2\",\"status\":\"normal\"},\"seq\":[7,17],\"objects\":[{\"_id\":\"o0000000000011c\",\"type\":\"observer\",\"room\":\"W2N2\",\"x\":36,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":500,\"hitsMax\":500,\"observeRoom\":\"W1N1\",\"notifyWhenAttacked\":true},{\"_id\":\"s00000000000126\",\"type\":\"source\",\"room\":\"W2N2\",\"x\":2,\"y\":23,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300}]}",
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[],\"objects\":[]}",
+     "{\"room\":{\"_id\":\"W2N0\",\"status\":\"normal\"},\"seq\":[12,19,22],\"objects\":[{\"_id\":\"a00000000000121\",\"type\":\"spawn\",\"room\":\"W2N0\",\"x\":22,\"y\":23,\"name\":\"s3\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300},\"off\":false},{\"_id\":\"r00000000000128\",\"type\":\"energy\",\"room\":\"W2N0\",\"x\":4,\"y\":6,\"energy\":364,\"resourceType\":\"energy\"},{\"_id\":\"o0000000000012b\",\"type\":\"observer\",\"room\":\"W2N0\",\"x\":40,\"y\":39,\"user\":\"5a1b2c3d4e5f601\",\"hits\":500,\"hitsMax\":500,\"observeRoom\":\"W2N2\",\"notifyWhenAttacked\":true}]}",
+     "{\"room\":{\"_id\":\"W2N3\",\"status\":\"normal\"},\"seq\":[10,14],\"objects\":[{\"_id\":\"k0000000000011f\",\"type\":\"creep\",\"room\":\"W2N3\",\"x\":18,\"y\":18,\"name\":\"c2\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"o00000000000123\",\"type\":\"observer\",\"room\":\"W2N3\",\"x\":8,\"y\":2,\"user\":\"5a1b2c3d4e5f601\",\"hits\":500,\"hitsMax\":500,\"observeRoom\":\"W9N9\",\"notifyWhenAttacked\":true}]}",
+     null,
+     "{\"room\":{\"_id\":\"W1N2\",\"status\":\"normal\"},\"seq\":[5,21],\"objects\":[{\"_id\":\"s0000000000011a\",\"type\":\"source\",\"room\":\"W1N2\",\"x\":14,\"y\":37,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a0000000000012a\",\"type\":\"spawn\",\"room\":\"W1N2\",\"x\":30,\"y\":45,\"name\":\"s5\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300},\"off\":true}]}"
+    ],
+    "eventLogs": [
+     "[{\"event\":3}]",
+     "[{\"event\":9}]",
+     "[{\"event\":3}]",
+     "[{\"event\":8}]",
+     "[{\"event\":7}]",
+     "[{\"event\":6}]",
+     null,
+     "[{\"event\":5}]"
+    ],
+    "memory": "",
+    "modules": {
+     "main": "\nmodule.exports.loop = function () {\n    var ids = function (h) { return Object.keys(h).map(function (k) { return k + ':' + (h[k].id || h[k].name); }).join(); };\n    console.log('rooms', Object.keys(Game.rooms).join());\n    console.log('creeps', ids(Game.creeps));\n    console.log('structures', Object.keys(Game.structures).join());\n    console.log('spawns', ids(Game.spawns));\n    console.log('sites', Object.keys(Game.constructionSites).join());\n    console.log('flags', Object.keys(Game.flags).join());\n    for (var name in Game.rooms) {\n        var r = Game.rooms[name];\n        [FIND_CREEPS, FIND_STRUCTURES, FIND_SOURCES, FIND_CONSTRUCTION_SITES, FIND_DROPPED_RESOURCES, FIND_FLAGS, FIND_MY_STRUCTURES, FIND_HOSTILE_CREEPS].forEach(function (t) {\n            console.log(name, t, r.find(t).map(function (o) { return o.id || o.name; }).join());\n        });\n        console.log(name, 'energy', r.energyAvailable, r.energyCapacityAvailable, JSON.stringify(r.getEventLog(true)));\n    }\n};"
+    }
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "rooms W2N2,W1N2,W2N3,W0N0,W2N0,W3N1,W1N1",
+       "escape": true
+      },
+      {
+       "message": "creeps \"\"",
+       "escape": true
+      },
+      {
+       "message": "structures a00000000000115,c00000000000118,c00000000000119,o0000000000011c,e0000000000011d,a00000000000121,o00000000000123,a0000000000012a,o0000000000012b",
+       "escape": true
+      },
+      {
+       "message": "spawns s0:a00000000000115,s3:a00000000000121,s5:a0000000000012a",
+       "escape": true
+      },
+      {
+       "message": "sites \"\"",
+       "escape": true
+      },
+      {
+       "message": "flags F0a,F0b,F1a,F1b,F2a,F2b,F3a,F3b,F4a,F4b,F5a,F5b",
+       "escape": true
+      },
+      {
+       "message": "W2N2 101 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N2 107 o0000000000011c",
+       "escape": true
+      },
+      {
+       "message": "W2N2 105 s00000000000126",
+       "escape": true
+      },
+      {
+       "message": "W2N2 111 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N2 106 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N2 110 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N2 108 o0000000000011c",
+       "escape": true
+      },
+      {
+       "message": "W2N2 103 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N2 energy 0 0 \"[{\\\"event\\\":3}]\"",
+       "escape": true
+      },
+      {
+       "message": "W1N2 101 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N2 107 a0000000000012a",
+       "escape": true
+      },
+      {
+       "message": "W1N2 105 s0000000000011a",
+       "escape": true
+      },
+      {
+       "message": "W1N2 111 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N2 106 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N2 110 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N2 108 a0000000000012a",
+       "escape": true
+      },
+      {
+       "message": "W1N2 103 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N2 energy 0 0 \"[{\\\"event\\\":5}]\"",
+       "escape": true
+      },
+      {
+       "message": "W2N3 101 k0000000000011f",
+       "escape": true
+      },
+      {
+       "message": "W2N3 107 o00000000000123",
+       "escape": true
+      },
+      {
+       "message": "W2N3 105 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N3 111 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N3 106 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N3 110 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N3 108 o00000000000123",
+       "escape": true
+      },
+      {
+       "message": "W2N3 103 k0000000000011f",
+       "escape": true
+      },
+      {
+       "message": "W2N3 energy 0 0 \"[{\\\"event\\\":6}]\"",
+       "escape": true
+      },
+      {
+       "message": "W0N0 101 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N0 107 a00000000000115,c00000000000118",
+       "escape": true
+      },
+      {
+       "message": "W0N0 105 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N0 111 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N0 106 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N0 110 F1a,F1b",
+       "escape": true
+      },
+      {
+       "message": "W0N0 108 a00000000000115,c00000000000118",
+       "escape": true
+      },
+      {
+       "message": "W0N0 103 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N0 energy 300 300 \"[{\\\"event\\\":3}]\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 101 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 107 a00000000000121,o0000000000012b",
+       "escape": true
+      },
+      {
+       "message": "W2N0 105 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 111 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 106 r00000000000128",
+       "escape": true
+      },
+      {
+       "message": "W2N0 110 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 108 a00000000000121,o0000000000012b",
+       "escape": true
+      },
+      {
+       "message": "W2N0 103 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 energy 300 300 \"[{\\\"event\\\":7}]\"",
+       "escape": true
+      },
+      {
+       "message": "W3N1 101 k00000000000129",
+       "escape": true
+      },
+      {
+       "message": "W3N1 107 c00000000000119,e0000000000011d",
+       "escape": true
+      },
+      {
+       "message": "W3N1 105 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W3N1 111 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W3N1 106 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W3N1 110 F2a,F2b",
+       "escape": true
+      },
+      {
+       "message": "W3N1 108 c00000000000119,e0000000000011d",
+       "escape": true
+      },
+      {
+       "message": "W3N1 103 k00000000000129",
+       "escape": true
+      },
+      {
+       "message": "W3N1 energy 50 50 \"[{\\\"event\\\":9}]\"",
+       "escape": true
+      },
+      {
+       "message": "W1N1 101 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N1 107 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N1 105 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N1 111 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N1 106 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N1 110 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N1 108 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N1 103 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N1 energy 0 0 \"[{\\\"event\\\":8}]\"",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  }
+ ]
+}

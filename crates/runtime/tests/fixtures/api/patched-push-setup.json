@@ -1,0 +1,144 @@
+{
+ "name": "patched-push-setup",
+ "tags": [
+  "game/game.js:43",
+  "game/game.js:414",
+  "game/rooms.js:688"
+ ],
+ "substituted": [],
+ "ticks": [
+  {
+   "newVm": true,
+   "input": {
+    "meta": "{\"time\":100,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5,6,7],\"objects\":[{\"_id\":\"c00000000000009\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"a0000000000000a\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"e0000000000000b\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k0000000000000c\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Stacked1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"k0000000000000d\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Stacked2\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e0000000000000e\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"r0000000000000f\",\"type\":\"energy\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"energy\":10,\"resourceType\":\"energy\"},{\"_id\":\"r00000000000010\",\"type\":\"energy\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"energy\":20,\"resourceType\":\"energy\"}]}"
+    ],
+    "eventLogs": [
+     null
+    ],
+    "memory": "",
+    "modules": {
+     "main": "\nvar realPush = Array.prototype.push;\nmodule.exports.loop = function () {\n    var seen = global.pushes;\n    if (Game.time === 101) {\n        Array.prototype.push = function () { global.pushes = (global.pushes || 0) + 1; return realPush.apply(this, arguments); };\n    }\n    console.log('pushes before loop', seen);\n    global.pushes = 0;\n    if (Game.time === 103) {\n        console.log('look', JSON.stringify(Game.rooms.W1N1.lookForAt(LOOK_STRUCTURES, 25, 25).map(s => s.structureType)),\n            Game.rooms.W1N1.lookForAt(LOOK_ENERGY, 26, 26).length, Game.rooms.W1N1.lookForAt(LOOK_CREEPS, 25, 25).length);\n    }\n};"
+    }
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "pushes before loop undefined",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  },
+  {
+   "input": {
+    "meta": "{\"time\":101,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5,6,7],\"objects\":[{\"_id\":\"c00000000000009\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"a0000000000000a\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"e0000000000000b\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k0000000000000c\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Stacked1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"k0000000000000d\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Stacked2\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e0000000000000e\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"r0000000000000f\",\"type\":\"energy\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"energy\":10,\"resourceType\":\"energy\"},{\"_id\":\"r00000000000010\",\"type\":\"energy\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"energy\":20,\"resourceType\":\"energy\"}]}"
+    ],
+    "eventLogs": [
+     null
+    ]
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "pushes before loop 0",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  },
+  {
+   "input": {
+    "meta": "{\"time\":102,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5,6,7],\"objects\":[{\"_id\":\"c00000000000009\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"a0000000000000a\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"e0000000000000b\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k0000000000000c\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Stacked1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"k0000000000000d\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Stacked2\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e0000000000000e\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"r0000000000000f\",\"type\":\"energy\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"energy\":10,\"resourceType\":\"energy\"},{\"_id\":\"r00000000000010\",\"type\":\"energy\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"energy\":20,\"resourceType\":\"energy\"}]}"
+    ],
+    "eventLogs": [
+     null
+    ]
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "pushes before loop 27",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  },
+  {
+   "input": {
+    "meta": "{\"time\":103,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5,6,7],\"objects\":[{\"_id\":\"c00000000000009\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"a0000000000000a\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"e0000000000000b\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k0000000000000c\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Stacked1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"k0000000000000d\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Stacked2\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e0000000000000e\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"r0000000000000f\",\"type\":\"energy\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"energy\":10,\"resourceType\":\"energy\"},{\"_id\":\"r00000000000010\",\"type\":\"energy\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"energy\":20,\"resourceType\":\"energy\"}]}"
+    ],
+    "eventLogs": [
+     null
+    ]
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "pushes before loop 27",
+       "escape": true
+      },
+      {
+       "message": "look [\"spawn\",\"extension\"] 2 2",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,139 @@
+{
+ "name": "create-construction-site-reserved",
+ "tags": [
+  "game/rooms.js:1052"
+ ],
+ "world": {
+  "user": "u1",
+  "users": {
+   "2": {
+    "username": "Invader"
+   },
+   "3": {
+    "username": "Source Keeper"
+   },
+   "u1": {
+    "username": "Alice"
+   },
+   "u2": {
+    "username": "Bob"
+   }
+  },
+  "time": 1000,
+  "objects": [
+   {
+    "_id": "c9",
+    "type": "controller",
+    "room": "W1N1",
+    "x": 25,
+    "y": 22,
+    "level": 0,
+    "reservation": {
+     "user": "u2",
+     "endTime": 3000
+    }
+   },
+   {
+    "_id": "cr9",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Res",
+    "body": [],
+    "store": {},
+    "spawning": false
+   },
+   {
+    "_id": "c8",
+    "type": "controller",
+    "room": "W1N2",
+    "x": 25,
+    "y": 22,
+    "level": 0,
+    "reservation": {
+     "user": "u1",
+     "endTime": 3000
+    }
+   },
+   {
+    "_id": "cr8",
+    "type": "creep",
+    "room": "W1N2",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Res2",
+    "body": [],
+    "store": {},
+    "spawning": false
+   }
+  ],
+  "flags": [
+   {
+    "room": "W1N1",
+    "data": "Flag1~1~1~25~25|My$VLINE$Flag~2~3~20~20|Edge~5~5~0~10"
+   },
+   {
+    "room": "W2N2",
+    "data": "Far~3~3~10~10"
+   }
+  ],
+  "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}",
+  "eventLog": {
+   "W1N1": "[{\"event\":1,\"objectId\":\"cr2\",\"data\":{\"targetId\":\"cr1\",\"damage\":10}}]"
+  }
+ },
+ "ticks": [
+  {
+   "probes": [
+    [
+     "reserved",
+     "() => [Game.rooms.W1N1.createConstructionSite(26, 26, 'road'), Game.rooms.W1N2.createConstructionSite(26, 26, 'road'),\r\n            Game.rooms.W1N2.createConstructionSite(26, 27, 'extension'), Game.rooms.W1N2.createConstructionSite(26, 27, 'container')]"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "reserved",
+      {
+       "$arr": [
+        -1,
+        0,
+        -14,
+        0
+       ]
+      }
+     ]
+    ],
+    "intents": {
+     "room": {
+      "createConstructionSite": {
+       "$arr": [
+        {
+         "roomName": "W1N2",
+         "x": 26,
+         "y": 26,
+         "structureType": "road"
+        },
+        {
+         "roomName": "W1N2",
+         "x": 26,
+         "y": 27,
+         "structureType": "container"
+        }
+       ]
+      }
+     }
+    },
+    "intentsCpu": 0.4,
+    "console": {
+     "$arr": []
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  }
+ ]
+}

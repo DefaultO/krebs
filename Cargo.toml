@@ -1,0 +1,31 @@
+[workspace]
+resolver = "2"
+# mods/* is not listed: a glob member with no Cargo.toml is an error, and that is what an empty submodule folder is. A mod
+# joins through the path dependency crates/modlist/build.rs writes, which makes it a workspace member by itself.
+members = ["crates/util", "crates/pathfinder", "crates/engine", "crates/runtime", "crates/backend", "crates/modlist", "crates/server"]
+# Plain `cargo build/test` skips the V8 crates (runtime, server): ~10 parallel worktrees cannot all build
+# V8. Use `--workspace` or `-p runtime -p server -j 4`.
+default-members = ["crates/util", "crates/pathfinder", "crates/engine", "crates/backend"]
+
+# The crates.io v8 crate plus a cage per isolate for `--features ptrcomp` builds (tools/v8-ptrcomp.ps1). Other
+# builds use the prebuilt library as before: the patch only changes code compiled from source.
+[patch.crates-io]
+v8 = { path = "vendor/v8" }
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+license = "MIT"
+
+[profile.release]
+debug = 1
+codegen-units = 4
+lto = "thin"
+panic = "unwind"
+
+# The exe that goes to players, built by tools\dist.bat. No debug information, so no path of the machine that built
+# it. Development keeps `release`, whose debug = 1 is what the sampling profiler reads.
+[profile.dist]
+inherits = "release"
+debug = false
+strip = true

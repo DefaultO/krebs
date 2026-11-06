@@ -1,0 +1,708 @@
+{
+ "name": "position-basics",
+ "tags": [
+  "game/rooms.js:1245",
+  "game/rooms.js:1276",
+  "game/rooms.js:1295",
+  "game/rooms.js:1350",
+  "game/rooms.js:1358"
+ ],
+ "world": {
+  "user": "u1",
+  "users": {
+   "2": {
+    "username": "Invader"
+   },
+   "3": {
+    "username": "Source Keeper"
+   },
+   "u1": {
+    "username": "Alice"
+   },
+   "u2": {
+    "username": "Bob"
+   }
+  },
+  "time": 1000,
+  "objects": [
+   {
+    "_id": "c1",
+    "type": "controller",
+    "room": "W1N1",
+    "x": 25,
+    "y": 22,
+    "user": "u1",
+    "level": 3,
+    "progress": 100,
+    "progressTotal": 45000,
+    "downgradeTime": 20000,
+    "safeModeAvailable": 1
+   },
+   {
+    "_id": "s1",
+    "type": "source",
+    "room": "W1N1",
+    "x": 22,
+    "y": 24,
+    "energy": 3000,
+    "energyCapacity": 3000,
+    "nextRegenerationTime": 1250
+   },
+   {
+    "_id": "s2",
+    "type": "source",
+    "room": "W1N1",
+    "x": 28,
+    "y": 28,
+    "energy": 0,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "m1",
+    "type": "mineral",
+    "room": "W1N1",
+    "x": 30,
+    "y": 20,
+    "mineralType": "H",
+    "mineralAmount": 50000,
+    "density": 3
+   },
+   {
+    "_id": "sp1",
+    "type": "spawn",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Spawn1",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex1",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 23,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex2",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 22,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "off": true,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "r1",
+    "type": "road",
+    "room": "W1N1",
+    "x": 25,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "r2",
+    "type": "road",
+    "room": "W1N1",
+    "x": 26,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "w1",
+    "type": "constructedWall",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 1000,
+    "hitsMax": 300000000
+   },
+   {
+    "_id": "cr1",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Harv1",
+    "hits": 300,
+    "hitsMax": 300,
+    "body": [
+     {
+      "type": "work",
+      "hits": 100
+     },
+     {
+      "type": "carry",
+      "hits": 100
+     },
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {
+     "energy": 10
+    },
+    "storeCapacity": 50,
+    "fatigue": 0,
+    "ageTime": 2400,
+    "spawning": false,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "cr2",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "name": "Bob1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 2000,
+    "spawning": false
+   },
+   {
+    "_id": "cr3",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Baby",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "spawning": true
+   },
+   {
+    "_id": "e1",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "energy",
+    "energy": 100
+   },
+   {
+    "_id": "e2",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "H",
+    "H": 20
+   },
+   {
+    "_id": "cs1",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 29,
+    "y": 29,
+    "user": "u1",
+    "structureType": "extension",
+    "progress": 0,
+    "progressTotal": 3000
+   },
+   {
+    "_id": "cs2",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 29,
+    "user": "u2",
+    "structureType": "road",
+    "progress": 10,
+    "progressTotal": 300
+   },
+   {
+    "_id": "ra1",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs3",
+    "type": "constructionSite",
+    "room": "W2N2",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "structureType": "spawn",
+    "name": "Spawn2",
+    "progress": 5,
+    "progressTotal": 15000
+   },
+   {
+    "_id": "c2",
+    "type": "controller",
+    "room": "W1N2",
+    "x": 25,
+    "y": 21,
+    "user": "u2",
+    "level": 2,
+    "progress": 0,
+    "progressTotal": 45000,
+    "downgradeTime": 20000
+   },
+   {
+    "_id": "sp2",
+    "type": "spawn",
+    "room": "W1N2",
+    "x": 25,
+    "y": 25,
+    "user": "u2",
+    "name": "BobSpawn",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null
+   },
+   {
+    "_id": "s3",
+    "type": "source",
+    "room": "W1N2",
+    "x": 21,
+    "y": 21,
+    "energy": 1500,
+    "energyCapacity": 1500
+   },
+   {
+    "_id": "cr4",
+    "type": "creep",
+    "room": "W1N2",
+    "x": 20,
+    "y": 30,
+    "user": "u1",
+    "name": "Scout",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 1500,
+    "spawning": false
+   },
+   {
+    "_id": "k1",
+    "type": "keeperLair",
+    "room": "W1N2",
+    "x": 30,
+    "y": 30,
+    "user": "3",
+    "nextSpawnTime": 1100
+   },
+   {
+    "_id": "s4",
+    "type": "source",
+    "room": "W2N1",
+    "x": 25,
+    "y": 25,
+    "energy": 3000,
+    "energyCapacity": 3000
+   }
+  ],
+  "flags": [
+   {
+    "room": "W1N1",
+    "data": "Flag1~1~1~25~25|My$VLINE$Flag~2~3~20~20|Edge~5~5~0~10"
+   },
+   {
+    "room": "W2N2",
+    "data": "Far~3~3~10~10"
+   }
+  ],
+  "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}",
+  "eventLog": {
+   "W1N1": "[{\"event\":1,\"objectId\":\"cr2\",\"data\":{\"targetId\":\"cr1\",\"damage\":10}}]"
+  }
+ },
+ "ticks": [
+  {
+   "probes": [
+    [
+     "ctor",
+     "() => {\n            const out = [];\n            for (const a of [[1, 2, 'W1N1'], [undefined, undefined, 'W1N1'], [null, true, 'E0S0'], ['5', 1.7, 'w1n1'], [0, 0, 'E5S5junk'],\n                [49, 49, 'W127N127'], [0, 0, 'E127S127'], [0, 0, 'E128S0'], [0, 0, 'W128N128'], [0, 0, 'W129N0'], [1, 1, 'sim'],\n                [50, 1, 'W1N1'], [-1, 1, 'W1N1'], [NaN, 1, 'W1N1'], [1, 1, 'X'], [1, 1, ''], [1, 1, 5], [1, 1, undefined], [1, 1, {}]]) {\n                try { const p = new RoomPosition(...a); out.push([p.x, p.y, p.roomName, p.__packedPos]); } catch (e) { out.push(e.constructor.name + ': ' + e.message); }\n            }\n            return out;\n        }"
+    ],
+    [
+     "props",
+     "() => {\n            const p = new RoomPosition(10, 20, 'E3S7');\n            const d = ['x', 'y', 'roomName'].map(k => Object.getOwnPropertyDescriptor(RoomPosition.prototype, k));\n            return [Object.keys(p), Object.getOwnPropertyDescriptor(p, '__packedPos'), d.map(x => [x.enumerable, x.configurable, typeof x.get, typeof x.set]),\n                JSON.stringify(p), String(p), p.toJSON(), Object.keys(RoomPosition.prototype)];\n        }"
+    ],
+    [
+     "setters",
+     "() => {\n            const p = new RoomPosition(10, 20, 'E3S7'), out = [];\n            for (const [k, v] of [['x', 5], ['y', '7'], ['x', 50], ['y', -1], ['x', NaN], ['roomName', 'W5N5'], ['roomName', 'bad'], ['roomName', 'sim'], ['roomName', 'E3S7'], ['x', 3.9]]) {\n                try { p[k] = v; out.push([p.x, p.y, p.roomName, p.__packedPos]); } catch (e) { out.push(e.message); }\n            }\n            p.extra = 1;\n            out.push(JSON.stringify(p), p.toJSON());\n            return out;\n        }"
+    ],
+    [
+     "packed edits",
+     "() => {\n            const p = new RoomPosition(1, 1, 'W1N1');\n            p.__packedPos = 0;\n            const q = new RoomPosition(1, 1, 'W1N1');\n            q.__packedPos = -1;\n            return [p.roomName, p.x, p.y, q.roomName, q.x, q.y, String(q)];\n        }"
+    ],
+    [
+     "room object",
+     "() => {\n            const c = Game.creeps.Harv1, s = Game.getObjectById('s1');\n            return [Object.keys(c).slice(0, 3), c.room === Game.rooms.W1N1, c.pos instanceof RoomPosition, Object.keys(s), s.effects,\n                Game.flags.Far.room, Object.keys(Game.flags.Far), Game.getObjectById('cs3').room];\n        }"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "ctor",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          1,
+          2,
+          "W1N1",
+          2122187010
+         ]
+        },
+        {
+         "$arr": [
+          0,
+          0,
+          "W1N1",
+          2122186752
+         ]
+        },
+        {
+         "$arr": [
+          0,
+          1,
+          "E0S0",
+          -2139095039
+         ]
+        },
+        {
+         "$arr": [
+          5,
+          1,
+          "W1N1",
+          2122188033
+         ]
+        },
+        {
+         "$arr": [
+          0,
+          0,
+          "E5S5",
+          -2054881280
+         ]
+        },
+        {
+         "$arr": [
+          49,
+          49,
+          "sim",
+          12593
+         ]
+        },
+        {
+         "$arr": [
+          0,
+          0,
+          "E127S127",
+          -65536
+         ]
+        },
+        {
+         "$arr": [
+          0,
+          0,
+          "W127S0",
+          8388608
+         ]
+        },
+        "Error: Invalid arguments in RoomPosition constructor",
+        "Error: Invalid arguments in RoomPosition constructor",
+        {
+         "$arr": [
+          1,
+          1,
+          "sim",
+          257
+         ]
+        },
+        "Error: Invalid arguments in RoomPosition constructor",
+        "Error: Invalid arguments in RoomPosition constructor",
+        "Error: Invalid arguments in RoomPosition constructor",
+        "Error: Invalid arguments in RoomPosition constructor",
+        "Error: Invalid arguments in RoomPosition constructor",
+        "TypeError: name.substr is not a function",
+        "TypeError: Cannot read properties of undefined (reading 'substr')",
+        "TypeError: name.substr is not a function"
+       ]
+      }
+     ],
+     [
+      "props",
+      {
+       "$arr": [
+        {
+         "$arr": []
+        },
+        {
+         "value": -2088302060,
+         "writable": true,
+         "enumerable": false,
+         "configurable": false
+        },
+        {
+         "$arr": [
+          {
+           "$arr": [
+            true,
+            false,
+            "function",
+            "function"
+           ]
+          },
+          {
+           "$arr": [
+            true,
+            false,
+            "function",
+            "function"
+           ]
+          },
+          {
+           "$arr": [
+            true,
+            false,
+            "function",
+            "function"
+           ]
+          }
+         ]
+        },
+        "{\"x\":10,\"y\":20,\"roomName\":\"E3S7\"}",
+        "[room E3S7 pos 10,20]",
+        {
+         "x": 10,
+         "y": 20,
+         "roomName": "E3S7"
+        },
+        {
+         "$arr": [
+          "x",
+          "y",
+          "roomName",
+          "toJSON",
+          "toString",
+          "inRangeTo",
+          "isNearTo",
+          "getDirectionTo",
+          "findPathTo",
+          "findClosestByPath",
+          "findInRange",
+          "findClosestByRange",
+          "isEqualTo",
+          "getRangeTo",
+          "look",
+          "lookFor",
+          "createFlag",
+          "createConstructionSite"
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "setters",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          5,
+          20,
+          "E3S7",
+          -2088303340
+         ]
+        },
+        {
+         "$arr": [
+          5,
+          7,
+          "E3S7",
+          -2088303353
+         ]
+        },
+        "Invalid coordinate",
+        "Invalid coordinate",
+        "Invalid coordinate",
+        {
+         "$arr": [
+          5,
+          7,
+          "W5N5",
+          2054817031
+         ]
+        },
+        "Invalid roomName",
+        {
+         "$arr": [
+          5,
+          7,
+          "sim",
+          1287
+         ]
+        },
+        {
+         "$arr": [
+          5,
+          7,
+          "E3S7",
+          -2088303353
+         ]
+        },
+        {
+         "$arr": [
+          3,
+          7,
+          "E3S7",
+          -2088303865
+         ]
+        },
+        "{\"x\":3,\"y\":7,\"roomName\":\"E3S7\",\"extra\":1}",
+        {
+         "x": 3,
+         "y": 7,
+         "roomName": "E3S7",
+         "extra": 1
+        }
+       ]
+      }
+     ],
+     [
+      "packed edits",
+      {
+       "$arr": [
+        "sim",
+        0,
+        0,
+        "E127S127",
+        255,
+        255,
+        "[room E127S127 pos 255,255]"
+       ]
+      }
+     ],
+     [
+      "room object",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          "room",
+          "pos",
+          "id"
+         ]
+        },
+        true,
+        true,
+        {
+         "$arr": [
+          "room",
+          "pos",
+          "id",
+          "_energy"
+         ]
+        },
+        {
+         "$": "undefined"
+        },
+        {
+         "$": "undefined"
+        },
+        {
+         "$arr": [
+          "room",
+          "pos",
+          "name",
+          "color",
+          "secondaryColor"
+         ]
+        },
+        {
+         "$": "undefined"
+        }
+       ]
+      }
+     ]
+    ],
+    "intents": {},
+    "intentsCpu": 0,
+    "console": {
+     "$arr": []
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  }
+ ]
+}

@@ -1,0 +1,421 @@
+[
+ {
+  "name": "snapshot",
+  "old": [],
+  "new": [
+   {
+    "_id": "a",
+    "type": "spawn",
+    "x": 1,
+    "store": {
+     "energy": 300
+    }
+   },
+   {
+    "_id": "b",
+    "type": "creep",
+    "name": "Zoë"
+   }
+  ],
+  "diff": "{\"a\":{\"_id\":\"a\",\"type\":\"spawn\",\"x\":1,\"store\":{\"energy\":300}},\"b\":{\"_id\":\"b\",\"type\":\"creep\",\"name\":\"Zoë\"}}"
+ },
+ {
+  "name": "removed object",
+  "old": [
+   {
+    "_id": "a",
+    "x": 1
+   },
+   {
+    "_id": "b",
+    "x": 2
+   }
+  ],
+  "new": [
+   {
+    "_id": "b",
+    "x": 2
+   }
+  ],
+  "diff": "{\"a\":null}"
+ },
+ {
+  "name": "top-level key removed and added",
+  "old": [
+   {
+    "_id": "a",
+    "x": 1,
+    "gone": true
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "x": 1,
+    "added": "y"
+   }
+  ],
+  "diff": "{\"a\":{\"gone\":null,\"added\":\"y\"}}"
+ },
+ {
+  "name": "scalar changes",
+  "old": [
+   {
+    "_id": "a",
+    "x": 1,
+    "s": "p",
+    "b": false
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "x": 2,
+    "s": "q",
+    "b": true
+   }
+  ],
+  "diff": "{\"a\":{\"x\":2,\"s\":\"q\",\"b\":true}}"
+ },
+ {
+  "name": "nested change carries the new value",
+  "old": [
+   {
+    "_id": "a",
+    "store": {
+     "energy": 50,
+     "H": 1
+    }
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "store": {
+     "energy": 40,
+     "H": 1
+    }
+   }
+  ],
+  "diff": "{\"a\":{\"store\":{\"energy\":40}}}"
+ },
+ {
+  "name": "nested removal is dropped",
+  "old": [
+   {
+    "_id": "a",
+    "store": {
+     "energy": 50,
+     "H": 1
+    }
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "store": {
+     "energy": 50
+    }
+   }
+  ],
+  "diff": "{\"a\":{\"store\":{}}}"
+ },
+ {
+  "name": "nested addition",
+  "old": [
+   {
+    "_id": "a",
+    "store": {
+     "energy": 50
+    }
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "store": {
+     "energy": 50,
+     "O": 3
+    }
+   }
+  ],
+  "diff": "{\"a\":{\"store\":{\"O\":3}}}"
+ },
+ {
+  "name": "truthy to falsy",
+  "old": [
+   {
+    "_id": "a",
+    "p": {
+     "k": 1
+    },
+    "n": 5,
+    "s": "x",
+    "t": true
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "p": null,
+    "n": 0,
+    "s": "",
+    "t": false
+   }
+  ],
+  "diff": "{\"a\":{\"p\":null,\"n\":0,\"s\":\"\",\"t\":false}}"
+ },
+ {
+  "name": "null to object",
+  "old": [
+   {
+    "_id": "a",
+    "p": null
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "p": {
+     "k": 1
+    }
+   }
+  ],
+  "diff": "{\"a\":{\"p\":{\"k\":1}}}"
+ },
+ {
+  "name": "type change",
+  "old": [
+   {
+    "_id": "a",
+    "p": 1
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "p": "1"
+   }
+  ],
+  "diff": "{\"a\":{\"p\":\"1\"}}"
+ },
+ {
+  "name": "array element",
+  "old": [
+   {
+    "_id": "a",
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     },
+     {
+      "type": "work",
+      "hits": 100
+     }
+    ]
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     },
+     {
+      "type": "work",
+      "hits": 50
+     }
+    ]
+   }
+  ],
+  "diff": "{\"a\":{\"body\":{\"1\":{\"type\":\"work\",\"hits\":50}}}}"
+ },
+ {
+  "name": "array shrink and grow",
+  "old": [
+   {
+    "_id": "a",
+    "s": [
+     1,
+     2,
+     3
+    ],
+    "g": [
+     1
+    ]
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "s": [
+     1,
+     2
+    ],
+    "g": [
+     1,
+     2
+    ]
+   }
+  ],
+  "diff": "{\"a\":{\"s\":{},\"g\":{\"1\":2}}}"
+ },
+ {
+  "name": "unchanged and reordered nested",
+  "old": [
+   {
+    "_id": "a",
+    "p": {
+     "x": {
+      "m": 1,
+      "n": 2
+     }
+    },
+    "q": 1
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "p": {
+     "x": {
+      "n": 2,
+      "m": 1
+     }
+    },
+    "q": 1
+   }
+  ],
+  "diff": "{}"
+ },
+ {
+  "name": "deep change",
+  "old": [
+   {
+    "_id": "a",
+    "p": {
+     "x": {
+      "m": 1
+     },
+     "y": 2
+    }
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "p": {
+     "x": {
+      "m": 2
+     },
+     "y": 2
+    }
+   }
+  ],
+  "diff": "{\"a\":{\"p\":{\"x\":{\"m\":2}}}}"
+ },
+ {
+  "name": "array vs object",
+  "old": [
+   {
+    "_id": "a",
+    "p": [
+     1
+    ]
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "p": {
+     "0": 1
+    }
+   }
+  ],
+  "diff": "{}"
+ },
+ {
+  "name": "integer keys order",
+  "old": [
+   {
+    "_id": "a",
+    "store": {
+     "7": 1,
+     "b": 1
+    }
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "store": {
+     "3": 1,
+     "7": 2,
+     "b": 2
+    }
+   }
+  ],
+  "diff": "{\"a\":{\"store\":{\"3\":1,\"7\":2,\"b\":2}}}"
+ },
+ {
+  "name": "mixed list",
+  "old": [
+   {
+    "_id": "a",
+    "x": 1
+   },
+   {
+    "_id": "b",
+    "x": 1
+   },
+   {
+    "_id": "c",
+    "x": 1
+   }
+  ],
+  "new": [
+   {
+    "_id": "d",
+    "x": 9
+   },
+   {
+    "_id": "c",
+    "x": 2
+   },
+   {
+    "_id": "a",
+    "x": 1
+   }
+  ],
+  "diff": "{\"b\":null,\"c\":{\"x\":2},\"d\":{\"_id\":\"d\",\"x\":9}}"
+ },
+ {
+  "name": "empty diffs everywhere",
+  "old": [
+   {
+    "_id": "a",
+    "x": [
+     1,
+     {
+      "y": 2
+     }
+    ]
+   }
+  ],
+  "new": [
+   {
+    "_id": "a",
+    "x": [
+     1,
+     {
+      "y": 2
+     }
+    ]
+   }
+  ],
+  "diff": "{}"
+ }
+]

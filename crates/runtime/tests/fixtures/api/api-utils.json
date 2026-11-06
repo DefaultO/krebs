@@ -1,0 +1,151 @@
+{
+ "name": "api-utils",
+ "tags": [
+  "src/utils.js:478",
+  "src/utils.js:348",
+  "runtime/runtime.js:92",
+  "game/game.js:19"
+ ],
+ "substituted": [],
+ "ticks": [
+  {
+   "newVm": true,
+   "input": {
+    "meta": "{\"time\":100,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{\"pc1000000000001\":{\"_id\":\"pc1000000000001\",\"user\":\"5a1b2c3d4e5f601\",\"name\":\"Ops\",\"className\":\"operator\",\"level\":2,\"hitsMax\":1000,\"store\":{},\"storeCapacity\":100,\"spawnCooldownTime\":0,\"powers\":{\"1\":{\"level\":1}}},\"pc3000000000003\":{\"_id\":\"pc3000000000003\",\"user\":\"5a1b2c3d4e5f601\",\"name\":\"Benched\",\"className\":\"operator\",\"level\":0,\"hitsMax\":1000,\"store\":{},\"storeCapacity\":100,\"spawnCooldownTime\":0,\"powers\":{}}},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5,8,9,10,11,12],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":6,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k00000000000004\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":11,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k00000000000006\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":30,\"y\":30,\"name\":\"Intruder\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"l00000000000009\",\"type\":\"lab\",\"room\":\"W1N1\",\"x\":30,\"y\":40,\"user\":\"5a1b2c3d4e5f601\",\"hits\":500,\"hitsMax\":500,\"cooldown\":0,\"store\":{\"energy\":0,\"OH\":100},\"storeCapacityResource\":{\"energy\":2000},\"storeCapacity\":3000},{\"_id\":\"l0000000000000a\",\"type\":\"lab\",\"room\":\"W1N1\",\"x\":31,\"y\":40,\"user\":\"5a1b2c3d4e5f601\",\"hits\":500,\"hitsMax\":500,\"cooldown\":0,\"store\":{\"energy\":0},\"storeCapacityResource\":{\"energy\":2000},\"storeCapacity\":3000},{\"_id\":\"l0000000000000b\",\"type\":\"lab\",\"room\":\"W1N1\",\"x\":32,\"y\":40,\"user\":\"5a1b2c3d4e5f601\",\"hits\":500,\"hitsMax\":500,\"cooldown\":0,\"store\":{\"energy\":0},\"storeCapacityResource\":{\"energy\":2000},\"storeCapacity\":3000},{\"_id\":\"pc1000000000001\",\"type\":\"powerCreep\",\"room\":\"W1N1\",\"x\":20,\"y\":30,\"user\":\"5a1b2c3d4e5f601\",\"name\":\"Ops\",\"className\":\"operator\",\"level\":2,\"hits\":1000,\"hitsMax\":1000,\"ageTime\":5000,\"store\":{},\"storeCapacity\":100,\"powers\":{\"1\":{\"level\":1,\"cooldownTime\":0}}},{\"_id\":\"pc2000000000002\",\"type\":\"powerCreep\",\"room\":\"W1N1\",\"x\":21,\"y\":30,\"user\":\"6b2c3d4e5f60712\",\"name\":\"Foe\",\"className\":\"operator\",\"level\":1,\"hits\":1000,\"hitsMax\":1000,\"ageTime\":5000,\"store\":{},\"storeCapacity\":100,\"powers\":{}}]}"
+    ],
+    "eventLogs": [
+     null
+    ],
+    "memory": "",
+    "modules": {
+     "main": "\nmodule.exports.loop = function () {\n    var r = Game.rooms.W1N1, c = Game.creeps.Harvester1;\n    console.log('active', r.find(FIND_MY_STRUCTURES).map(function (s) { return s.structureType + ':' + s.isActive(); }).join());\n    console.log('cost', Game.market.calcTransactionCost(1000, 'W1N1', 'W5N5'), Game.map.getRoomLinearDistance('W1N1', 'W9N1', true));\n    console.log('dir', c.pos.getDirectionTo(30, 30), c.pos.getDirectionTo(11, 1), c.pos.getDirectionTo(c.pos));\n    console.log('border', r.createConstructionSite(1, 10, STRUCTURE_EXTENSION), r.createConstructionSite(10, 1, STRUCTURE_ROAD), r.createConstructionSite(48, 48, STRUCTURE_WALL));\n    var lab = r.find(FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_LAB}});\n    console.log('reverse', lab[0].reverseReaction(lab[1], lab[2]));\n    console.log('cancel', c.move(TOP), c.say('x'), c.cancelOrder('move'), c.cancelOrder('move'), c.cancelOrder('say'), c.transfer(Game.spawns.Spawn1, RESOURCE_ENERGY));\n    console.log('used', typeof Game.cpu.getUsed(), Game.cpu.getUsed() >= 0);\n    console.log('pcs', r.find(FIND_MY_POWER_CREEPS).map(String).join(), r.find(FIND_HOSTILE_POWER_CREEPS).map(String).join(), r.find(FIND_POWER_CREEPS).length, Object.keys(Game.powerCreeps).join());\n};"
+    }
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     [
+      [
+       "room",
+       [
+        "o",
+        1,
+        [
+         [
+          "createConstructionSite",
+          [
+           "a",
+           2,
+           [
+            [
+             "o",
+             3,
+             [
+              [
+               "roomName",
+               "W1N1"
+              ],
+              [
+               "x",
+               10
+              ],
+              [
+               "y",
+               1
+              ],
+              [
+               "structureType",
+               "road"
+              ]
+             ]
+            ]
+           ]
+          ]
+         ]
+        ]
+       ]
+      ],
+      [
+       "l00000000000009",
+       [
+        "o",
+        4,
+        [
+         [
+          "reverseReaction",
+          [
+           "o",
+           5,
+           [
+            [
+             "lab1",
+             "l0000000000000a"
+            ],
+            [
+             "lab2",
+             "l0000000000000b"
+            ]
+           ]
+          ]
+         ]
+        ]
+       ]
+      ],
+      [
+       "k00000000000004",
+       [
+        "o",
+        6,
+        []
+       ]
+      ]
+     ]
+    ],
+    "intentsCpu": 0.20000000000000007,
+    "console": {
+     "log": [
+      {
+       "message": "active controller:true,spawn:true,extension:true,lab:true,lab:true,lab:true",
+       "escape": true
+      },
+      {
+       "message": "cost 33 0",
+       "escape": true
+      },
+      {
+       "message": "dir 4 1 undefined",
+       "escape": true
+      },
+      {
+       "message": "border -7 0 -7",
+       "escape": true
+      },
+      {
+       "message": "reverse 0",
+       "escape": true
+      },
+      {
+       "message": "cancel 0 0 0 -5 0 -9",
+       "escape": true
+      },
+      {
+       "message": "used number true",
+       "escape": true
+      },
+      {
+       "message": "pcs [powerCreep Ops] [powerCreep Foe] 2 Ops,Benched",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  }
+ ]
+}

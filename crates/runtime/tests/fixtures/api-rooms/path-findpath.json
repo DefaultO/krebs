@@ -1,0 +1,2122 @@
+{
+ "name": "path-findpath",
+ "tags": [
+  "game/rooms.js:157",
+  "game/rooms.js:198",
+  "game/rooms.js:223",
+  "game/rooms.js:863",
+  "game/rooms.js:1396",
+  "game/path-finder.js:57",
+  "lib/path-finder.js:86"
+ ],
+ "world": {
+  "user": "u1",
+  "users": {
+   "2": {
+    "username": "Invader"
+   },
+   "3": {
+    "username": "Source Keeper"
+   },
+   "u1": {
+    "username": "Alice"
+   },
+   "u2": {
+    "username": "Bob"
+   }
+  },
+  "time": 1000,
+  "objects": [
+   {
+    "_id": "c1",
+    "type": "controller",
+    "room": "W1N1",
+    "x": 25,
+    "y": 22,
+    "user": "u1",
+    "level": 3,
+    "progress": 100,
+    "progressTotal": 45000,
+    "downgradeTime": 20000,
+    "safeModeAvailable": 1
+   },
+   {
+    "_id": "s1",
+    "type": "source",
+    "room": "W1N1",
+    "x": 22,
+    "y": 24,
+    "energy": 3000,
+    "energyCapacity": 3000,
+    "nextRegenerationTime": 1250
+   },
+   {
+    "_id": "s2",
+    "type": "source",
+    "room": "W1N1",
+    "x": 28,
+    "y": 28,
+    "energy": 0,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "m1",
+    "type": "mineral",
+    "room": "W1N1",
+    "x": 30,
+    "y": 20,
+    "mineralType": "H",
+    "mineralAmount": 50000,
+    "density": 3
+   },
+   {
+    "_id": "sp1",
+    "type": "spawn",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Spawn1",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex1",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 23,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex2",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 22,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "off": true,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "r1",
+    "type": "road",
+    "room": "W1N1",
+    "x": 25,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "r2",
+    "type": "road",
+    "room": "W1N1",
+    "x": 26,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "w1",
+    "type": "constructedWall",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 1000,
+    "hitsMax": 300000000
+   },
+   {
+    "_id": "cr1",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Harv1",
+    "hits": 300,
+    "hitsMax": 300,
+    "body": [
+     {
+      "type": "work",
+      "hits": 100
+     },
+     {
+      "type": "carry",
+      "hits": 100
+     },
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {
+     "energy": 10
+    },
+    "storeCapacity": 50,
+    "fatigue": 0,
+    "ageTime": 2400,
+    "spawning": false,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "cr2",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "name": "Bob1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 2000,
+    "spawning": false
+   },
+   {
+    "_id": "cr3",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Baby",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "spawning": true
+   },
+   {
+    "_id": "e1",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "energy",
+    "energy": 100
+   },
+   {
+    "_id": "e2",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "H",
+    "H": 20
+   },
+   {
+    "_id": "cs1",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 29,
+    "y": 29,
+    "user": "u1",
+    "structureType": "extension",
+    "progress": 0,
+    "progressTotal": 3000
+   },
+   {
+    "_id": "cs2",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 29,
+    "user": "u2",
+    "structureType": "road",
+    "progress": 10,
+    "progressTotal": 300
+   },
+   {
+    "_id": "ra1",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs3",
+    "type": "constructionSite",
+    "room": "W2N2",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "structureType": "spawn",
+    "name": "Spawn2",
+    "progress": 5,
+    "progressTotal": 15000
+   },
+   {
+    "_id": "c2",
+    "type": "controller",
+    "room": "W1N2",
+    "x": 25,
+    "y": 21,
+    "user": "u2",
+    "level": 2,
+    "progress": 0,
+    "progressTotal": 45000,
+    "downgradeTime": 20000
+   },
+   {
+    "_id": "sp2",
+    "type": "spawn",
+    "room": "W1N2",
+    "x": 25,
+    "y": 25,
+    "user": "u2",
+    "name": "BobSpawn",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null
+   },
+   {
+    "_id": "s3",
+    "type": "source",
+    "room": "W1N2",
+    "x": 21,
+    "y": 21,
+    "energy": 1500,
+    "energyCapacity": 1500
+   },
+   {
+    "_id": "cr4",
+    "type": "creep",
+    "room": "W1N2",
+    "x": 20,
+    "y": 30,
+    "user": "u1",
+    "name": "Scout",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 1500,
+    "spawning": false
+   },
+   {
+    "_id": "k1",
+    "type": "keeperLair",
+    "room": "W1N2",
+    "x": 30,
+    "y": 30,
+    "user": "3",
+    "nextSpawnTime": 1100
+   },
+   {
+    "_id": "s4",
+    "type": "source",
+    "room": "W2N1",
+    "x": 25,
+    "y": 25,
+    "energy": 3000,
+    "energyCapacity": 3000
+   }
+  ],
+  "flags": [
+   {
+    "room": "W1N1",
+    "data": "Flag1~1~1~25~25|My$VLINE$Flag~2~3~20~20|Edge~5~5~0~10"
+   },
+   {
+    "room": "W2N2",
+    "data": "Far~3~3~10~10"
+   }
+  ],
+  "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}",
+  "eventLog": {
+   "W1N1": "[{\"event\":1,\"objectId\":\"cr2\",\"data\":{\"targetId\":\"cr1\",\"damage\":10}}]"
+  }
+ },
+ "ticks": [
+  {
+   "probes": [
+    [
+     "same room",
+     "() => {\n            const r = Game.rooms.W1N1, from = new RoomPosition(25, 25, 'W1N1');\n            return [r.findPath(from, new RoomPosition(30, 26, 'W1N1')), r.findPath(from, new RoomPosition(26, 26, 'W1N1')),\n                r.findPath(from, new RoomPosition(25, 25, 'W1N1')), r.findPath(from, Game.getObjectById('s1').pos),\n                r.findPath(from, new RoomPosition(21, 21, 'W1N1'), {serialize: true}), r.findPath(from, new RoomPosition(30, 26, 'W1N1'), {range: 2}),\n                r.findPath(from, new RoomPosition(28, 25, 'W1N1'), {ignoreCreeps: true}), r.findPath(from, new RoomPosition(28, 25, 'W1N1')),\n                r.findPath(from, new RoomPosition(24, 28, 'W1N1'), {ignoreRoads: true}), r.findPath(from, new RoomPosition(24, 28, 'W1N1'))];\n        }"
+    ],
+    [
+     "options",
+     "() => {\n            const r = Game.rooms.W1N1, from = new RoomPosition(25, 25, 'W1N1'), to = new RoomPosition(29, 21, 'W1N1');\n            const seen = [];\n            const opts = {costCallback: (rn, m) => { seen.push(rn, m.get(25, 27), m.get(21, 21), m.get(24, 26), m.get(27, 24)); m.set(27, 23, 255); }};\n            const res = [r.findPath(from, to, opts), seen, r.findPath(from, to, {plainCost: 3, swampCost: 3}),\n                r.findPath(from, to, {costCallback: () => new PathFinder.CostMatrix()}), r.findPath(from, to, {maxOps: 5}),\n                r.findPath(from, to, {ignoreDestructibleStructures: true}), r.findPath(from, to, {heuristicWeight: 9, flee: true, maxCost: 1})];\n            const o2 = {avoid: [], ignore: [from], maxRooms: 1};\n            res.push(r.findPath(from, to, o2), Object.keys(o2), o2.maxOps);\n            return res;\n        }"
+    ],
+    [
+     "opts mutation",
+     "() => {\n            const r = Game.rooms.W1N1, from = new RoomPosition(25, 25, 'W1N1');\n            const o = {avoid: [new RoomPosition(26, 26, 'W1N1')]};\n            r.findPath(from, new RoomPosition(25, 10, 'W1N2'), o);\n            const o3 = {};\n            from.findPathTo(new RoomPosition(25, 10, 'W1N2'), o3);\n            const o4 = {};\n            from.findPathTo(25, 10, o4);\n            return [o, o3, o4];\n        }"
+    ],
+    [
+     "cross room",
+     "() => {\n            const r = Game.rooms.W1N1, from = new RoomPosition(25, 25, 'W1N1');\n            return [r.findPath(from, new RoomPosition(25, 25, 'W1N2')), r.findPath(from, new RoomPosition(25, 25, 'W0N1'), {maxRooms: 1}),\n                r.findPath(from, new RoomPosition(25, 25, 'W2N1')), r.findPath(new RoomPosition(25, 25, 'W1N2'), from, {}),\n                (() => { try { return r.findPath(new RoomPosition(25, 25, 'W1N2'), from); } catch (e) { return e.constructor.name; } })()];\n        }"
+    ],
+    [
+     "findPathTo",
+     "() => {\n            const p = Game.creeps.Harv1.pos;\n            return [p.findPathTo(30, 26), p.findPathTo(Game.getObjectById('s1')), p.findPathTo(new RoomPosition(30, 26, 'W1N1'), {serialize: true}),\n                p.findPathTo({x: 30, y: 26}), p.findPathTo(30, 26, {ignoreCreeps: true}), p.findPathTo(Game.creeps.Scout),\n                Game.creeps.Scout.pos.findPathTo(Game.creeps.Harv1, {maxRooms: 2})];\n        }"
+    ],
+    [
+     "callback rooms",
+     "() => {\n            const seen = [];\n            Game.rooms.W1N1.findPath(new RoomPosition(25, 25, 'W1N1'), new RoomPosition(25, 25, 'E0N1'), {costCallback: (rn, m) => { seen.push(rn); }});\n            return seen;\n        }"
+    ],
+    [
+     "deprecated",
+     "() => { Game.rooms.W1N1.findPath(new RoomPosition(25, 25, 'W1N1'), new RoomPosition(28, 28, 'W1N1'), {avoid: [1], ignore: [2]}); return 1; }"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "same room",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 26,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 27,
+           "y": 27,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 28,
+           "y": 27,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 29,
+           "y": 27,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 30,
+           "y": 26,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 26,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          }
+         ]
+        },
+        {
+         "$arr": []
+        },
+        {
+         "$arr": [
+          {
+           "x": 24,
+           "y": 25,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 23,
+           "y": 25,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 22,
+           "y": 24,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          }
+         ]
+        },
+        "24248888",
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 26,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 27,
+           "y": 27,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 28,
+           "y": 27,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 27,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 28,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 27,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 28,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 25,
+           "y": 26,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 24,
+           "y": 27,
+           "dx": -1,
+           "dy": 1,
+           "direction": 6
+          },
+          {
+           "x": 24,
+           "y": 28,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 25,
+           "y": 26,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 25,
+           "y": 27,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 24,
+           "y": 28,
+           "dx": -1,
+           "dy": 1,
+           "direction": 6
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "options",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 24,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 26,
+           "y": 23,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 27,
+           "y": 22,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 28,
+           "y": 21,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 29,
+           "y": 21,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          }
+         ]
+        },
+        {
+         "$arr": [
+          "W1N1",
+          1,
+          255,
+          255,
+          255
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 24,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 27,
+           "y": 23,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 28,
+           "y": 22,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 29,
+           "y": 21,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 24,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 27,
+           "y": 23,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 28,
+           "y": 22,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 29,
+           "y": 21,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 24,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 27,
+           "y": 23,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 24,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 27,
+           "y": 23,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 28,
+           "y": 22,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 29,
+           "y": 21,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 24,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 27,
+           "y": 23,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 28,
+           "y": 22,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 29,
+           "y": 21,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 24,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 27,
+           "y": 23,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 28,
+           "y": 22,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 29,
+           "y": 21,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          "avoid",
+          "ignore",
+          "maxRooms"
+         ]
+        },
+        {
+         "$": "undefined"
+        }
+       ]
+      }
+     ],
+     [
+      "opts mutation",
+      {
+       "$arr": [
+        {
+         "avoid": {
+          "$": "undefined"
+         },
+         "maxOps": 20000
+        },
+        {},
+        {}
+       ]
+      }
+     ],
+     [
+      "cross room",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "x": 24,
+           "y": 24,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 23,
+           "y": 23,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 22,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 21,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 21,
+           "y": 20,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 21,
+           "y": 19,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 20,
+           "y": 18,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 19,
+           "y": 17,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 19,
+           "y": 16,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 18,
+           "y": 15,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 18,
+           "y": 14,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 18,
+           "y": 13,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 19,
+           "y": 12,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 19,
+           "y": 11,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 19,
+           "y": 10,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 19,
+           "y": 9,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 19,
+           "y": 8,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 20,
+           "y": 7,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 21,
+           "y": 6,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 22,
+           "y": 5,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 22,
+           "y": 4,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 3,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 2,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 23,
+           "y": 1,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 0,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 26,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 27,
+           "y": 27,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 28,
+           "y": 27,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 29,
+           "y": 28,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 30,
+           "y": 29,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 31,
+           "y": 30,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 32,
+           "y": 31,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 33,
+           "y": 32,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 34,
+           "y": 33,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 35,
+           "y": 34,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 36,
+           "y": 35,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 37,
+           "y": 36,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 38,
+           "y": 37,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 39,
+           "y": 37,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 40,
+           "y": 37,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 41,
+           "y": 37,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 42,
+           "y": 37,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 43,
+           "y": 37,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 44,
+           "y": 38,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 45,
+           "y": 37,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 46,
+           "y": 36,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 47,
+           "y": 36,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 48,
+           "y": 36,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 49,
+           "y": 36,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 24,
+           "y": 24,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 23,
+           "y": 23,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 22,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 21,
+           "y": 22,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 20,
+           "y": 21,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 19,
+           "y": 20,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 18,
+           "y": 20,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 17,
+           "y": 19,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 16,
+           "y": 18,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 15,
+           "y": 17,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 14,
+           "y": 16,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 13,
+           "y": 15,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 12,
+           "y": 14,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 11,
+           "y": 13,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 11,
+           "y": 12,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 10,
+           "y": 11,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 9,
+           "y": 10,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 8,
+           "y": 9,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 7,
+           "y": 8,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 6,
+           "y": 7,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 5,
+           "y": 7,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 4,
+           "y": 8,
+           "dx": -1,
+           "dy": 1,
+           "direction": 6
+          },
+          {
+           "x": 3,
+           "y": 8,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 2,
+           "y": 8,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 1,
+           "y": 7,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 0,
+           "y": 6,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          }
+         ]
+        },
+        {
+         "$arr": []
+        },
+        "TypeError"
+       ]
+      }
+     ],
+     [
+      "findPathTo",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 26,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 27,
+           "y": 27,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 28,
+           "y": 27,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 29,
+           "y": 27,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 30,
+           "y": 26,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 24,
+           "y": 25,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 23,
+           "y": 25,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 22,
+           "y": 24,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          }
+         ]
+        },
+        "262644332",
+        {
+         "$arr": [
+          {
+           "x": 24,
+           "y": 24,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 23,
+           "y": 23,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 22,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 21,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 21,
+           "y": 20,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 20,
+           "y": 20,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 19,
+           "y": 19,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 18,
+           "y": 18,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 17,
+           "y": 17,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 16,
+           "y": 16,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 15,
+           "y": 15,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 14,
+           "y": 14,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 13,
+           "y": 13,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 12,
+           "y": 12,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 11,
+           "y": 11,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 10,
+           "y": 10,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 9,
+           "y": 10,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 8,
+           "y": 9,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 7,
+           "y": 8,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 6,
+           "y": 7,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 5,
+           "y": 7,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 4,
+           "y": 8,
+           "dx": -1,
+           "dy": 1,
+           "direction": 6
+          },
+          {
+           "x": 3,
+           "y": 8,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 2,
+           "y": 8,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 1,
+           "y": 7,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 1,
+           "y": 6,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 1,
+           "y": 5,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 1,
+           "y": 4,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 1,
+           "y": 3,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 0,
+           "y": 2,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 26,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 27,
+           "y": 27,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 28,
+           "y": 27,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 29,
+           "y": 27,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 30,
+           "y": 26,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 24,
+           "y": 24,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 23,
+           "y": 23,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 22,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 21,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 21,
+           "y": 20,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 21,
+           "y": 19,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 20,
+           "y": 18,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 19,
+           "y": 17,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 19,
+           "y": 16,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 18,
+           "y": 15,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 18,
+           "y": 14,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 18,
+           "y": 13,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 19,
+           "y": 12,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 19,
+           "y": 11,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 19,
+           "y": 10,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 19,
+           "y": 9,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 19,
+           "y": 8,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 20,
+           "y": 7,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 21,
+           "y": 6,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 22,
+           "y": 5,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 22,
+           "y": 4,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 3,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 2,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 1,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 0,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 21,
+           "y": 31,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 21,
+           "y": 32,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 33,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 34,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 35,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 36,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 37,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 38,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 39,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 40,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 41,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 42,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 43,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 44,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 45,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 21,
+           "y": 46,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 22,
+           "y": 47,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 22,
+           "y": 48,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 22,
+           "y": 49,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "callback rooms",
+      {
+       "$arr": [
+        "W1N1",
+        "W0N1",
+        "W1N2",
+        "W1N0",
+        "W0N0",
+        "W0N2",
+        "W2N1",
+        "E0N2",
+        "E0N1",
+        "W2N2"
+       ]
+      }
+     ],
+     [
+      "deprecated",
+      1
+     ]
+    ],
+    "intents": {},
+    "intentsCpu": 0,
+    "console": {
+     "$arr": [
+      {
+       "message": "`avoid` option cannot be used when `PathFinder.use()` is enabled. Use `costCallback` instead.",
+       "escape": true
+      },
+      {
+       "message": "`ignore` option cannot be used when `PathFinder.use()` is enabled. Use `costCallback` instead.",
+       "escape": true
+      }
+     ]
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  }
+ ]
+}

@@ -1,0 +1,1414 @@
+{
+ "name": "find-look-more-types",
+ "tags": [
+  "game/rooms.js:584",
+  "game/rooms.js:659",
+  "game/rooms.js:707"
+ ],
+ "world": {
+  "user": "u1",
+  "users": {
+   "2": {
+    "username": "Invader"
+   },
+   "3": {
+    "username": "Source Keeper"
+   },
+   "u1": {
+    "username": "Alice"
+   },
+   "u2": {
+    "username": "Bob"
+   }
+  },
+  "time": 1000,
+  "objects": [
+   {
+    "_id": "c1",
+    "type": "controller",
+    "room": "W1N1",
+    "x": 25,
+    "y": 22,
+    "user": "u1",
+    "level": 3,
+    "progress": 100,
+    "progressTotal": 45000,
+    "downgradeTime": 20000,
+    "safeModeAvailable": 1
+   },
+   {
+    "_id": "s1",
+    "type": "source",
+    "room": "W1N1",
+    "x": 22,
+    "y": 24,
+    "energy": 3000,
+    "energyCapacity": 3000,
+    "nextRegenerationTime": 1250
+   },
+   {
+    "_id": "s2",
+    "type": "source",
+    "room": "W1N1",
+    "x": 28,
+    "y": 28,
+    "energy": 0,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "m1",
+    "type": "mineral",
+    "room": "W1N1",
+    "x": 30,
+    "y": 20,
+    "mineralType": "H",
+    "mineralAmount": 50000,
+    "density": 3
+   },
+   {
+    "_id": "sp1",
+    "type": "spawn",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Spawn1",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex1",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 23,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex2",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 22,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "off": true,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "r1",
+    "type": "road",
+    "room": "W1N1",
+    "x": 25,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "r2",
+    "type": "road",
+    "room": "W1N1",
+    "x": 26,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "w1",
+    "type": "constructedWall",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 1000,
+    "hitsMax": 300000000
+   },
+   {
+    "_id": "cr1",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Harv1",
+    "hits": 300,
+    "hitsMax": 300,
+    "body": [
+     {
+      "type": "work",
+      "hits": 100
+     },
+     {
+      "type": "carry",
+      "hits": 100
+     },
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {
+     "energy": 10
+    },
+    "storeCapacity": 50,
+    "fatigue": 0,
+    "ageTime": 2400,
+    "spawning": false,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "cr2",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "name": "Bob1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 2000,
+    "spawning": false
+   },
+   {
+    "_id": "cr3",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Baby",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "spawning": true
+   },
+   {
+    "_id": "e1",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "energy",
+    "energy": 100
+   },
+   {
+    "_id": "e2",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "H",
+    "H": 20
+   },
+   {
+    "_id": "cs1",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 29,
+    "y": 29,
+    "user": "u1",
+    "structureType": "extension",
+    "progress": 0,
+    "progressTotal": 3000
+   },
+   {
+    "_id": "cs2",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 29,
+    "user": "u2",
+    "structureType": "road",
+    "progress": 10,
+    "progressTotal": 300
+   },
+   {
+    "_id": "ra1",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs3",
+    "type": "constructionSite",
+    "room": "W2N2",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "structureType": "spawn",
+    "name": "Spawn2",
+    "progress": 5,
+    "progressTotal": 15000
+   },
+   {
+    "_id": "c2",
+    "type": "controller",
+    "room": "W1N2",
+    "x": 25,
+    "y": 21,
+    "user": "u2",
+    "level": 2,
+    "progress": 0,
+    "progressTotal": 45000,
+    "downgradeTime": 20000
+   },
+   {
+    "_id": "sp2",
+    "type": "spawn",
+    "room": "W1N2",
+    "x": 25,
+    "y": 25,
+    "user": "u2",
+    "name": "BobSpawn",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null
+   },
+   {
+    "_id": "s3",
+    "type": "source",
+    "room": "W1N2",
+    "x": 21,
+    "y": 21,
+    "energy": 1500,
+    "energyCapacity": 1500
+   },
+   {
+    "_id": "cr4",
+    "type": "creep",
+    "room": "W1N2",
+    "x": 20,
+    "y": 30,
+    "user": "u1",
+    "name": "Scout",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 1500,
+    "spawning": false
+   },
+   {
+    "_id": "k1",
+    "type": "keeperLair",
+    "room": "W1N2",
+    "x": 30,
+    "y": 30,
+    "user": "3",
+    "nextSpawnTime": 1100
+   },
+   {
+    "_id": "s4",
+    "type": "source",
+    "room": "W2N1",
+    "x": 25,
+    "y": 25,
+    "energy": 3000,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "t1",
+    "type": "tombstone",
+    "room": "W1N1",
+    "x": 23,
+    "y": 23,
+    "user": "u2",
+    "deathTime": 990,
+    "decayTime": 1100,
+    "creepId": "old",
+    "creepName": "Old",
+    "creepBody": [
+     "move"
+    ],
+    "store": {
+     "energy": 5
+    }
+   },
+   {
+    "_id": "ru1",
+    "type": "ruin",
+    "room": "W1N1",
+    "x": 23,
+    "y": 23,
+    "destroyTime": 990,
+    "decayTime": 1200,
+    "structure": {
+     "id": "x",
+     "type": "road",
+     "hits": 0,
+     "hitsMax": 5000
+    },
+    "store": {}
+   },
+   {
+    "_id": "n1",
+    "type": "nuke",
+    "room": "W1N1",
+    "x": 24,
+    "y": 23,
+    "landTime": 1500,
+    "launchRoomName": "E2S2"
+   },
+   {
+    "_id": "d1",
+    "type": "deposit",
+    "room": "W1N1",
+    "x": 29,
+    "y": 23,
+    "depositType": "mist",
+    "harvested": 10,
+    "cooldownTime": 1005,
+    "decayTime": 5000
+   },
+   {
+    "_id": "pc1",
+    "type": "powerCreep",
+    "room": "W1N1",
+    "x": 26,
+    "y": 23,
+    "user": "u2",
+    "name": "PC",
+    "className": "operator",
+    "level": 1,
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {},
+    "storeCapacity": 100,
+    "ageTime": 5000
+   },
+   {
+    "_id": "po1",
+    "type": "portal",
+    "room": "W1N1",
+    "x": 30,
+    "y": 30,
+    "destination": {
+     "room": "E2S2",
+     "x": 25,
+     "y": 25
+    }
+   },
+   {
+    "_id": "ra2",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 21,
+    "y": 23,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": true
+   },
+   {
+    "_id": "ra3",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 21,
+    "y": 24,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs6",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 25,
+    "user": "u1",
+    "structureType": "road",
+    "progress": 0,
+    "progressTotal": 300
+   },
+   {
+    "_id": "cs7",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 26,
+    "user": "u2",
+    "structureType": "tower",
+    "progress": 0,
+    "progressTotal": 5000
+   },
+   {
+    "_id": "r3",
+    "type": "road",
+    "room": "W1N1",
+    "x": 21,
+    "y": 26,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "r4",
+    "type": "road",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "r5",
+    "type": "road",
+    "room": "W1N1",
+    "x": 0,
+    "y": 0,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "cr5",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 28,
+    "y": 26,
+    "user": "2",
+    "name": "Invader_1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "attack",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "spawning": false
+   },
+   {
+    "_id": "ct1",
+    "type": "container",
+    "room": "W1N1",
+    "x": 20,
+    "y": 24,
+    "hits": 250000,
+    "hitsMax": 250000,
+    "store": {},
+    "storeCapacity": 2000
+   }
+  ],
+  "flags": [
+   {
+    "room": "W1N1",
+    "data": "Flag1~1~1~25~25|My$VLINE$Flag~2~3~20~20|Edge~5~5~0~10"
+   },
+   {
+    "room": "W2N2",
+    "data": "Far~3~3~10~10"
+   }
+  ],
+  "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}",
+  "eventLog": {
+   "W1N1": "[{\"event\":1,\"objectId\":\"cr2\",\"data\":{\"targetId\":\"cr1\",\"damage\":10}}]"
+  }
+ },
+ "ticks": [
+  {
+   "probes": [
+    [
+     "find",
+     "() => [FIND_TOMBSTONES, FIND_RUINS, FIND_NUKES, FIND_DEPOSITS, FIND_POWER_CREEPS, FIND_MY_POWER_CREEPS, FIND_HOSTILE_POWER_CREEPS,\n            FIND_HOSTILE_CREEPS, FIND_STRUCTURES, FIND_HOSTILE_STRUCTURES, FIND_CONSTRUCTION_SITES].map(t => Game.rooms.W1N1.find(t))"
+    ],
+    [
+     "lookAt",
+     "() => [Game.rooms.W1N1.lookAt(23, 23), Game.rooms.W1N1.lookAt(24, 23), Game.rooms.W1N1.lookAt(26, 23), Game.rooms.W1N1.lookAt(29, 23),\n            Game.rooms.W1N1.lookAt(21, 26), Game.rooms.W1N1.lookAt(0, 0)]"
+    ],
+    [
+     "area",
+     "() => [Game.rooms.W1N1.lookAtArea(22, 22, 24, 30, true), Game.rooms.W1N1.lookAtArea(22, 22, 23, 23)]"
+    ],
+    [
+     "forAt",
+     "() => [LOOK_TOMBSTONES, LOOK_RUINS, LOOK_NUKES, LOOK_DEPOSITS, LOOK_POWER_CREEPS].map(t =>\n            [Game.rooms.W1N1.lookForAt(t, 23, 23), Game.rooms.W1N1.lookForAtArea(t, 20, 20, 30, 30, true)])"
+    ],
+    [
+     "closest",
+     "() => [Game.creeps.Harv1.pos.findClosestByRange(FIND_HOSTILE_CREEPS), Game.creeps.Harv1.pos.findClosestByPath(FIND_TOMBSTONES),\n            Game.creeps.Harv1.pos.findInRange(FIND_STRUCTURES, 4).length]"
+    ],
+    [
+     "matrix",
+     "() => {\n    const sets = [{}, {ignoreCreeps: true}, {ignoreDestructibleStructures: true}, {ignoreRoads: true},\n        {ignoreCreeps: true, ignoreDestructibleStructures: true, ignoreRoads: true}];\n    return sets.map(o => {\n        let bits;\n        const r = Game.rooms.W1N1.findPath(new RoomPosition(25, 25, 'W1N1'), new RoomPosition(25, 20, 'W1N1'),\n            Object.assign({costCallback: (rn, m) => { if (rn == 'W1N1') bits = Array.from(m._bits); }}, o));\n        return [bits.map((v, i) => v ? i + ':' + v : '').filter(Boolean).join(' '), r.length];\n    });\n}"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "find",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "$obj": "Tombstone",
+           "id": "t1",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "Ruin",
+           "id": "ru1",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "Nuke",
+           "id": "n1",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "Deposit",
+           "id": "d1",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "PowerCreep",
+           "id": "pc1",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": []
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "PowerCreep",
+           "id": "pc1",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "Creep",
+           "id": "cr2",
+           "same": true
+          },
+          {
+           "$obj": "Creep",
+           "id": "cr5",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "StructureRoad",
+           "id": "r1",
+           "same": true
+          },
+          {
+           "$obj": "StructureRoad",
+           "id": "r2",
+           "same": true
+          },
+          {
+           "$obj": "StructureWall",
+           "id": "w1",
+           "same": true
+          },
+          {
+           "$obj": "StructureRampart",
+           "id": "ra1",
+           "same": true
+          },
+          {
+           "$obj": "StructurePortal",
+           "id": "po1",
+           "same": true
+          },
+          {
+           "$obj": "StructureRampart",
+           "id": "ra2",
+           "same": true
+          },
+          {
+           "$obj": "StructureRoad",
+           "id": "r3",
+           "same": true
+          },
+          {
+           "$obj": "StructureRoad",
+           "id": "r4",
+           "same": true
+          },
+          {
+           "$obj": "StructureRoad",
+           "id": "r5",
+           "same": true
+          },
+          {
+           "$obj": "StructureContainer",
+           "id": "ct1",
+           "same": true
+          },
+          {
+           "$obj": "StructureController",
+           "id": "c1",
+           "same": true
+          },
+          {
+           "$obj": "StructureSpawn",
+           "id": "sp1",
+           "same": true
+          },
+          {
+           "$obj": "StructureExtension",
+           "id": "ex1",
+           "same": true
+          },
+          {
+           "$obj": "StructureExtension",
+           "id": "ex2",
+           "same": true
+          },
+          {
+           "$obj": "StructureRampart",
+           "id": "ra3",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "StructureRampart",
+           "id": "ra1",
+           "same": true
+          },
+          {
+           "$obj": "StructureRampart",
+           "id": "ra2",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "ConstructionSite",
+           "id": "cs2",
+           "same": true
+          },
+          {
+           "$obj": "ConstructionSite",
+           "id": "cs7",
+           "same": true
+          },
+          {
+           "$obj": "ConstructionSite",
+           "id": "cs1",
+           "same": true
+          },
+          {
+           "$obj": "ConstructionSite",
+           "id": "cs6",
+           "same": true
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "lookAt",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          },
+          {
+           "type": "tombstone",
+           "tombstone": {
+            "$obj": "Tombstone",
+            "id": "t1",
+            "same": true
+           }
+          },
+          {
+           "type": "ruin",
+           "ruin": {
+            "$obj": "Ruin",
+            "id": "ru1",
+            "same": true
+           }
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          },
+          {
+           "type": "nuke",
+           "nuke": {
+            "$obj": "Nuke",
+            "id": "n1",
+            "same": true
+           }
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          },
+          {
+           "type": "powerCreep",
+           "powerCreep": {
+            "$obj": "PowerCreep",
+            "id": "pc1",
+            "same": true
+           }
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "type": "deposit",
+           "deposit": {
+            "$obj": "Deposit",
+            "id": "d1",
+            "same": true
+           }
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "type": "structure",
+           "structure": {
+            "$obj": "StructureRoad",
+            "id": "r3",
+            "same": true
+           }
+          },
+          {
+           "type": "constructionSite",
+           "constructionSite": {
+            "$obj": "ConstructionSite",
+            "id": "cs7",
+            "same": true
+           }
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "type": "structure",
+           "structure": {
+            "$obj": "StructureRoad",
+            "id": "r5",
+            "same": true
+           }
+          },
+          {
+           "type": "terrain",
+           "terrain": "wall"
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "area",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "x": 27,
+           "y": 24,
+           "type": "creep",
+           "creep": {
+            "$obj": "Creep",
+            "id": "cr2",
+            "same": true
+           }
+          },
+          {
+           "x": 22,
+           "y": 24,
+           "type": "source",
+           "source": {
+            "$obj": "Source",
+            "id": "s1",
+            "same": true
+           }
+          },
+          {
+           "x": 29,
+           "y": 23,
+           "type": "deposit",
+           "deposit": {
+            "$obj": "Deposit",
+            "id": "d1",
+            "same": true
+           }
+          },
+          {
+           "x": 27,
+           "y": 24,
+           "type": "structure",
+           "structure": {
+            "$obj": "StructureRampart",
+            "id": "ra1",
+            "same": true
+           }
+          },
+          {
+           "x": 25,
+           "y": 22,
+           "type": "structure",
+           "structure": {
+            "$obj": "StructureController",
+            "id": "c1",
+            "same": true
+           }
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 22,
+           "y": 22
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 23,
+           "y": 22
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 24,
+           "y": 22
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 25,
+           "y": 22
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 26,
+           "y": 22
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 27,
+           "y": 22
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 28,
+           "y": 22
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 29,
+           "y": 22
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 30,
+           "y": 22
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 22,
+           "y": 23
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 23,
+           "y": 23
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 24,
+           "y": 23
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 25,
+           "y": 23
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 26,
+           "y": 23
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 27,
+           "y": 23
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 28,
+           "y": 23
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 29,
+           "y": 23
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 30,
+           "y": 23
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 22,
+           "y": 24
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 23,
+           "y": 24
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 24,
+           "y": 24
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 25,
+           "y": 24
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 26,
+           "y": 24
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 27,
+           "y": 24
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 28,
+           "y": 24
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 29,
+           "y": 24
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 30,
+           "y": 24
+          },
+          {
+           "x": 24,
+           "y": 23,
+           "type": "nuke",
+           "nuke": {
+            "$obj": "Nuke",
+            "id": "n1",
+            "same": true
+           }
+          },
+          {
+           "x": 23,
+           "y": 23,
+           "type": "tombstone",
+           "tombstone": {
+            "$obj": "Tombstone",
+            "id": "t1",
+            "same": true
+           }
+          },
+          {
+           "x": 23,
+           "y": 23,
+           "type": "ruin",
+           "ruin": {
+            "$obj": "Ruin",
+            "id": "ru1",
+            "same": true
+           }
+          },
+          {
+           "x": 26,
+           "y": 23,
+           "type": "powerCreep",
+           "powerCreep": {
+            "$obj": "PowerCreep",
+            "id": "pc1",
+            "same": true
+           }
+          }
+         ]
+        },
+        {
+         "22": {
+          "22": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          },
+          "23": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          }
+         },
+         "23": {
+          "22": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          },
+          "23": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            },
+            {
+             "type": "tombstone",
+             "tombstone": {
+              "$obj": "Tombstone",
+              "id": "t1",
+              "same": true
+             }
+            },
+            {
+             "type": "ruin",
+             "ruin": {
+              "$obj": "Ruin",
+              "id": "ru1",
+              "same": true
+             }
+            }
+           ]
+          }
+         }
+        }
+       ]
+      }
+     ],
+     [
+      "forAt",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "$arr": [
+            {
+             "$obj": "Tombstone",
+             "id": "t1",
+             "same": true
+            }
+           ]
+          },
+          {
+           "$arr": [
+            {
+             "x": 23,
+             "y": 23,
+             "tombstone": {
+              "$obj": "Tombstone",
+              "id": "t1",
+              "same": true
+             }
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": [
+            {
+             "$obj": "Ruin",
+             "id": "ru1",
+             "same": true
+            }
+           ]
+          },
+          {
+           "$arr": [
+            {
+             "x": 23,
+             "y": 23,
+             "ruin": {
+              "$obj": "Ruin",
+              "id": "ru1",
+              "same": true
+             }
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": []
+          },
+          {
+           "$arr": [
+            {
+             "x": 24,
+             "y": 23,
+             "nuke": {
+              "$obj": "Nuke",
+              "id": "n1",
+              "same": true
+             }
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": []
+          },
+          {
+           "$arr": [
+            {
+             "x": 29,
+             "y": 23,
+             "deposit": {
+              "$obj": "Deposit",
+              "id": "d1",
+              "same": true
+             }
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": []
+          },
+          {
+           "$arr": [
+            {
+             "x": 26,
+             "y": 23,
+             "powerCreep": {
+              "$obj": "PowerCreep",
+              "id": "pc1",
+              "same": true
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "closest",
+      {
+       "$arr": [
+        {
+         "$obj": "Creep",
+         "id": "cr2",
+         "same": true
+        },
+        {
+         "$obj": "Tombstone",
+         "id": "t1",
+         "same": true
+        },
+        12
+       ]
+      }
+     ],
+     [
+      "matrix",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          "0:1 1071:255 1076:1 1124:255 1127:255 1177:255 1226:255 1272:255 1275:255 1277:1 1323:255 1327:1 1374:255 1426:255 1428:255 1473:255 1479:255 1520:255 1530:255",
+          5
+         ]
+        },
+        {
+         "$arr": [
+          "0:1 1071:255 1076:1 1124:255 1127:255 1177:255 1226:255 1272:255 1277:1 1327:1 1374:255 1428:255 1473:255 1479:255 1520:255 1530:255",
+          5
+         ]
+        },
+        {
+         "$arr": [
+          "0:1 1071:1 1076:1 1124:255 1226:255 1272:255 1275:255 1277:1 1323:255 1327:1 1374:255 1426:255 1428:255 1473:255 1520:255 1530:255",
+          5
+         ]
+        },
+        {
+         "$arr": [
+          "1071:255 1124:255 1127:255 1177:255 1226:255 1272:255 1275:255 1323:255 1374:255 1426:255 1428:255 1473:255 1479:255 1520:255 1530:255",
+          5
+         ]
+        },
+        {
+         "$arr": [
+          "1124:255 1272:255 1428:255 1473:255 1520:255 1530:255",
+          5
+         ]
+        }
+       ]
+      }
+     ]
+    ],
+    "intents": {},
+    "intentsCpu": 0,
+    "console": {
+     "$arr": []
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  }
+ ]
+}

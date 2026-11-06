@@ -1,0 +1,83 @@
+{
+ "name": "store-shape",
+ "tags": [
+  "game/store.js:19",
+  "game/store.js:42",
+  "game/store.js:86"
+ ],
+ "substituted": [],
+ "ticks": [
+  {
+   "newVm": true,
+   "input": {
+    "meta": "{\"time\":100,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5,8,9,10,11],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k00000000000004\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":11,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":20,\"H\":5,\"O\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k00000000000006\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":30,\"y\":30,\"name\":\"Intruder\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"t00000000000009\",\"type\":\"container\",\"room\":\"W1N1\",\"x\":5,\"y\":5,\"hits\":250000,\"hitsMax\":250000,\"store\":{\"energy\":100,\"H\":20,\"O\":0},\"storeCapacity\":2000,\"nextDecayTime\":500},{\"_id\":\"l0000000000000a\",\"type\":\"lab\",\"room\":\"W1N1\",\"x\":6,\"y\":6,\"user\":\"5a1b2c3d4e5f601\",\"hits\":500,\"hitsMax\":500,\"cooldown\":0,\"store\":{\"energy\":200,\"H\":50},\"storeCapacityResource\":{\"energy\":2000,\"H\":3000},\"storeCapacity\":0},{\"_id\":\"l0000000000000b\",\"type\":\"lab\",\"room\":\"W1N1\",\"x\":7,\"y\":6,\"user\":\"5a1b2c3d4e5f601\",\"hits\":500,\"hitsMax\":500,\"cooldown\":0,\"store\":{\"energy\":0},\"storeCapacityResource\":{\"energy\":2000},\"storeCapacity\":3000},{\"_id\":\"p0000000000000c\",\"type\":\"powerSpawn\",\"room\":\"W1N1\",\"x\":8,\"y\":6,\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"store\":{\"energy\":10,\"power\":0},\"storeCapacityResource\":{\"energy\":5000,\"power\":100}}]}"
+    ],
+    "eventLogs": [
+     null
+    ],
+    "memory": "",
+    "modules": {
+     "main": "\nfunction probe(label, st) {\n    var res = ['H', 'energy', 'power', undefined, 'nonsense'].map(function (r) {\n        return [st.getCapacity(r), st.getUsedCapacity(r), st.getFreeCapacity(r)];\n    });\n    console.log(label, JSON.stringify(Object.keys(st)), JSON.stringify(st), String(st), st.H, st.energy, st.nonsense,\n        st instanceof Store, Object.getOwnPropertyNames(st).join(), JSON.stringify(res), 'energy' in st, st._sum);\n}\nmodule.exports.loop = function () {\n    var r = Game.rooms.W1N1;\n    probe('creep', Game.creeps.Harvester1.store);\n    probe('spawn', Game.spawns.Spawn1.store);\n    probe('ext', r.find(FIND_MY_STRUCTURES, {filter: {structureType: 'extension'}})[0].store);\n    r.find(FIND_STRUCTURES).forEach(function (s) { if (s.store) probe(s.structureType, s.store); });\n    var s = Game.creeps.Harvester1.store;\n    console.log('identity', s === Game.creeps.Harvester1.store, Object.keys(Game.creeps.Harvester1));\n};"
+    }
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "creep [\"energy\",\"H\"] {\"energy\":20,\"H\":5} [store] 5 20 undefined true energy,H,getCapacity,getUsedCapacity,getFreeCapacity,toString,_sum [[50,5,25],[50,20,25],[50,0,25],[50,25,25],[50,0,25]] true 25",
+       "escape": true
+      },
+      {
+       "message": "spawn [\"energy\"] {\"energy\":300} [store] 0 300 undefined true energy,getCapacity,getUsedCapacity,getFreeCapacity,toString [[null,null,null],[300,300,0],[null,null,null],[null,null,null],[null,null,null]] true undefined",
+       "escape": true
+      },
+      {
+       "message": "ext [\"energy\"] {\"energy\":50} [store] 0 50 undefined true energy,getCapacity,getUsedCapacity,getFreeCapacity,toString [[null,null,null],[50,50,0],[null,null,null],[null,null,null],[null,null,null]] true undefined",
+       "escape": true
+      },
+      {
+       "message": "container [\"energy\",\"H\"] {\"energy\":100,\"H\":20} [store] 20 100 undefined true energy,H,getCapacity,getUsedCapacity,getFreeCapacity,toString,_sum [[2000,20,1880],[2000,100,1880],[2000,0,1880],[2000,120,1880],[2000,0,1880]] true 120",
+       "escape": true
+      },
+      {
+       "message": "spawn [\"energy\"] {\"energy\":300} [store] 0 300 undefined true energy,getCapacity,getUsedCapacity,getFreeCapacity,toString [[null,null,null],[300,300,0],[null,null,null],[null,null,null],[null,null,null]] true undefined",
+       "escape": true
+      },
+      {
+       "message": "extension [\"energy\"] {\"energy\":50} [store] 0 50 undefined true energy,getCapacity,getUsedCapacity,getFreeCapacity,toString [[null,null,null],[50,50,0],[null,null,null],[null,null,null],[null,null,null]] true undefined",
+       "escape": true
+      },
+      {
+       "message": "lab [\"energy\",\"H\"] {\"energy\":200,\"H\":50} [store] 50 200 undefined true energy,H,getCapacity,getUsedCapacity,getFreeCapacity,toString [[3000,50,2950],[2000,200,1800],[null,null,null],[null,null,null],[null,null,null]] true undefined",
+       "escape": true
+      },
+      {
+       "message": "lab [] {} [store] 0 0 undefined true getCapacity,getUsedCapacity,getFreeCapacity,toString,_sum [[1000,0,1000],[2000,0,2000],[1000,0,1000],[null,0,null],[1000,0,1000]] false 0",
+       "escape": true
+      },
+      {
+       "message": "powerSpawn [\"energy\"] {\"energy\":10} [store] 0 10 undefined true energy,getCapacity,getUsedCapacity,getFreeCapacity,toString [[null,null,null],[5000,10,4990],[100,0,100],[null,null,null],[null,null,null]] true undefined",
+       "escape": true
+      },
+      {
+       "message": "identity true room,pos,id,_name,_spawning,_my,_store",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  }
+ ]
+}

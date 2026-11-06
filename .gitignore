@@ -1,0 +1,16 @@
+/target/
+/reference/
+/data/
+/dist/
+/krebs.json
+/chitin.json
+*.log
+/.claude/
+# Private, and not a submodule. tools\package.bat and tools\dist.bat keep it out of a release.
+/mods/platform/
+# Files that can hold a password or a key.
+.env
+.screepsrc
+screeps.json
+*.pem
+*.key

@@ -1,0 +1,16 @@
+[package]
+name = "runtime"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+util = { path = "../util" }
+pathfinder = { path = "../pathfinder" }
+engine = { path = "../engine" }
+# Building it needs `-j 4` (RAM), and tools/v8-junction.ps1 when target/ is on another drive.
+v8 = "=152.2.0"
+
+[features]
+# V8 with pointer compression and a 4 GB cage per isolate. No prebuilt library: build with tools/v8-ptrcomp.ps1.
+ptrcomp = ["v8/v8_enable_pointer_compression"]

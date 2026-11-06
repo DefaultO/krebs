@@ -1,0 +1,467 @@
+//! `krebs` with no command, which is what a double-click runs. It does in one go what `new` and `serve` do apart, for
+//! someone who has never seen a console: it works in the exe's own folder whatever the current directory is, makes the
+//! world on the first start, says what to do next, and answers every failure with a plain sentence and a wait for Enter,
+//! because the window would otherwise close before anyone could read it.
+//!
+//! Mods come from `mods` in krebs.json, as for `serve`. Where nothing names any, a build that has `PLAYERS_MOD` uses it, as
+//! a lost krebs.json must not turn the game into the plain Screeps client. A build without it stays the plain server.
+//! `--friends` listens on all interfaces. The CLI has no authentication, so it stays on this PC, and match servers never
+//! see the flag: `mods/bare` starts them on their own defaults, which are 127.0.0.1.
+//!
+//! Not covered: a fatal V8 error or an out-of-memory abort end the process without unwinding, so nothing here runs.
+
+use crate::config::{Args, Config};
+use std::io::{Read, Write};
+use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+
+const ALL_INTERFACES: &str = "0.0.0.0";
+const THIS_PC: &str = "127.0.0.1";
+const PLAYERS_MOD: &str = "bare";
+/// With the port open to a network, the room one caller can take up. A browser opens a handful of connections, so this
+/// still fits a full lobby many times over.
+const FRIENDS_MAX_CONNECTIONS: usize = 256;
+const FRIENDS_REQUEST_TIMEOUT_S: u64 = 30;
+
+const CRASHED: &str = "Krebs hit an internal error and had to stop. The lines above say where.\n\
+Your last automatic save is still there. Start Krebs again to carry on from it.";
+
+const IN_THE_ZIP: &str = "Krebs was started from inside the zip, so Windows gave it a throwaway folder and left the other files out.\n\
+Close this, right-click the zip and choose Extract All. Then start Krebs.exe from the new folder.";
+
+static ACTIVE: AtomicBool = AtomicBool::new(false);
+
+/// Whether this process was started with no command.
+pub fn active() -> bool {
+    ACTIVE.load(Ordering::Relaxed)
+}
+
+/// Says what went wrong and keeps the window open until it has been read.
+pub fn give_up(msg: &str) -> ! {
+    eprintln!("\n{msg}\n");
+    println!("Press Enter to close this window.");
+    // with no console to read from this returns at once, so a script or a test never hangs here
+    let _ = std::io::stdin().read_line(&mut String::new());
+    std::process::exit(1)
+}
+
+/// Runs `f`, and a panic comes back as the sentence to show. Panics that something else catches (a connection, a room)
+/// never get here, and the server keeps running through those.
+fn guarded(f: impl FnOnce()) -> Result<(), &'static str> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).map_err(|_| CRASHED)
+}
+
+pub fn run(args: &Args) {
+    ACTIVE.store(true, Ordering::Relaxed);
+    if let Err(msg) = guarded(|| start(args)) {
+        give_up(msg);
+    }
+}
+
+fn start(args: &Args) {
+    let folder = go_to_exe_folder().unwrap_or_else(|e| give_up(&format!("Krebs could not open its own folder: {e}.\nMove the Krebs folder somewhere you own, such as Documents or the Desktop, and start it again.")));
+    if unpacked_for_one_run(&folder) {
+        give_up(IN_THE_ZIP);
+    }
+    let mut cfg = Config::load(args).unwrap_or_else(|e| give_up(&format!("Krebs could not read its settings: {e}.\nFix krebs.json, or delete it and Krebs uses its normal settings. Then start Krebs again.")));
+    default_mods(&mut cfg, crate::mods::built_in(PLAYERS_MOD));
+    if args.flag("friends").is_some() {
+        open_to_friends(&mut cfg);
+    }
+    if let Some(problem) = folder_problem(&cfg.data).or_else(|| port_problem(&cfg)) {
+        give_up(&problem);
+    }
+    if !crate::spec_path(&cfg).exists() && !engine::persist::exists(&cfg.data) {
+        println!("Creating your world. This only happens the first time.");
+        crate::new_world(&cfg, false);
+    }
+    crate::serve(cfg, args);
+}
+
+fn go_to_exe_folder() -> std::io::Result<PathBuf> {
+    let exe = std::env::current_exe()?;
+    let folder = exe.parent().unwrap_or(Path::new(".")).to_path_buf();
+    std::env::set_current_dir(&folder)?;
+    Ok(folder)
+}
+
+/// The folder Explorer (`Temp1_name.zip`), WinRAR (`Rar$EXa1.2`) or 7-Zip (`7zO12345`) unpacks one file into, for a
+/// program started from inside an archive. It goes away, and the world would go with it.
+fn unpacked_for_one_run(folder: &Path) -> bool {
+    let name = folder.file_name().map_or(String::new(), |n| n.to_string_lossy().to_ascii_lowercase());
+    let explorer = name.strip_prefix("temp").and_then(|rest| rest.split_once('_')).is_some_and(|(n, rest)| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()) && rest.ends_with(".zip"));
+    let seven_zip = name.strip_prefix("7zo").is_some_and(|rest| !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_alphanumeric()));
+    explorer || seven_zip || name.starts_with("rar$ex")
+}
+
+fn default_mods(cfg: &mut Config, players_mod_built_in: bool) {
+    if !cfg.mods_named && players_mod_built_in {
+        cfg.mods = vec![PLAYERS_MOD.to_string()];
+    }
+}
+
+fn open_to_friends(cfg: &mut Config) {
+    cfg.http_host = ALL_INTERFACES.into();
+    cfg.cli_host = THIS_PC.into();
+    cfg.max_connections = cfg.max_connections.min(FRIENDS_MAX_CONNECTIONS);
+    cfg.request_timeout_s = cfg.request_timeout_s.min(FRIENDS_REQUEST_TIMEOUT_S);
+}
+
+/// The world lives in `data`, so a folder that cannot be written to has to stop the start here, not at the first save.
+fn folder_problem(data: &Path) -> Option<String> {
+    let probe = data.join(format!("krebs-write-test-{}.tmp", std::process::id()));
+    let result = std::fs::create_dir_all(data).and_then(|()| std::fs::write(&probe, b""));
+    let _ = std::fs::remove_file(&probe);
+    let e = result.err()?;
+    let place = std::path::absolute(data).unwrap_or_else(|_| data.to_path_buf());
+    Some(format!(
+        "Krebs cannot write to {} ({e}).\nIt keeps your world there, and folders like Program Files or a read-only drive do not allow that.\n\
+         Move the Krebs folder somewhere you own, such as Documents or the Desktop, and start it again.",
+        place.display()
+    ))
+}
+
+#[derive(Debug, PartialEq)]
+enum Holder {
+    Krebs,
+    Other,
+}
+
+/// What answers on this PC at `port`, if anything. Binding alone would not tell: on Windows a listener on 127.0.0.1 and
+/// one on all interfaces can share a port, and only one of them would then get the connections.
+fn holder(port: u16) -> Option<Holder> {
+    let address = SocketAddr::from((Ipv4Addr::LOCALHOST, port));
+    let mut socket = TcpStream::connect_timeout(&address, Duration::from_millis(500)).ok()?;
+    let _ = socket.set_read_timeout(Some(Duration::from_secs(2)));
+    let _ = socket.set_write_timeout(Some(Duration::from_secs(2)));
+    let _ = socket.write_all(b"GET /api/version HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n");
+    let mut head = Vec::new();
+    let _ = socket.take(4096).read_to_end(&mut head);
+    let head = String::from_utf8_lossy(&head).to_ascii_lowercase();
+    Some(if head.contains(&format!("\r\n{}:", backend::server::KREBS_HEADER.to_ascii_lowercase())) { Holder::Krebs } else { Holder::Other })
+}
+
+/// `friends`: this start was to let other PCs in, which the copy already running may not do.
+fn taken(holder: &Holder, port: u16, friends: bool) -> String {
+    match holder {
+        Holder::Krebs if friends => format!(
+            "Krebs is already running on port {port}, and that copy may not let friends in.\n\
+             Close the other Krebs window first, then start this again."
+        ),
+        Holder::Krebs => format!(
+            "Krebs is already running on port {port}, so this one has nothing to do.\n\
+             Look for its other window, or just open Screeps and connect. To run a second one, copy the Krebs folder somewhere else and change the port number in its krebs.json."
+        ),
+        Holder::Other => format!(
+            "Port {port} is already used by another program, so Krebs cannot start. It may be another Screeps server.\n\
+             Close that program and start Krebs again, or change the port number in krebs.json. README.txt shows how."
+        ),
+    }
+}
+
+fn port_problem(cfg: &Config) -> Option<String> {
+    let (host, port) = (cfg.http_host.as_str(), cfg.http_port);
+    let friends = host == ALL_INTERFACES;
+    if let Some(found) = holder(port) {
+        return Some(taken(&found, port, friends));
+    }
+    let e = TcpListener::bind((host, port)).err()?;
+    Some(match e.kind() {
+        std::io::ErrorKind::AddrInUse => taken(&Holder::Other, port, friends),
+        std::io::ErrorKind::PermissionDenied => format!("Windows does not let Krebs use port {port}: something has reserved it.\nChange the port number in krebs.json and start Krebs again. README.txt shows how."),
+        _ => format!("Krebs could not open port {port} on {host}: {e}.\nCheck host and port under http in krebs.json, or delete that file and Krebs uses its normal settings."),
+    })
+}
+
+/// For a world that is there but cannot be used. Nothing was changed, and that should be said.
+pub fn world_problem(data: &Path, detail: &str) -> String {
+    let place = std::path::absolute(data).unwrap_or_else(|_| data.to_path_buf());
+    format!(
+        "The saved world in {} could not be read: {detail}\nKrebs did not change it. To start a new world, rename that folder, for example to data-old, and start Krebs again.",
+        place.display()
+    )
+}
+
+pub fn mods_problem(detail: &str) -> String {
+    format!("{detail}.\nCheck the mods list in krebs.json. A mod has to be built into this copy of Krebs to be used.")
+}
+
+fn save_failed(detail: &str, every_s: u64) -> String {
+    format!(
+        "\n  Krebs could not save your world: {detail}.\n\
+         \x20 If you close this window now, you lose everything since the last save.\n\
+         \x20 Free some disk space, and check that the data folder beside Krebs can be written to.\n\
+         \x20 Krebs tries again every {every_s} seconds and says so here when it works.\n"
+    )
+}
+
+const SAVING_AGAIN: &str = "\n  Krebs can save your world again.\n";
+
+/// What the window says after each save: the same words every time one fails, and one line when they work again.
+pub fn save_report(every_s: u64) -> impl FnMut(Result<(), &str>) + Send + 'static {
+    let mut failing = false;
+    move |saved| match saved {
+        Err(detail) => {
+            failing = true;
+            eprintln!("{}", save_failed(detail, every_s));
+        }
+        Ok(()) if failing => {
+            failing = false;
+            println!("{SAVING_AGAIN}");
+        }
+        Ok(()) => {}
+    }
+}
+
+/// For the save at the very end, when the window may already be closing.
+pub fn last_save_failed(data: &Path, detail: &str) -> String {
+    let place = std::path::absolute(data).unwrap_or_else(|_| data.to_path_buf());
+    format!(
+        "Krebs could not save your world when it closed: {detail}.\nEverything since the last good save is lost. That save is still in {}.\n\
+         Free some disk space, check that you can write to that folder, and start Krebs again.",
+        place.display()
+    )
+}
+
+/// A closing console takes its window down whatever this process does, so saying this where it stays read needs a new
+/// window: this same program, shown `msg` by the word `TELL`. Without one it goes to this window.
+pub fn tell_in_a_new_window(msg: &str) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NEW_CONSOLE: u32 = 0x10;
+        let opened = std::env::current_exe().and_then(|exe| std::process::Command::new(exe).args([crate::TELL, msg]).creation_flags(CREATE_NEW_CONSOLE).spawn());
+        if opened.is_ok() {
+            return;
+        }
+    }
+    give_up(msg);
+}
+
+/// This PC's addresses on its networks, most likely first. No packet leaves: connecting a UDP socket only picks the
+/// interface a packet would use. The computer's own name then gives the others.
+fn lan_addresses() -> Vec<Ipv4Addr> {
+    let mut found = Vec::new();
+    if let Ok(socket) = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)) {
+        if let (Ok(()), Ok(SocketAddr::V4(me))) = (socket.connect(("10.255.255.255", 1)), socket.local_addr()) {
+            found.push(*me.ip());
+        }
+    }
+    let name = std::env::var("COMPUTERNAME").or_else(|_| std::env::var("HOSTNAME")).unwrap_or_default();
+    for address in (name.as_str(), 0).to_socket_addrs().into_iter().flatten() {
+        if let SocketAddr::V4(me) = address {
+            if !found.contains(me.ip()) {
+                found.push(*me.ip());
+            }
+        }
+    }
+    found.retain(|ip| !ip.is_loopback() && !ip.is_link_local() && !ip.is_unspecified());
+    found
+}
+
+fn play_here(port: u16) -> String {
+    format!(
+        "  To play on this PC:\n\
+         \x20   1. Open Screeps in Steam.\n\
+         \x20   2. On the server list, switch from Community servers to Private server.\n\
+         \x20   3. Enter Host {THIS_PC} and Port {port}, then press Connect.\n"
+    )
+}
+
+/// `lan`: this PC's addresses, shown only when people can reach them.
+fn welcome_text(port: u16, friends: bool, lan: &[Ipv4Addr]) -> String {
+    let mut text = String::from("\n  Krebs is running.\n\n");
+    text += &play_here(port);
+    if friends {
+        text += "\n  To let other people join, give them the same steps with one of these as the Host:\n";
+        if lan.is_empty() {
+            text += "    (Krebs could not find this PC's address. Run ipconfig and use the IPv4 Address.)\n";
+        }
+        for ip in lan {
+            text += &format!("    {ip}\n");
+        }
+        text += &format!(
+            "  Those work for people on your own network. Try the first one first.\n\n\
+             \x20 Windows Firewall may ask about Krebs. Allow it, or nobody else can connect. If friends cannot connect, README.txt says what to check.\n\
+             \x20 Friends over the internet also need port {port} forwarded to this PC on your router, and then use your public address.\n\n\
+             \x20 Krebs cannot check who people are, and anyone who reaches this port can sign in as anyone. Only share it with people you trust.\n"
+        );
+    }
+    text += "\n  Keep this window open while you play. Close it to stop. Your world is saved, and any match that is running ends.\n";
+    text
+}
+
+pub fn welcome(cfg: &Config) -> String {
+    let friends = cfg.http_host == ALL_INTERFACES;
+    welcome_text(cfg.http_port, friends, &if friends { lan_addresses() } else { Vec::new() })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn config() -> Config {
+        Config::load(&Args::parse(&["serve".to_string()])).unwrap()
+    }
+
+    fn config_from(name: &str, text: &str, flags: &[&str]) -> Config {
+        let dir = std::env::temp_dir().join(format!("krebs-start-{name}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("krebs.json");
+        std::fs::write(&file, text).unwrap();
+        let argv: Vec<String> = ["serve", "--config", file.to_str().unwrap()].iter().chain(flags).map(|s| s.to_string()).collect();
+        let cfg = Config::load(&Args::parse(&argv)).unwrap();
+        let _ = std::fs::remove_dir_all(&dir);
+        cfg
+    }
+
+    #[test]
+    fn with_no_mods_named_the_players_mod_is_used_where_it_is_built_in() {
+        let mut lost = config();
+        default_mods(&mut lost, true);
+        assert_eq!(lost.mods, ["bare"], "a lost krebs.json keeps the game");
+        let mut plain = config();
+        default_mods(&mut plain, false);
+        assert!(plain.mods.is_empty(), "the core without mods stays the plain server");
+        let mut port_only = config_from("port", r#"{"http":{"port":21555}}"#, &[]);
+        default_mods(&mut port_only, true);
+        assert_eq!(port_only.mods, ["bare"], "a file that only sets the port is not a choice about mods");
+        let mut chosen = config_from("empty", r#"{"mods":[]}"#, &[]);
+        default_mods(&mut chosen, true);
+        assert!(chosen.mods.is_empty(), "a list in the file is a choice");
+        let mut flag = config_from("flag", "{}", &["--mods", "history"]);
+        default_mods(&mut flag, true);
+        assert_eq!(flag.mods, ["history"]);
+    }
+
+    #[test]
+    fn a_throwaway_folder_is_told_from_a_real_one() {
+        for folder in ["C:/Users/Ann/AppData/Local/Temp/Temp1_Krebs-v0.1.0-windows-x64.zip", "C:/Temp/Temp12_krebs.ZIP", "C:/Temp/7zO8A2C1F31", "C:/Temp/Rar$EXa1234.5678"] {
+            assert!(unpacked_for_one_run(Path::new(folder)), "{folder}");
+        }
+        for folder in ["C:/Users/Ann/Documents/Krebs-v0.1.0-windows-x64", "C:/Temp/krebs", "C:/Temp/Temp_x.zip", "C:/Temp/Temp1_notes", "C:/Temp/7zip-stuff", "C:/"] {
+            assert!(!unpacked_for_one_run(Path::new(folder)), "{folder}");
+        }
+    }
+
+    #[test]
+    fn a_save_that_fails_says_so_in_plain_words() {
+        let said = save_failed("Access is denied. (os error 5)", 60);
+        for words in ["could not save your world", "Access is denied", "lose everything since the last save", "disk space", "every 60 seconds"] {
+            assert!(said.contains(words), "{words}: {said}");
+        }
+        let closing = last_save_failed(Path::new("data"), "x");
+        for words in ["could not save your world when it closed", "last good save is lost", "start Krebs again"] {
+            assert!(closing.contains(words), "{words}: {closing}");
+        }
+    }
+
+    /// A one-shot server that answers with `head`.
+    fn answer(head: &'static str) -> u16 {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        std::thread::spawn(move || {
+            let (mut s, _) = listener.accept().unwrap();
+            let mut request = [0u8; 256];
+            let _ = s.read(&mut request);
+            let _ = s.write_all(head.as_bytes());
+        });
+        port
+    }
+
+    #[test]
+    fn a_free_port_has_no_holder() {
+        let port = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap().local_addr().unwrap().port();
+        assert_eq!(holder(port), None);
+    }
+
+    #[test]
+    fn krebs_is_told_from_another_program() {
+        assert_eq!(holder(answer("HTTP/1.1 200 OK\r\nX-Krebs: 0.1.0\r\nContent-Length: 0\r\n\r\n")), Some(Holder::Krebs));
+        assert_eq!(holder(answer("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n")), Some(Holder::Other));
+        assert_eq!(holder(answer("not http at all")), Some(Holder::Other));
+    }
+
+    #[test]
+    fn a_taken_port_is_explained() {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let mut cfg = config();
+        cfg.http_port = listener.local_addr().unwrap().port();
+        let said = port_problem(&cfg).unwrap();
+        assert!(said.contains(&format!("Port {} is already used by another program", cfg.http_port)), "{said}");
+        assert!(taken(&Holder::Krebs, 21025, false).contains("already running"));
+    }
+
+    #[test]
+    fn a_running_copy_is_not_called_enough_for_friends() {
+        let alone = taken(&Holder::Krebs, 21025, false);
+        assert!(alone.contains("just open Screeps and connect"), "{alone}");
+        let friends = taken(&Holder::Krebs, 21025, true);
+        assert!(friends.contains("Close the other Krebs window first") && !friends.contains("just open"), "{friends}");
+        assert_eq!(taken(&Holder::Other, 21025, true), taken(&Holder::Other, 21025, false));
+    }
+
+    #[test]
+    fn a_folder_that_cannot_be_written_is_explained() {
+        let dir = std::env::temp_dir().join(format!("krebs-start-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        assert_eq!(folder_problem(&dir.join("data")), None, "a new folder is made");
+        assert!(dir.join("data").is_dir());
+        assert_eq!(std::fs::read_dir(dir.join("data")).unwrap().count(), 0, "the test file is gone again");
+        // a file where the folder should be fails the same way on every system
+        std::fs::write(dir.join("taken"), "").unwrap();
+        let said = folder_problem(&dir.join("taken")).unwrap();
+        assert!(said.contains("Krebs cannot write to") && said.contains("Documents"), "{said}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_panic_becomes_a_sentence() {
+        assert_eq!(guarded(|| {}), Ok(()));
+        assert_eq!(guarded(|| panic!("this panic is part of the test")), Err(CRASHED));
+    }
+
+    #[test]
+    fn friends_open_the_game_port_and_nothing_else() {
+        let mut cfg = config();
+        assert_eq!((cfg.http_host.as_str(), cfg.cli_host.as_str()), (THIS_PC, THIS_PC), "off by default");
+        cfg.cli_host = ALL_INTERFACES.into();
+        open_to_friends(&mut cfg);
+        assert_eq!((cfg.http_host.as_str(), cfg.cli_host.as_str()), (ALL_INTERFACES, THIS_PC));
+        assert_eq!((cfg.max_connections, cfg.request_timeout_s), (FRIENDS_MAX_CONNECTIONS, FRIENDS_REQUEST_TIMEOUT_S), "the limits tighten with the port open");
+        cfg.max_connections = 8;
+        open_to_friends(&mut cfg);
+        assert_eq!(cfg.max_connections, 8, "and never loosen what the file set");
+    }
+
+    #[test]
+    fn the_welcome_says_what_to_do_next() {
+        let alone = welcome_text(21025, false, &[]);
+        for words in ["Open Screeps in Steam", "Private server", "Host 127.0.0.1 and Port 21025", "Keep this window open", "Close it to stop", "any match that is running ends"] {
+            assert!(alone.contains(words), "{words}: {alone}");
+        }
+        assert!(!alone.contains("Firewall") && !alone.contains("trust"), "{alone}");
+        let friends = welcome_text(21500, true, &[Ipv4Addr::new(192, 168, 1, 20)]);
+        for words in ["192.168.1.20", "Windows Firewall", "README.txt says what to check", "port 21500 forwarded", "cannot check who people are", "people you trust"] {
+            assert!(friends.contains(words), "{words}: {friends}");
+        }
+        assert!(welcome_text(21500, true, &[]).contains("ipconfig"));
+    }
+
+    #[test]
+    fn the_words_stay_plain() {
+        let here = std::env::current_dir().unwrap().display().to_string();
+        for text in [welcome_text(21025, true, &[]), CRASHED.to_string(), IN_THE_ZIP.to_string(), SAVING_AGAIN.to_string(), taken(&Holder::Krebs, 1, false), taken(&Holder::Krebs, 1, true), taken(&Holder::Other, 1, false), world_problem(Path::new("d"), "x"), mods_problem("x"), save_failed("x", 60), last_save_failed(Path::new("d"), "x")] {
+            // The folder in a message is the user's own, in whatever language it is.
+            let text = text.replace(&here, "");
+            assert!(text.is_ascii(), "a console may not show it: {text}");
+        }
+    }
+
+    #[test]
+    fn lan_addresses_are_never_this_pc_alone() {
+        assert!(lan_addresses().iter().all(|ip| !ip.is_loopback()));
+    }
+}

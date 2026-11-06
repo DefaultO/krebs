@@ -1,0 +1,72 @@
+[
+ {
+  "data": "",
+  "parsed": [],
+  "reserialized": ""
+ },
+ {
+  "data": "Flag1~1~2~10~10",
+  "parsed": [
+   [
+    "Flag1",
+    "1",
+    "2",
+    "10",
+    "10"
+   ]
+  ],
+  "reserialized": "Flag1~1~2~10~10"
+ },
+ {
+  "data": "a$VLINE$b~3~3~1~1|c$TILDE$d$TILDE$~4~5~2.5~3",
+  "parsed": [
+   [
+    "a|b",
+    "3",
+    "3",
+    "1",
+    "1"
+   ],
+   [
+    "c~d~",
+    "4",
+    "5",
+    "2.5",
+    "3"
+   ]
+  ],
+  "reserialized": "a$VLINE$b~3~3~1~1|c$TILDE$d$TILDE$~4~5~2.5~3"
+ },
+ {
+  "data": "x$VLINE$$VLINE$~1~1~1~1|y~2~2~2~2|z",
+  "parsed": [
+   [
+    "x||",
+    "1",
+    "1",
+    "1",
+    "1"
+   ],
+   [
+    "y",
+    "2",
+    "2",
+    "2",
+    "2"
+   ],
+   [
+    "z"
+   ]
+  ],
+  "reserialized": "x$VLINE$$VLINE$~1~1~1~1|y~2~2~2~2|z"
+ },
+ {
+  "data": "only",
+  "parsed": [
+   [
+    "only"
+   ]
+  ],
+  "reserialized": "only"
+ }
+]

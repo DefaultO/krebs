@@ -1,0 +1,960 @@
+{
+ "name": "objects-source-mineral",
+ "tags": [
+  "game/sources.js:26",
+  "game/minerals.js:26"
+ ],
+ "world": {
+  "user": "u1",
+  "users": {
+   "2": {
+    "username": "Invader"
+   },
+   "3": {
+    "username": "Source Keeper"
+   },
+   "u1": {
+    "username": "Alice"
+   },
+   "u2": {
+    "username": "Bob"
+   }
+  },
+  "time": 1000,
+  "objects": [
+   {
+    "_id": "c1",
+    "type": "controller",
+    "room": "W1N1",
+    "x": 25,
+    "y": 22,
+    "user": "u1",
+    "level": 3,
+    "progress": 100,
+    "progressTotal": 45000,
+    "downgradeTime": 20000,
+    "safeModeAvailable": 1
+   },
+   {
+    "_id": "s1",
+    "type": "source",
+    "room": "W1N1",
+    "x": 22,
+    "y": 24,
+    "energy": 3000,
+    "energyCapacity": 3000,
+    "nextRegenerationTime": 1250
+   },
+   {
+    "_id": "s2",
+    "type": "source",
+    "room": "W1N1",
+    "x": 28,
+    "y": 28,
+    "energy": 0,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "m1",
+    "type": "mineral",
+    "room": "W1N1",
+    "x": 30,
+    "y": 20,
+    "mineralType": "H",
+    "mineralAmount": 50000,
+    "density": 3
+   },
+   {
+    "_id": "sp1",
+    "type": "spawn",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Spawn1",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex1",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 23,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex2",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 22,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "off": true,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "r1",
+    "type": "road",
+    "room": "W1N1",
+    "x": 25,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "r2",
+    "type": "road",
+    "room": "W1N1",
+    "x": 26,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "w1",
+    "type": "constructedWall",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 1000,
+    "hitsMax": 300000000
+   },
+   {
+    "_id": "cr1",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Harv1",
+    "hits": 300,
+    "hitsMax": 300,
+    "body": [
+     {
+      "type": "work",
+      "hits": 100
+     },
+     {
+      "type": "carry",
+      "hits": 100
+     },
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {
+     "energy": 10
+    },
+    "storeCapacity": 50,
+    "fatigue": 0,
+    "ageTime": 2400,
+    "spawning": false,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "cr2",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "name": "Bob1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 2000,
+    "spawning": false
+   },
+   {
+    "_id": "cr3",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Baby",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "spawning": true
+   },
+   {
+    "_id": "e1",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "energy",
+    "energy": 100
+   },
+   {
+    "_id": "e2",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "H",
+    "H": 20
+   },
+   {
+    "_id": "cs1",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 29,
+    "y": 29,
+    "user": "u1",
+    "structureType": "extension",
+    "progress": 0,
+    "progressTotal": 3000
+   },
+   {
+    "_id": "cs2",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 29,
+    "user": "u2",
+    "structureType": "road",
+    "progress": 10,
+    "progressTotal": 300
+   },
+   {
+    "_id": "ra1",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs3",
+    "type": "constructionSite",
+    "room": "W2N2",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "structureType": "spawn",
+    "name": "Spawn2",
+    "progress": 5,
+    "progressTotal": 15000
+   },
+   {
+    "_id": "c2",
+    "type": "controller",
+    "room": "W1N2",
+    "x": 25,
+    "y": 21,
+    "user": "u2",
+    "level": 2,
+    "progress": 0,
+    "progressTotal": 45000,
+    "downgradeTime": 20000
+   },
+   {
+    "_id": "sp2",
+    "type": "spawn",
+    "room": "W1N2",
+    "x": 25,
+    "y": 25,
+    "user": "u2",
+    "name": "BobSpawn",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null
+   },
+   {
+    "_id": "s3",
+    "type": "source",
+    "room": "W1N2",
+    "x": 21,
+    "y": 21,
+    "energy": 1500,
+    "energyCapacity": 1500
+   },
+   {
+    "_id": "cr4",
+    "type": "creep",
+    "room": "W1N2",
+    "x": 20,
+    "y": 30,
+    "user": "u1",
+    "name": "Scout",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 1500,
+    "spawning": false
+   },
+   {
+    "_id": "k1",
+    "type": "keeperLair",
+    "room": "W1N2",
+    "x": 30,
+    "y": 30,
+    "user": "3",
+    "nextSpawnTime": 1100
+   },
+   {
+    "_id": "s4",
+    "type": "source",
+    "room": "W2N1",
+    "x": 25,
+    "y": 25,
+    "energy": 3000,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "m2",
+    "type": "mineral",
+    "room": "W1N2",
+    "x": 40,
+    "y": 40,
+    "mineralType": "O",
+    "mineralAmount": 0,
+    "density": 1,
+    "nextRegenerationTime": 1500,
+    "effects": [
+     {
+      "effect": 1001,
+      "endTime": 1100
+     },
+     {
+      "effect": 1002,
+      "power": 6,
+      "level": 2,
+      "endTime": 900
+     }
+    ]
+   }
+  ],
+  "flags": [
+   {
+    "room": "W1N1",
+    "data": "Flag1~1~1~25~25|My$VLINE$Flag~2~3~20~20|Edge~5~5~0~10"
+   },
+   {
+    "room": "W2N2",
+    "data": "Far~3~3~10~10"
+   }
+  ],
+  "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}",
+  "eventLog": {
+   "W1N1": "[{\"event\":1,\"objectId\":\"cr2\",\"data\":{\"targetId\":\"cr1\",\"damage\":10}}]"
+  }
+ },
+ "ticks": [
+  {
+   "probes": [
+    [
+     "source",
+     "() => {\n            const s = Game.getObjectById('s1'), s2 = Game.getObjectById('s2');\n            return [s.energy, s.energyCapacity, s.ticksToRegeneration, s2.ticksToRegeneration, s2.energy, String(s), s.id,\n                Object.keys(s), Object.keys(s2), JSON.stringify(s), JSON.stringify(s2), Object.keys(s2), s instanceof RoomObject];\n        }"
+    ],
+    [
+     "source props",
+     "() => {\n            const d = Object.getOwnPropertyDescriptor(Source.prototype, 'energy');\n            const s = Game.getObjectById('s1');\n            let assign;\n            try { s.energy = 5; assign = s.energy; } catch (e) { assign = e.constructor.name; }\n            return [d.enumerable, d.configurable, typeof d.set, Object.keys(Source.prototype), assign, Source.prototype.constructor === Source,\n                Object.getPrototypeOf(Source.prototype) === RoomObject.prototype];\n        }"
+    ],
+    [
+     "mineral",
+     "() => {\n            const m = Game.getObjectById('m1'), m2 = Game.getObjectById('m2');\n            return [m.mineralType, m.mineralAmount, m.density, m.ticksToRegeneration, String(m), m2.mineralAmount, m2.ticksToRegeneration,\n                m2.effects, JSON.stringify(m), Object.keys(m), Object.keys(Mineral.prototype)];\n        }"
+    ],
+    [
+     "stale",
+     "() => {\n            const s = Game.getObjectById('s1');\n            return [Game.getObjectById('s4'), s.toJSON(), s.room === Game.rooms.W1N1];\n        }"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "source",
+      {
+       "$arr": [
+        3000,
+        3000,
+        250,
+        {
+         "$": "undefined"
+        },
+        0,
+        "[source #s1]",
+        "s1",
+        {
+         "$arr": [
+          "room",
+          "pos",
+          "id",
+          "_energy",
+          "_energyCapacity",
+          "_ticksToRegeneration"
+         ]
+        },
+        {
+         "$arr": [
+          "room",
+          "pos",
+          "id",
+          "_energy",
+          "_ticksToRegeneration"
+         ]
+        },
+        "{\"room\":{\"name\":\"W1N1\",\"energyAvailable\":350,\"energyCapacityAvailable\":350,\"visual\":{\"roomName\":\"W1N1\"}},\"pos\":{\"x\":22,\"y\":24,\"roomName\":\"W1N1\"},\"id\":\"s1\",\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":250}",
+        "{\"room\":{\"name\":\"W1N1\",\"energyAvailable\":350,\"energyCapacityAvailable\":350,\"visual\":{\"roomName\":\"W1N1\"}},\"pos\":{\"x\":28,\"y\":28,\"roomName\":\"W1N1\"},\"id\":\"s2\",\"energy\":0,\"energyCapacity\":3000}",
+        {
+         "$arr": [
+          "room",
+          "pos",
+          "id",
+          "_energy",
+          "_ticksToRegeneration",
+          "_energyCapacity"
+         ]
+        },
+        true
+       ]
+      }
+     ],
+     [
+      "source props",
+      {
+       "$arr": [
+        true,
+        false,
+        "undefined",
+        {
+         "$arr": [
+          "constructor",
+          "energy",
+          "energyCapacity",
+          "ticksToRegeneration",
+          "toJSON",
+          "toString"
+         ]
+        },
+        3000,
+        true,
+        true
+       ]
+      }
+     ],
+     [
+      "mineral",
+      {
+       "$arr": [
+        "H",
+        50000,
+        3,
+        {
+         "$": "undefined"
+        },
+        "[mineral (H) #m1]",
+        0,
+        500,
+        {
+         "$arr": [
+          {
+           "power": {
+            "$": "undefined"
+           },
+           "effect": 1001,
+           "level": {
+            "$": "undefined"
+           },
+           "ticksRemaining": 100
+          }
+         ]
+        },
+        "{\"room\":{\"name\":\"W1N1\",\"energyAvailable\":350,\"energyCapacityAvailable\":350,\"visual\":{\"roomName\":\"W1N1\"}},\"pos\":{\"x\":30,\"y\":20,\"roomName\":\"W1N1\"},\"id\":\"m1\",\"mineralType\":\"H\",\"mineralAmount\":50000,\"density\":3}",
+        {
+         "$arr": [
+          "room",
+          "pos",
+          "id",
+          "_mineralType",
+          "_mineralAmount",
+          "_density",
+          "_ticksToRegeneration"
+         ]
+        },
+        {
+         "$arr": [
+          "constructor",
+          "mineralType",
+          "mineralAmount",
+          "density",
+          "ticksToRegeneration",
+          "toJSON",
+          "toString"
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "stale",
+      {
+       "$arr": [
+        null,
+        {
+         "room": {
+          "$room": "W1N1",
+          "same": true
+         },
+         "pos": {
+          "$pos": [
+           22,
+           24,
+           "W1N1"
+          ],
+          "packed": 2122192408
+         },
+         "id": "s1",
+         "constructor": {
+          "$fn": ""
+         },
+         "energy": 3000,
+         "energyCapacity": 3000,
+         "ticksToRegeneration": 250
+        },
+        true
+       ]
+      }
+     ]
+    ],
+    "intents": {},
+    "intentsCpu": 0,
+    "console": {
+     "$arr": []
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  },
+  {
+   "world": {
+    "objects": [
+     {
+      "_id": "c1",
+      "type": "controller",
+      "room": "W1N1",
+      "x": 25,
+      "y": 22,
+      "user": "u1",
+      "level": 3,
+      "progress": 100,
+      "progressTotal": 45000,
+      "downgradeTime": 20000,
+      "safeModeAvailable": 1
+     },
+     {
+      "_id": "s2",
+      "type": "source",
+      "room": "W1N1",
+      "x": 28,
+      "y": 28,
+      "energy": 77,
+      "energyCapacity": 3000
+     },
+     {
+      "_id": "m1",
+      "type": "mineral",
+      "room": "W1N1",
+      "x": 30,
+      "y": 20,
+      "mineralType": "H",
+      "mineralAmount": 50000,
+      "density": 3
+     },
+     {
+      "_id": "sp1",
+      "type": "spawn",
+      "room": "W1N1",
+      "x": 24,
+      "y": 26,
+      "user": "u1",
+      "name": "Spawn1",
+      "hits": 5000,
+      "hitsMax": 5000,
+      "store": {
+       "energy": 300
+      },
+      "storeCapacityResource": {
+       "energy": 300
+      },
+      "spawning": null,
+      "notifyWhenAttacked": true
+     },
+     {
+      "_id": "ex1",
+      "type": "extension",
+      "room": "W1N1",
+      "x": 23,
+      "y": 27,
+      "user": "u1",
+      "hits": 1000,
+      "hitsMax": 1000,
+      "store": {
+       "energy": 50
+      },
+      "storeCapacityResource": {
+       "energy": 50
+      },
+      "notifyWhenAttacked": true
+     },
+     {
+      "_id": "ex2",
+      "type": "extension",
+      "room": "W1N1",
+      "x": 22,
+      "y": 27,
+      "user": "u1",
+      "hits": 1000,
+      "hitsMax": 1000,
+      "off": true,
+      "store": {
+       "energy": 50
+      },
+      "storeCapacityResource": {
+       "energy": 50
+      },
+      "notifyWhenAttacked": true
+     },
+     {
+      "_id": "r1",
+      "type": "road",
+      "room": "W1N1",
+      "x": 25,
+      "y": 27,
+      "hits": 5000,
+      "hitsMax": 5000,
+      "nextDecayTime": 2000
+     },
+     {
+      "_id": "r2",
+      "type": "road",
+      "room": "W1N1",
+      "x": 26,
+      "y": 27,
+      "hits": 5000,
+      "hitsMax": 5000,
+      "nextDecayTime": 2000
+     },
+     {
+      "_id": "w1",
+      "type": "constructedWall",
+      "room": "W1N1",
+      "x": 21,
+      "y": 21,
+      "hits": 1000,
+      "hitsMax": 300000000
+     },
+     {
+      "_id": "cr1",
+      "type": "creep",
+      "room": "W1N1",
+      "x": 25,
+      "y": 25,
+      "user": "u1",
+      "name": "Harv1",
+      "hits": 300,
+      "hitsMax": 300,
+      "body": [
+       {
+        "type": "work",
+        "hits": 100
+       },
+       {
+        "type": "carry",
+        "hits": 100
+       },
+       {
+        "type": "move",
+        "hits": 100
+       }
+      ],
+      "store": {
+       "energy": 10
+      },
+      "storeCapacity": 50,
+      "fatigue": 0,
+      "ageTime": 2400,
+      "spawning": false,
+      "notifyWhenAttacked": true
+     },
+     {
+      "_id": "cr2",
+      "type": "creep",
+      "room": "W1N1",
+      "x": 27,
+      "y": 24,
+      "user": "u2",
+      "name": "Bob1",
+      "hits": 100,
+      "hitsMax": 100,
+      "body": [
+       {
+        "type": "move",
+        "hits": 100
+       }
+      ],
+      "store": {},
+      "storeCapacity": 0,
+      "fatigue": 0,
+      "ageTime": 2000,
+      "spawning": false
+     },
+     {
+      "_id": "cr3",
+      "type": "creep",
+      "room": "W1N1",
+      "x": 24,
+      "y": 26,
+      "user": "u1",
+      "name": "Baby",
+      "hits": 100,
+      "hitsMax": 100,
+      "body": [
+       {
+        "type": "move",
+        "hits": 100
+       }
+      ],
+      "store": {},
+      "storeCapacity": 0,
+      "fatigue": 0,
+      "spawning": true
+     },
+     {
+      "_id": "e1",
+      "type": "energy",
+      "room": "W1N1",
+      "x": 27,
+      "y": 25,
+      "resourceType": "energy",
+      "energy": 100
+     },
+     {
+      "_id": "e2",
+      "type": "energy",
+      "room": "W1N1",
+      "x": 27,
+      "y": 25,
+      "resourceType": "H",
+      "H": 20
+     },
+     {
+      "_id": "cs1",
+      "type": "constructionSite",
+      "room": "W1N1",
+      "x": 29,
+      "y": 29,
+      "user": "u1",
+      "structureType": "extension",
+      "progress": 0,
+      "progressTotal": 3000
+     },
+     {
+      "_id": "cs2",
+      "type": "constructionSite",
+      "room": "W1N1",
+      "x": 21,
+      "y": 29,
+      "user": "u2",
+      "structureType": "road",
+      "progress": 10,
+      "progressTotal": 300
+     },
+     {
+      "_id": "ra1",
+      "type": "rampart",
+      "room": "W1N1",
+      "x": 27,
+      "y": 24,
+      "user": "u2",
+      "hits": 1000,
+      "hitsMax": 300000,
+      "isPublic": false
+     },
+     {
+      "_id": "cs3",
+      "type": "constructionSite",
+      "room": "W2N2",
+      "x": 25,
+      "y": 25,
+      "user": "u1",
+      "structureType": "spawn",
+      "name": "Spawn2",
+      "progress": 5,
+      "progressTotal": 15000
+     },
+     {
+      "_id": "c2",
+      "type": "controller",
+      "room": "W1N2",
+      "x": 25,
+      "y": 21,
+      "user": "u2",
+      "level": 2,
+      "progress": 0,
+      "progressTotal": 45000,
+      "downgradeTime": 20000
+     },
+     {
+      "_id": "sp2",
+      "type": "spawn",
+      "room": "W1N2",
+      "x": 25,
+      "y": 25,
+      "user": "u2",
+      "name": "BobSpawn",
+      "hits": 5000,
+      "hitsMax": 5000,
+      "store": {
+       "energy": 300
+      },
+      "storeCapacityResource": {
+       "energy": 300
+      },
+      "spawning": null
+     },
+     {
+      "_id": "s3",
+      "type": "source",
+      "room": "W1N2",
+      "x": 21,
+      "y": 21,
+      "energy": 1500,
+      "energyCapacity": 1500
+     },
+     {
+      "_id": "cr4",
+      "type": "creep",
+      "room": "W1N2",
+      "x": 20,
+      "y": 30,
+      "user": "u1",
+      "name": "Scout",
+      "hits": 100,
+      "hitsMax": 100,
+      "body": [
+       {
+        "type": "move",
+        "hits": 100
+       }
+      ],
+      "store": {},
+      "storeCapacity": 0,
+      "fatigue": 0,
+      "ageTime": 1500,
+      "spawning": false
+     },
+     {
+      "_id": "k1",
+      "type": "keeperLair",
+      "room": "W1N2",
+      "x": 30,
+      "y": 30,
+      "user": "3",
+      "nextSpawnTime": 1100
+     },
+     {
+      "_id": "s4",
+      "type": "source",
+      "room": "W2N1",
+      "x": 25,
+      "y": 25,
+      "energy": 3000,
+      "energyCapacity": 3000
+     }
+    ]
+   },
+   "probes": [
+    [
+     "next tick",
+     "() => [Game.getObjectById('s2').energy, typeof Source, Game.getObjectById('s1')]"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "next tick",
+      {
+       "$arr": [
+        77,
+        "function",
+        null
+       ]
+      }
+     ]
+    ],
+    "intents": {},
+    "intentsCpu": 0,
+    "console": {
+     "$arr": []
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  }
+ ]
+}

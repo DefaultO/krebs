@@ -1,0 +1,146 @@
+{
+ "name": "pathfinder-bridge",
+ "tags": [
+  "runtime/runtime-driver.js:124"
+ ],
+ "substituted": [],
+ "ticks": [
+  {
+   "newVm": true,
+   "input": {
+    "meta": "{\"time\":100,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k00000000000004\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":11,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k00000000000006\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":30,\"y\":30,\"name\":\"Intruder\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50}]}"
+    ],
+    "eventLogs": [
+     null
+    ],
+    "memory": "",
+    "modules": {
+     "main": "\nmodule.exports.loop = function () {\n    var from = new RoomPosition(11, 11, 'W1N1'), to = new RoomPosition(40, 35, 'W1N1');\n    var r = PathFinder.search(from, {pos: to, range: 1}, {roomCallback: function (room) {\n        var m = new PathFinder.CostMatrix();\n        m.set(20, 20, 255);\n        return room === 'W1N1' ? m : false;\n    }});\n    console.log('search', r.path.length, r.ops, r.cost, r.incomplete, r.path.slice(0, 3).map(String).join());\n    console.log('findPath', JSON.stringify(Game.rooms.W1N1.findPath(from, to).slice(0, 4)));\n    console.log('moveTo', Game.creeps.Harvester1.moveTo(to), JSON.stringify(Memory.creeps));\n    console.log('multiroom', PathFinder.search(from, {pos: new RoomPosition(25, 25, 'W2N1'), range: 1}).path.length);\n};"
+    }
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "{\"creeps\":{\"Harvester1\":{\"_move\":{\"dest\":{\"x\":40,\"y\":35,\"room\":\"W1N1\"},\"time\":100,\"path\":\"1212444555555555555555555555555542222223333333333333333334\",\"room\":\"W1N1\"}}}}",
+    "intentsList": [
+     "o",
+     0,
+     [
+      [
+       "k00000000000004",
+       [
+        "o",
+        1,
+        [
+         [
+          "move",
+          [
+           "o",
+           2,
+           [
+            [
+             "direction",
+             4
+            ]
+           ]
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    ],
+    "intentsCpu": 0.2,
+    "console": {
+     "log": [
+      {
+       "message": "search 53 71 53 false [room W1N1 pos 12,12],[room W1N1 pos 13,13],[room W1N1 pos 14,14]",
+       "escape": true
+      },
+      {
+       "message": "findPath [{\"x\":12,\"y\":12,\"dx\":1,\"dy\":1,\"direction\":4},{\"x\":13,\"y\":13,\"dx\":1,\"dy\":1,\"direction\":4},{\"x\":14,\"y\":14,\"dx\":1,\"dy\":1,\"direction\":4},{\"x\":14,\"y\":15,\"dx\":0,\"dy\":1,\"direction\":5}]",
+       "escape": true
+      },
+      {
+       "message": "moveTo 0 {\"Harvester1\":{\"_move\":{\"dest\":{\"x\":40,\"y\":35,\"room\":\"W1N1\"},\"time\":100,\"path\":\"1212444555555555555555555555555542222223333333333333333334\",\"room\":\"W1N1\"}}}",
+       "escape": true
+      },
+      {
+       "message": "multiroom 38",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  },
+  {
+   "input": {
+    "meta": "{\"time\":101,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k00000000000004\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":11,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k00000000000006\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":30,\"y\":30,\"name\":\"Intruder\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50}]}"
+    ],
+    "eventLogs": [
+     null
+    ]
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "{\"creeps\":{\"Harvester1\":{\"_move\":{\"dest\":{\"x\":40,\"y\":35,\"room\":\"W1N1\"},\"time\":100,\"path\":\"1212444555555555555555555555555542222223333333333333333334\",\"room\":\"W1N1\"}}}}",
+    "intentsList": [
+     "o",
+     0,
+     [
+      [
+       "k00000000000004",
+       [
+        "o",
+        1,
+        [
+         [
+          "move",
+          [
+           "o",
+           2,
+           [
+            [
+             "direction",
+             4
+            ]
+           ]
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    ],
+    "intentsCpu": 0.2,
+    "console": {
+     "log": [
+      {
+       "message": "search 53 71 53 false [room W1N1 pos 12,12],[room W1N1 pos 13,13],[room W1N1 pos 14,14]",
+       "escape": true
+      },
+      {
+       "message": "findPath [{\"x\":12,\"y\":12,\"dx\":1,\"dy\":1,\"direction\":4},{\"x\":13,\"y\":13,\"dx\":1,\"dy\":1,\"direction\":4},{\"x\":14,\"y\":14,\"dx\":1,\"dy\":1,\"direction\":4},{\"x\":14,\"y\":15,\"dx\":0,\"dy\":1,\"direction\":5}]",
+       "escape": true
+      },
+      {
+       "message": "moveTo 0 {\"Harvester1\":{\"_move\":{\"dest\":{\"x\":40,\"y\":35,\"room\":\"W1N1\"},\"time\":100,\"path\":\"1212444555555555555555555555555542222223333333333333333334\",\"room\":\"W1N1\"}}}",
+       "escape": true
+      },
+      {
+       "message": "multiroom 38",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  }
+ ]
+}

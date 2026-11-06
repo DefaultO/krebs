@@ -1,0 +1,123 @@
+{
+ "name": "require-namespace",
+ "tags": [
+  "game/game.js:504",
+  "game/game.js:517",
+  "game/game.js:551",
+  "runtime/runtime-driver.js:21",
+  "runtime/runtime-driver.js:101"
+ ],
+ "substituted": [],
+ "ticks": [
+  {
+   "newVm": true,
+   "input": {
+    "meta": "{\"time\":100,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k00000000000004\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":11,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k00000000000006\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":30,\"y\":30,\"name\":\"Intruder\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50}]}"
+    ],
+    "eventLogs": [
+     null
+    ],
+    "memory": "",
+    "modules": {
+     "main": "\nvar a = require('./role.harvester'), b = require('role.harvester');\nconsole.log('same', a === b, require.cache['role.harvester'] === a, require('lodash') === _);\nconsole.log('proto', typeof require('toString'), require('__proto__') === Object.prototype, require('constructor') === Object);\ntry { require('nope') } catch (e) { console.log('unknown', e.message, e instanceof Error) }\ntry { require('../role.harvester') } catch (e) { console.log('dotdot', e.message) }\nconsole.log('xjs', require('x.js').me, require('lib/util').me);\nconsole.log('module', module.name, typeof module.code, module.user, module.timestamp, Object.keys(module), Object.getOwnPropertyDescriptor(module, '__initGlobals'));\nconsole.log('wrapper', typeof this, this === global, arguments.length, typeof __filename, typeof exports, exports === module.exports);\nconsole.log('requireProps', Object.keys(require), typeof require.timestamp, Object.getOwnPropertyDescriptor(require, 'initGlobals'), require.name);\nmodule.exports.loop = function () {\n    console.log('loop', this === module.exports, typeof global.module, global.__module && global.__module.name, Object.keys(require.cache));\n    console.log('leak', JSON.stringify(Object.keys(global.module)));\n};",
+     "role.harvester": "module.exports = {role: 'h', n: Math.random()};",
+     "x.js": "exports.me = 'x.js';",
+     "lib/util": "'use strict'; exports.me = typeof this;"
+    }
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "same true true true",
+       "escape": true
+      },
+      {
+       "message": "proto function true true",
+       "escape": true
+      },
+      {
+       "message": "unknown Unknown module 'nope' true",
+       "escape": true
+      },
+      {
+       "message": "dotdot Unknown module '../role.harvester'",
+       "escape": true
+      },
+      {
+       "message": "xjs x.js undefined",
+       "escape": true
+      },
+      {
+       "message": "module main string 5a1b2c3d4e5f601 1 exports,user,timestamp,name,code [object Object]",
+       "escape": true
+      },
+      {
+       "message": "wrapper object true 2 undefined object true",
+       "escape": true
+      },
+      {
+       "message": "requireProps cache,timestamp number [object Object] bound requireFn",
+       "escape": true
+      },
+      {
+       "message": "loop true object __mainLoop lodash,main,role.harvester,x.js,lib/util",
+       "escape": true
+      },
+      {
+       "message": "leak []",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  },
+  {
+   "input": {
+    "meta": "{\"time\":101,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k00000000000004\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":11,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k00000000000006\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":30,\"y\":30,\"name\":\"Intruder\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50}]}"
+    ],
+    "eventLogs": [
+     null
+    ]
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "loop true object __mainLoop lodash,main,role.harvester,x.js,lib/util",
+       "escape": true
+      },
+      {
+       "message": "leak [\"exports\",\"user\",\"timestamp\",\"name\",\"code\"]",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  }
+ ]
+}

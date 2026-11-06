@@ -1,0 +1,12 @@
+[submodule "mods/bare"]
+	path = mods/bare
+	url = ../krebs-bare.git
+[submodule "mods/matchrun"]
+	path = mods/matchrun
+	url = ../krebs-matchrun.git
+[submodule "mods/matchrules"]
+	path = mods/matchrules
+	url = ../krebs-matchrules.git
+[submodule "mods/example"]
+	path = mods/example
+	url = ../krebs-example.git

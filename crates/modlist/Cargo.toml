@@ -1,0 +1,11 @@
+[package]
+name = "modlist"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Every Rust mod crate under mods/, registered for the server (build.rs keeps the list below)"
+
+[dependencies]
+backend = { path = "../backend" }
+# BEGIN MODS: written by build.rs from mods/*/Cargo.toml, do not edit
+# END MODS

@@ -1,0 +1,113 @@
+// mirror: reference/engine/src/game/flags.js
+// parity: FAITHFUL
+// J9 (ARCHITECTURE.md §7.2): engine classes are read as plain globals (`RoomPosition`), vanilla `globals.RoomPosition`.
+var utils = require('./../utils'),
+    rooms = require('./rooms'),
+    driver = utils.getRuntimeDriver(),
+    C = driver.constants,
+    _ = require('lodash');
+
+var runtimeData, intents, register, globals;
+
+// J9 (ARCHITECTURE.md §7.2): vanilla's `if(globals.Flag)` in make(), where `Flag` is make()'s own local;
+// out here it is the global, read through its property cell.
+function hasFlag() {
+    return typeof Flag !== 'undefined' && !!Flag;
+}
+
+// vanilla: flags.js:9
+exports.make = function(_runtimeData, _intents, _register, _globals) {
+
+    runtimeData = _runtimeData;
+    intents = _intents;
+    register = _register;
+    globals = _globals;
+
+    if(hasFlag()) {
+        return;
+    }
+
+    // vanilla: flags.js:20
+    var Flag = register.wrapFn(function(name, color, secondaryColor, roomName, x, y) {
+        RoomObject.call(this, Number(x),Number(y),roomName);
+
+        this.name = name;
+        this.color = Number(color);
+        this.secondaryColor = Number(secondaryColor || color);
+    });
+
+    Flag.prototype = Object.create(RoomObject.prototype);
+    Flag.prototype.constructor = Flag;
+
+    // vanilla: flags.js:31
+    Object.defineProperty(Flag.prototype, 'memory', {
+        get: function() {
+            if(_.isUndefined(globals.Memory.flags) || globals.Memory.flags === 'undefined') {
+                globals.Memory.flags = {};
+            }
+            if(!_.isObject(globals.Memory.flags)) {
+                return undefined;
+            }
+            return globals.Memory.flags[this.name] = globals.Memory.flags[this.name] || {};
+        },
+
+        set: function(value) {
+            if(_.isUndefined(globals.Memory.flags) || globals.Memory.flags === 'undefined') {
+                globals.Memory.flags = {};
+            }
+            if(!_.isObject(globals.Memory.flags)) {
+                throw new Error('Could not set flag memory');
+            }
+            globals.Memory.flags[this.name] = value;
+        }
+    });
+
+    // vanilla: flags.js:53
+    Flag.prototype.toString = register.wrapFn(function() {
+        return `[flag ${this.name}]`;
+    });
+
+    // vanilla: flags.js:57
+    Flag.prototype.remove = register.wrapFn(function() {
+
+        intents.pushByName('room', 'removeFlag', {roomName: this.pos.roomName, name: this.name});
+        return C.OK;
+    });
+
+    // vanilla: flags.js:63
+    Flag.prototype.setPosition = register.wrapFn(function(firstArg, secondArg) {
+
+        var [x,y,roomName] = utils.fetchXYArguments(firstArg, secondArg, globals);
+        roomName = roomName || this.pos.roomName;
+        if(_.isUndefined(x) || _.isUndefined(y)) {
+            return C.ERR_INVALID_TARGET;
+        }
+
+        intents.pushByName('room', 'removeFlag', {roomName: this.pos.roomName, name: this.name});
+        intents.pushByName('room', 'createFlag', {roomName, x, y, name: this.name, color: this.color, secondaryColor: this.secondaryColor});
+        return C.OK;
+    });
+
+    // vanilla: flags.js:76
+    Flag.prototype.setColor = register.wrapFn(function(color, secondaryColor) {
+
+        if(!_.contains(C.COLORS_ALL, color)) {
+            return C.ERR_INVALID_ARGS;
+        }
+
+        secondaryColor = secondaryColor || color;
+
+        if(!_.contains(C.COLORS_ALL, secondaryColor)) {
+            return C.ERR_INVALID_ARGS;
+        }
+
+        intents.pushByName('room', 'removeFlag', {roomName: this.pos.roomName, name: this.name});
+        intents.pushByName('room', 'createFlag', {roomName: this.pos.roomName, x: this.pos.x, y: this.pos.y, name: this.name, color, secondaryColor});
+        return C.OK;
+    });
+
+    Object.defineProperty(globals, 'Flag', {
+        enumerable: true,
+        value: Flag
+    });
+};

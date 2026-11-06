@@ -1,0 +1,22 @@
+[package]
+name = "server"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "krebs"
+path = "src/main.rs"
+
+[features]
+# Built-in Rust mods (§10.1); each is compiled in only with its feature.
+default = ["history", "devtools"]
+history = []
+devtools = []
+
+[dependencies]
+util = { path = "../util" }
+engine = { path = "../engine" }
+runtime = { path = "../runtime" }
+backend = { path = "../backend" }
+modlist = { path = "../modlist" }

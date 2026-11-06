@@ -1,0 +1,688 @@
+{
+ "name": "room-terrain",
+ "tags": [
+  "game/rooms.js:1134",
+  "game/rooms.js:1223"
+ ],
+ "world": {
+  "user": "u1",
+  "users": {
+   "2": {
+    "username": "Invader"
+   },
+   "3": {
+    "username": "Source Keeper"
+   },
+   "u1": {
+    "username": "Alice"
+   },
+   "u2": {
+    "username": "Bob"
+   }
+  },
+  "time": 1000,
+  "objects": [
+   {
+    "_id": "c1",
+    "type": "controller",
+    "room": "W1N1",
+    "x": 25,
+    "y": 22,
+    "user": "u1",
+    "level": 3,
+    "progress": 100,
+    "progressTotal": 45000,
+    "downgradeTime": 20000,
+    "safeModeAvailable": 1
+   },
+   {
+    "_id": "s1",
+    "type": "source",
+    "room": "W1N1",
+    "x": 22,
+    "y": 24,
+    "energy": 3000,
+    "energyCapacity": 3000,
+    "nextRegenerationTime": 1250
+   },
+   {
+    "_id": "s2",
+    "type": "source",
+    "room": "W1N1",
+    "x": 28,
+    "y": 28,
+    "energy": 0,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "m1",
+    "type": "mineral",
+    "room": "W1N1",
+    "x": 30,
+    "y": 20,
+    "mineralType": "H",
+    "mineralAmount": 50000,
+    "density": 3
+   },
+   {
+    "_id": "sp1",
+    "type": "spawn",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Spawn1",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex1",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 23,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex2",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 22,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "off": true,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "r1",
+    "type": "road",
+    "room": "W1N1",
+    "x": 25,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "r2",
+    "type": "road",
+    "room": "W1N1",
+    "x": 26,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "w1",
+    "type": "constructedWall",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 1000,
+    "hitsMax": 300000000
+   },
+   {
+    "_id": "cr1",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Harv1",
+    "hits": 300,
+    "hitsMax": 300,
+    "body": [
+     {
+      "type": "work",
+      "hits": 100
+     },
+     {
+      "type": "carry",
+      "hits": 100
+     },
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {
+     "energy": 10
+    },
+    "storeCapacity": 50,
+    "fatigue": 0,
+    "ageTime": 2400,
+    "spawning": false,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "cr2",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "name": "Bob1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 2000,
+    "spawning": false
+   },
+   {
+    "_id": "cr3",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Baby",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "spawning": true
+   },
+   {
+    "_id": "e1",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "energy",
+    "energy": 100
+   },
+   {
+    "_id": "e2",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "H",
+    "H": 20
+   },
+   {
+    "_id": "cs1",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 29,
+    "y": 29,
+    "user": "u1",
+    "structureType": "extension",
+    "progress": 0,
+    "progressTotal": 3000
+   },
+   {
+    "_id": "cs2",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 29,
+    "user": "u2",
+    "structureType": "road",
+    "progress": 10,
+    "progressTotal": 300
+   },
+   {
+    "_id": "ra1",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs3",
+    "type": "constructionSite",
+    "room": "W2N2",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "structureType": "spawn",
+    "name": "Spawn2",
+    "progress": 5,
+    "progressTotal": 15000
+   },
+   {
+    "_id": "c2",
+    "type": "controller",
+    "room": "W1N2",
+    "x": 25,
+    "y": 21,
+    "user": "u2",
+    "level": 2,
+    "progress": 0,
+    "progressTotal": 45000,
+    "downgradeTime": 20000
+   },
+   {
+    "_id": "sp2",
+    "type": "spawn",
+    "room": "W1N2",
+    "x": 25,
+    "y": 25,
+    "user": "u2",
+    "name": "BobSpawn",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null
+   },
+   {
+    "_id": "s3",
+    "type": "source",
+    "room": "W1N2",
+    "x": 21,
+    "y": 21,
+    "energy": 1500,
+    "energyCapacity": 1500
+   },
+   {
+    "_id": "cr4",
+    "type": "creep",
+    "room": "W1N2",
+    "x": 20,
+    "y": 30,
+    "user": "u1",
+    "name": "Scout",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 1500,
+    "spawning": false
+   },
+   {
+    "_id": "k1",
+    "type": "keeperLair",
+    "room": "W1N2",
+    "x": 30,
+    "y": 30,
+    "user": "3",
+    "nextSpawnTime": 1100
+   },
+   {
+    "_id": "s4",
+    "type": "source",
+    "room": "W2N1",
+    "x": 25,
+    "y": 25,
+    "energy": 3000,
+    "energyCapacity": 3000
+   }
+  ],
+  "flags": [
+   {
+    "room": "W1N1",
+    "data": "Flag1~1~1~25~25|My$VLINE$Flag~2~3~20~20|Edge~5~5~0~10"
+   },
+   {
+    "room": "W2N2",
+    "data": "Far~3~3~10~10"
+   }
+  ],
+  "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}",
+  "eventLog": {
+   "W1N1": "[{\"event\":1,\"objectId\":\"cr2\",\"data\":{\"targetId\":\"cr1\",\"damage\":10}}]"
+  }
+ },
+ "ticks": [
+  {
+   "probes": [
+    [
+     "get",
+     "() => {\n            const t = new Room.Terrain('W1N1'), out = [];\n            for (let y = 0; y < 50; y += 7) for (let x = 0; x < 50; x += 3) out.push(t.get(x, y));\n            out.push(t.get(50, 0), t.get(0, 50), t.get(-1, 0), t.get(1.5, 2), t.get('3', '4'), t.get(), Object.keys(t), typeof t.get, t instanceof Room.Terrain);\n            return out;\n        }"
+    ],
+    [
+     "raw",
+     "() => {\n            const t = Game.rooms.W1N2.getTerrain(), a = t.getRawBuffer(), b = new Uint8Array(2500), c = new Uint16Array(2600), out = [];\n            out.push(a, t.getRawBuffer(b) === b, b.every((v, i) => v === a[i]), t.getRawBuffer(c) === c, c[2499], c[2500], a === t.getRawBuffer());\n            for (const d of [[], {}, new Uint8Array(10), 'x', 1]) { try { out.push(t.getRawBuffer(d)); } catch (e) { out.push(e.constructor.name); } }\n            return out;\n        }"
+    ],
+    [
+     "ctor",
+     "() => {\n            const out = [];\n            for (const n of ['W2N1', 'E2S2', 'W9N9', 'sim', undefined, 'w1n1', {toString: () => 'W1N1'}, 'constructor', 'toString', '__proto__']) {\n                try { out.push(new Room.Terrain(n).get(0, 0)); } catch (e) { out.push(e.message); }\n            }\n            try { Room.Terrain('W1N1'); } catch (e) { out.push(e.constructor.name); }\n            out.push(Game.rooms.W1N1.getTerrain() !== Game.rooms.W1N1.getTerrain());\n            return out;\n        }"
+    ],
+    [
+     "wall+swamp code",
+     "() => {\n            const t = new Room.Terrain('W1N1'), raw = t.getRawBuffer(), out = [];\n            for (let i = 0; i < 2500; i++) if (raw[i] === 3) out.push([i, t.get(i % 50, i / 50 | 0), new RoomPosition(i % 50, i / 50 | 0, 'W1N1').lookFor('terrain')]);\n            return out;\n        }"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "get",
+      {
+       "$arr": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        1,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        2,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        2,
+        1,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        1,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        {
+         "$arr": [
+          "get",
+          "getRawBuffer"
+         ]
+        },
+        "function",
+        true
+       ]
+      }
+     ],
+     [
+      "raw",
+      {
+       "$arr": [
+        {
+         "$ta": "Uint8Array",
+         "len": 2500,
+         "v": "1x51,0x4,2,0x4,1x3,0,2,0x4,2,1x4,0x5,2,0,2,0x9,1x5,0x2,1x3,0x3,2,0x3,2,0,2,0x5,2x2,0x2,2x2,0x6,2,0x13,1x3,2,0x3,1x2,0x12,2,0x3,2,0,2,0x6,2,0x3,2x2,0x14,2,0x2,1x2,0x4,2,0x18,1,2,0x6,2,0x10,2,0x3,2,0,1x2,0x2,1,2x2,0x6,1x4,0x7,1x3,0x4,2,0x7,1,0x8,2,0,1x6,2,0x4,1x9,0x3,2,1x3,2,0,3,0,2x2,0x5,1x3,0x6,2,0x2,1x5,0x2,2,0,2,1x11,0,2,0,2,1,0x3,2,0x8,1x3,0x9,1x3,0x4,2,0,2,1x11,0x3,2,0x5,1x3,0x6,1x2,0x9,1x2,2,0,2,0,2,0x3,1x11,0x8,1x5,2,0x2,2x3,0x9,1x3,2,0x8,1x6,0x2,1x3,0x7,3,1x4,2,0x4,2,0,2,0x6,1x4,2,0x5,2,0x3,1x4,0x4,1,0x9,1x3,0,2x2,0x10,2,0,1x5,0x9,1x3,0x3,2,0x7,2,0,2,0x2,1,2,0x15,2,1x6,0x2,2,0,2,0x3,1,0x7,2,0x2,2,0,1,0x2,2,0x6,2x2,0x5,2,0x5,1x6,0x9,2,0x3,2,0x6,1x3,0,2,0x8,2,0x4,2,0,2,0,2,0,2,1x5,0,2,0,2,0,2,0x6,2,0x5,2,0,1x3,0x21,2,1x5,0,2,0x17,1x4,0x12,1x3,0x2,2,0,2,0x2,2,1x4,2,0x17,1x4,2x2,0x2,2,0x2,1x15,0x2,1x4,0x12,1x2,0x3,1x4,0x7,1x16,0x2,1x4,0x10,2,0,1x8,0,2,0x5,1x6,0x4,1x7,0x2,1x3,0,2,0x12,1x3,0x11,1x5,0x10,2,0x3,1x3,0x5,2,0x10,1,0x12,1x2,0x8,2,0x7,1x3,0x5,2,0x4,2,0x19,2,0x15,1x3,0x13,2x2,0x25,2,0,2,0x4,1x2,2,0x2,2,0,2,0x6,3,0,2,1x2,0,1,0x19,2,0x2,2,0,2,0x4,1x2,0x12,2,0,1x5,0x24,2,0x4,1,0x12,2,0x3,1x4,0x11,1,0x5,2,0x9,2,1x2,0x10,1,0x6,1x3,0x11,1x2,2,0x10,2,0x3,1x2,0x3,2,0x5,1x4,0x5,1x2,0x11,1,0x8,2,0x4,2,0x2,1x2,0x6,1x8,0x34,2,1,0x5,1x10,0,2,0x24,2x2,0,2,0x3,2,1,0x4,2,1x5,3,0,1x4,0,2,0x4,2,0x10,2x2,0x14,1,0x5,1x4,0x4,1x3,2,0x2,2,0x12,2x2,0x2,2,0x2,1x4,0x5,2,1,0x4,2,0,1x2,2,0x5,1x2,0x10,2,0x6,2,0x4,1x6,0x5,1x2,0x5,1x2,0x3,2,0x3,2,0x3,2,0x5,3,2,0x6,2,0x2,2,0,1x6,0x2,2,0x2,1x2,0x6,1x2,0,2,0x3,2,0x5,2,0x2,1x3,0x2,2,0,2,0x6,2,1x6,0,2,0x3,1x2,0x2,2,0x3,1x2,0x4,2,0x5,2,0x3,1x5,0x4,2,0x5,1x5,0x6,1x2,0x3,2,0x2,2,0,2,0x3,2,0x2,1x3,0,2,0x3,1x6,0x4,2,0x4,1x3,2,0,2,0x2,2,0,1x2,0,2x2,0x7,2x2,0x2,2,1x3,0x5,1x6,0x4,2x2,0x2,2,0x4,2,0x3,1x4,0x19,2,0x4,1x5,2,0x4,2,0x3,2,0x6,1x5,0x3,2,0x5,2,0x8,2,0x3,2,0x23,1x5,0x13,2,0,2,0x5,2,0,2,0x4,2,0x8,2,0x2,2,0x5,1x4,2x2,0x2,2,0x3,2,0x13,2x2,0x7,2,0x5,2,0x8,2,1x3,0,2,0x2,2,0x4,2,0,2,0x3,2x3,0x6,2,0,2,0x4,2,0x7,2,0x2,2,0x4,1x2,0x2,2,0x7,2,0x12,2,0x7,2,0x2,2,0,2,0x5,1x2,2,0x3,1x2,2,0x17,1x2,0x7,2,0x13,1x4,0x3,1x2,0x10,2,0x6,1x3,0,2x2,0x2,2,0x2,2,0x5,2,0x3,2,0,2,1x3,0x4,1x2,0x16,1x3,0x9,2,0x2,2,0x6,2,0x2,1x3,2,0x3,1x20,0,2,0x17,2,0x2,1x5,0x3,1x23,0x2,1x7,0x4,1x15"
+        },
+        true,
+        true,
+        true,
+        1,
+        0,
+        false,
+        "TypeError",
+        "TypeError",
+        "RangeError",
+        "TypeError",
+        "TypeError"
+       ]
+      }
+     ],
+     [
+      "ctor",
+      {
+       "$arr": [
+        1,
+        1,
+        "Could not access room W9N9",
+        "Could not access room sim",
+        "Could not access room undefined",
+        "Could not access room w1n1",
+        1,
+        0,
+        0,
+        0,
+        true
+       ]
+      }
+     ],
+     [
+      "wall+swamp code",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          359,
+          1,
+          {
+           "$arr": [
+            "wall"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          388,
+          1,
+          {
+           "$arr": [
+            "wall"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          518,
+          1,
+          {
+           "$arr": [
+            "wall"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          793,
+          1,
+          {
+           "$arr": [
+            "wall"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          1206,
+          1,
+          {
+           "$arr": [
+            "wall"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          1838,
+          1,
+          {
+           "$arr": [
+            "wall"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    ],
+    "intents": {},
+    "intentsCpu": 0,
+    "console": {
+     "$arr": []
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  }
+ ]
+}

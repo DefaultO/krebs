@@ -1,0 +1,574 @@
+{
+ "name": "create-flag",
+ "tags": [
+  "game/rooms.js:978",
+  "game/rooms.js:1622"
+ ],
+ "world": {
+  "user": "u1",
+  "users": {
+   "2": {
+    "username": "Invader"
+   },
+   "3": {
+    "username": "Source Keeper"
+   },
+   "u1": {
+    "username": "Alice"
+   },
+   "u2": {
+    "username": "Bob"
+   }
+  },
+  "time": 1000,
+  "objects": [
+   {
+    "_id": "c1",
+    "type": "controller",
+    "room": "W1N1",
+    "x": 25,
+    "y": 22,
+    "user": "u1",
+    "level": 3,
+    "progress": 100,
+    "progressTotal": 45000,
+    "downgradeTime": 20000,
+    "safeModeAvailable": 1
+   },
+   {
+    "_id": "s1",
+    "type": "source",
+    "room": "W1N1",
+    "x": 22,
+    "y": 24,
+    "energy": 3000,
+    "energyCapacity": 3000,
+    "nextRegenerationTime": 1250
+   },
+   {
+    "_id": "s2",
+    "type": "source",
+    "room": "W1N1",
+    "x": 28,
+    "y": 28,
+    "energy": 0,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "m1",
+    "type": "mineral",
+    "room": "W1N1",
+    "x": 30,
+    "y": 20,
+    "mineralType": "H",
+    "mineralAmount": 50000,
+    "density": 3
+   },
+   {
+    "_id": "sp1",
+    "type": "spawn",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Spawn1",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex1",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 23,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex2",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 22,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "off": true,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "r1",
+    "type": "road",
+    "room": "W1N1",
+    "x": 25,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "r2",
+    "type": "road",
+    "room": "W1N1",
+    "x": 26,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "w1",
+    "type": "constructedWall",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 1000,
+    "hitsMax": 300000000
+   },
+   {
+    "_id": "cr1",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Harv1",
+    "hits": 300,
+    "hitsMax": 300,
+    "body": [
+     {
+      "type": "work",
+      "hits": 100
+     },
+     {
+      "type": "carry",
+      "hits": 100
+     },
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {
+     "energy": 10
+    },
+    "storeCapacity": 50,
+    "fatigue": 0,
+    "ageTime": 2400,
+    "spawning": false,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "cr2",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "name": "Bob1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 2000,
+    "spawning": false
+   },
+   {
+    "_id": "cr3",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Baby",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "spawning": true
+   },
+   {
+    "_id": "e1",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "energy",
+    "energy": 100
+   },
+   {
+    "_id": "e2",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "H",
+    "H": 20
+   },
+   {
+    "_id": "cs1",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 29,
+    "y": 29,
+    "user": "u1",
+    "structureType": "extension",
+    "progress": 0,
+    "progressTotal": 3000
+   },
+   {
+    "_id": "cs2",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 29,
+    "user": "u2",
+    "structureType": "road",
+    "progress": 10,
+    "progressTotal": 300
+   },
+   {
+    "_id": "ra1",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs3",
+    "type": "constructionSite",
+    "room": "W2N2",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "structureType": "spawn",
+    "name": "Spawn2",
+    "progress": 5,
+    "progressTotal": 15000
+   },
+   {
+    "_id": "c2",
+    "type": "controller",
+    "room": "W1N2",
+    "x": 25,
+    "y": 21,
+    "user": "u2",
+    "level": 2,
+    "progress": 0,
+    "progressTotal": 45000,
+    "downgradeTime": 20000
+   },
+   {
+    "_id": "sp2",
+    "type": "spawn",
+    "room": "W1N2",
+    "x": 25,
+    "y": 25,
+    "user": "u2",
+    "name": "BobSpawn",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null
+   },
+   {
+    "_id": "s3",
+    "type": "source",
+    "room": "W1N2",
+    "x": 21,
+    "y": 21,
+    "energy": 1500,
+    "energyCapacity": 1500
+   },
+   {
+    "_id": "cr4",
+    "type": "creep",
+    "room": "W1N2",
+    "x": 20,
+    "y": 30,
+    "user": "u1",
+    "name": "Scout",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 1500,
+    "spawning": false
+   },
+   {
+    "_id": "k1",
+    "type": "keeperLair",
+    "room": "W1N2",
+    "x": 30,
+    "y": 30,
+    "user": "3",
+    "nextSpawnTime": 1100
+   },
+   {
+    "_id": "s4",
+    "type": "source",
+    "room": "W2N1",
+    "x": 25,
+    "y": 25,
+    "energy": 3000,
+    "energyCapacity": 3000
+   }
+  ],
+  "flags": [
+   {
+    "room": "W1N1",
+    "data": "Flag1~1~1~25~25|My$VLINE$Flag~2~3~20~20|Edge~5~5~0~10"
+   },
+   {
+    "room": "W2N2",
+    "data": "Far~3~3~10~10"
+   }
+  ],
+  "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}",
+  "eventLog": {
+   "W1N1": "[{\"event\":1,\"objectId\":\"cr2\",\"data\":{\"targetId\":\"cr1\",\"damage\":10}}]"
+  }
+ },
+ "ticks": [
+  {
+   "probes": [
+    [
+     "create",
+     "() => {\r\n            const r = Game.rooms.W1N1;\r\n            return [r.createFlag(10, 10), r.createFlag(11, 11), r.createFlag(12, 12, 'Flag1'), r.createFlag(12, 12, 'New', COLOR_RED, COLOR_BLUE),\r\n                r.createFlag(12, 12, 'New'), r.createFlag(13, 13, 'Col', '1'), r.createFlag(13, 13, 'Col2', 11), r.createFlag(13, 13, 'Col3', 2, 12),\r\n                r.createFlag(13, 13, 'x'.repeat(101)), r.createFlag(50, 1, 'Oob'), r.createFlag(), r.createFlag(new RoomPosition(5, 5, 'W1N2'), 'OtherRoom', 3),\r\n                r.createFlag(Game.creeps.Harv1, 'OnCreep'), r.createFlag(14, 14, 0, 0, 0), r.createFlag(15, 15, {}, 2)];\r\n        }"
+    ],
+    [
+     "pos form",
+     "() => [new RoomPosition(20, 21, 'W1N1').createFlag(), new RoomPosition(20, 22, 'W1N1').createFlag('PF', 4, 5),\r\n            new RoomPosition(20, 22, 'W1N2').createFlag('PF2')]"
+    ],
+    [
+     "game flags",
+     "() => [Object.keys(Game.flags), Game.flags.New && [Game.flags.New.color, Game.flags.New.secondaryColor, Game.flags.New.pos],\r\n            Game.rooms.W1N1.find(FIND_FLAGS).length, Game.getObjectById('flag_New'), Game.getObjectById('flag_Flag1') === Game.flags.Flag1]"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "create",
+      {
+       "$arr": [
+        "Flag2",
+        "Flag3",
+        -3,
+        "New",
+        -3,
+        -10,
+        -10,
+        -10,
+        -10,
+        -10,
+        -10,
+        "OtherRoom",
+        "OnCreep",
+        "Flag4",
+        {}
+       ]
+      }
+     ],
+     [
+      "pos form",
+      {
+       "$arr": [
+        "Flag5",
+        "PF",
+        "PF2"
+       ]
+      }
+     ],
+     [
+      "game flags",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          "Flag1",
+          "My|Flag",
+          "Edge",
+          "Far",
+          "Flag2",
+          "Flag3",
+          "New",
+          "OtherRoom",
+          "OnCreep",
+          "Flag4",
+          "[object Object]",
+          "Flag5",
+          "PF",
+          "PF2"
+         ]
+        },
+        {
+         "$arr": [
+          1,
+          3,
+          {
+           "$pos": [
+            12,
+            12,
+            "W1N1"
+           ],
+           "packed": 2122189836
+          }
+         ]
+        },
+        3,
+        null,
+        true
+       ]
+      }
+     ]
+    ],
+    "intents": {
+     "room": {
+      "createFlag": {
+       "$arr": [
+        {
+         "roomName": "W1N1",
+         "x": 10,
+         "y": 10,
+         "name": "Flag2",
+         "color": 10,
+         "secondaryColor": 10
+        },
+        {
+         "roomName": "W1N1",
+         "x": 11,
+         "y": 11,
+         "name": "Flag3",
+         "color": 10,
+         "secondaryColor": 10
+        },
+        {
+         "roomName": "W1N1",
+         "x": 12,
+         "y": 12,
+         "name": "New",
+         "color": 1,
+         "secondaryColor": 3
+        },
+        {
+         "roomName": "W1N1",
+         "x": 5,
+         "y": 5,
+         "name": "OtherRoom",
+         "color": 3,
+         "secondaryColor": 3
+        },
+        {
+         "roomName": "W1N1",
+         "x": 25,
+         "y": 25,
+         "name": "OnCreep",
+         "color": 10,
+         "secondaryColor": 10
+        },
+        {
+         "roomName": "W1N1",
+         "x": 14,
+         "y": 14,
+         "name": "Flag4",
+         "color": 10,
+         "secondaryColor": 10
+        },
+        {
+         "roomName": "W1N1",
+         "x": 15,
+         "y": 15,
+         "name": {},
+         "color": 2,
+         "secondaryColor": 2
+        },
+        {
+         "roomName": "W1N1",
+         "x": 20,
+         "y": 21,
+         "name": "Flag5",
+         "color": 10,
+         "secondaryColor": 10
+        },
+        {
+         "roomName": "W1N1",
+         "x": 20,
+         "y": 22,
+         "name": "PF",
+         "color": 4,
+         "secondaryColor": 5
+        },
+        {
+         "roomName": "W1N2",
+         "x": 20,
+         "y": 22,
+         "name": "PF2",
+         "color": 10,
+         "secondaryColor": 10
+        }
+       ]
+      }
+     }
+    },
+    "intentsCpu": 2,
+    "console": {
+     "$arr": []
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  }
+ ]
+}

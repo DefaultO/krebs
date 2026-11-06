@@ -1,0 +1,1774 @@
+{
+ "name": "path-pathfinder",
+ "tags": [
+  "game/path-finder.js:18",
+  "game/path-finder.js:57",
+  "game/path-finder.js:67",
+  "lib/path-finder.js:59",
+  "lib/path-finder.js:86"
+ ],
+ "world": {
+  "user": "u1",
+  "users": {
+   "2": {
+    "username": "Invader"
+   },
+   "3": {
+    "username": "Source Keeper"
+   },
+   "u1": {
+    "username": "Alice"
+   },
+   "u2": {
+    "username": "Bob"
+   }
+  },
+  "time": 1000,
+  "objects": [
+   {
+    "_id": "c1",
+    "type": "controller",
+    "room": "W1N1",
+    "x": 25,
+    "y": 22,
+    "user": "u1",
+    "level": 3,
+    "progress": 100,
+    "progressTotal": 45000,
+    "downgradeTime": 20000,
+    "safeModeAvailable": 1
+   },
+   {
+    "_id": "s1",
+    "type": "source",
+    "room": "W1N1",
+    "x": 22,
+    "y": 24,
+    "energy": 3000,
+    "energyCapacity": 3000,
+    "nextRegenerationTime": 1250
+   },
+   {
+    "_id": "s2",
+    "type": "source",
+    "room": "W1N1",
+    "x": 28,
+    "y": 28,
+    "energy": 0,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "m1",
+    "type": "mineral",
+    "room": "W1N1",
+    "x": 30,
+    "y": 20,
+    "mineralType": "H",
+    "mineralAmount": 50000,
+    "density": 3
+   },
+   {
+    "_id": "sp1",
+    "type": "spawn",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Spawn1",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex1",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 23,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex2",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 22,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "off": true,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "r1",
+    "type": "road",
+    "room": "W1N1",
+    "x": 25,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "r2",
+    "type": "road",
+    "room": "W1N1",
+    "x": 26,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "w1",
+    "type": "constructedWall",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 1000,
+    "hitsMax": 300000000
+   },
+   {
+    "_id": "cr1",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Harv1",
+    "hits": 300,
+    "hitsMax": 300,
+    "body": [
+     {
+      "type": "work",
+      "hits": 100
+     },
+     {
+      "type": "carry",
+      "hits": 100
+     },
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {
+     "energy": 10
+    },
+    "storeCapacity": 50,
+    "fatigue": 0,
+    "ageTime": 2400,
+    "spawning": false,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "cr2",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "name": "Bob1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 2000,
+    "spawning": false
+   },
+   {
+    "_id": "cr3",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Baby",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "spawning": true
+   },
+   {
+    "_id": "e1",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "energy",
+    "energy": 100
+   },
+   {
+    "_id": "e2",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "H",
+    "H": 20
+   },
+   {
+    "_id": "cs1",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 29,
+    "y": 29,
+    "user": "u1",
+    "structureType": "extension",
+    "progress": 0,
+    "progressTotal": 3000
+   },
+   {
+    "_id": "cs2",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 29,
+    "user": "u2",
+    "structureType": "road",
+    "progress": 10,
+    "progressTotal": 300
+   },
+   {
+    "_id": "ra1",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs3",
+    "type": "constructionSite",
+    "room": "W2N2",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "structureType": "spawn",
+    "name": "Spawn2",
+    "progress": 5,
+    "progressTotal": 15000
+   },
+   {
+    "_id": "c2",
+    "type": "controller",
+    "room": "W1N2",
+    "x": 25,
+    "y": 21,
+    "user": "u2",
+    "level": 2,
+    "progress": 0,
+    "progressTotal": 45000,
+    "downgradeTime": 20000
+   },
+   {
+    "_id": "sp2",
+    "type": "spawn",
+    "room": "W1N2",
+    "x": 25,
+    "y": 25,
+    "user": "u2",
+    "name": "BobSpawn",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null
+   },
+   {
+    "_id": "s3",
+    "type": "source",
+    "room": "W1N2",
+    "x": 21,
+    "y": 21,
+    "energy": 1500,
+    "energyCapacity": 1500
+   },
+   {
+    "_id": "cr4",
+    "type": "creep",
+    "room": "W1N2",
+    "x": 20,
+    "y": 30,
+    "user": "u1",
+    "name": "Scout",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 1500,
+    "spawning": false
+   },
+   {
+    "_id": "k1",
+    "type": "keeperLair",
+    "room": "W1N2",
+    "x": 30,
+    "y": 30,
+    "user": "3",
+    "nextSpawnTime": 1100
+   },
+   {
+    "_id": "s4",
+    "type": "source",
+    "room": "W2N1",
+    "x": 25,
+    "y": 25,
+    "energy": 3000,
+    "energyCapacity": 3000
+   }
+  ],
+  "flags": [
+   {
+    "room": "W1N1",
+    "data": "Flag1~1~1~25~25|My$VLINE$Flag~2~3~20~20|Edge~5~5~0~10"
+   },
+   {
+    "room": "W2N2",
+    "data": "Far~3~3~10~10"
+   }
+  ],
+  "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}",
+  "eventLog": {
+   "W1N1": "[{\"event\":1,\"objectId\":\"cr2\",\"data\":{\"targetId\":\"cr1\",\"damage\":10}}]"
+  }
+ },
+ "ticks": [
+  {
+   "probes": [
+    [
+     "search",
+     "() => {\n            const from = new RoomPosition(25, 25, 'W1N1');\n            const res = r => [r.path, r.ops, r.cost, r.incomplete, Object.keys(r)];\n            return [res(PathFinder.search(from, new RoomPosition(30, 30, 'W1N1'))), res(PathFinder.search(from, {pos: new RoomPosition(30, 30, 'W1N1'), range: 3})),\n                res(PathFinder.search(from, [{pos: new RoomPosition(30, 30, 'W1N1'), range: 1}, new RoomPosition(20, 22, 'W1N1')])),\n                res(PathFinder.search(from, Game.getObjectById('s1'))), PathFinder.search(from, []), PathFinder.search(from), PathFinder.search(from, null),\n                res(PathFinder.search(from, from)), res(PathFinder.search(from, {pos: new RoomPosition(30, 30, 'W1N1'), range: 5}, {flee: true})),\n                res(PathFinder.search(from, new RoomPosition(25, 25, 'W1N2'), {maxOps: 50})), res(PathFinder.search(from, new RoomPosition(25, 25, 'W1N2'), {maxRooms: 1})),\n                res(PathFinder.search(from, new RoomPosition(25, 25, 'W0N1'), {roomCallback: rn => rn == 'W1N1' ? undefined : false})),\n                res(PathFinder.search(from, new RoomPosition(30, 30, 'W1N1'), {roomCallback: () => false})),\n                res(PathFinder.search(from, new RoomPosition(30, 30, 'W1N1'), {plainCost: 300, swampCost: 0.5, heuristicWeight: 20, maxCost: 3e9})),\n                res(PathFinder.search(from, new RoomPosition(30, 30, 'W1N1'), {maxCost: 4})),\n                res(PathFinder.search(from, new RoomPosition(30, 30, 'W1N1'), {roomCallback: 5, maxOps: Infinity}))];\n        }"
+    ],
+    [
+     "search errors",
+     "() => {\n            const from = new RoomPosition(25, 25, 'W1N1'), out = [];\n            for (const f of [() => PathFinder.search(Game.creeps.Harv1, from), () => PathFinder.search({x: 1, y: 1, roomName: 'sim'}, from),\n                () => PathFinder.search({x: 50, y: 1, roomName: 'W1N1'}, from), () => PathFinder.search(from, {x: 1, y: 1}),\n                () => PathFinder.search(from, new RoomPosition(1, 1, 'W1N1'), {roomCallback: () => { throw new Error('cb boom'); }}),\n                () => PathFinder.search(from, {range: 1}), () => PathFinder.search(from, [{pos: from, range: -3}]),\n                () => PathFinder.search({x: 1, y: 1, roomName: 'W200N1'}, from)]) {\n                try { const r = f(); out.push([r.path, r.ops, r.incomplete]); } catch (e) { out.push(e.message); }\n            }\n            return out;\n        }"
+    ],
+    [
+     "callback matrix",
+     "() => {\n            const from = new RoomPosition(25, 25, 'W1N1'), m = new PathFinder.CostMatrix();\n            for (let y = 0; y < 50; y++) m.set(27, y, 255);\n            const r1 = PathFinder.search(from, new RoomPosition(30, 25, 'W1N1'), {roomCallback: () => m});\n            const r2 = PathFinder.search(from, new RoomPosition(30, 25, 'W1N1'), {roomCallback: () => ({_bits: m._bits})});\n            return [r1.path, r1.incomplete, r2.path.length];\n        }"
+    ],
+    [
+     "costmatrix",
+     "() => {\n            const m = new PathFinder.CostMatrix();\n            m.set(1, 2, 3); m.set(0, 50, 7); m.set(49, 49, 300); m.set(2, 2, -5); m.set(3, 3, 'x'); m.set(4, 4, 2.7); m.set(5, 5, '9');\n            m.set(60, 60, 1); m.set(-1, 0, 4);\n            const c = m.clone();\n            c.set(1, 2, 9);\n            const s = m.serialize();\n            const d = PathFinder.CostMatrix.deserialize(s), d2 = PathFinder.CostMatrix.deserialize([1, 2, 256]);\n            return [m.get(1, 2), m.get(1, 0), m.get(49, 49), m.get(2, 2), m.get(3, 3), m.get(4, 4), m.get(5, 5), m.get(60, 60), m.get(-1, 0), m.get(1.9, 2.2),\n                c.get(1, 2), m.get(1, 2), s.length, s.slice(0, 4), s[624], d.get(1, 2), d instanceof PathFinder.CostMatrix, Object.keys(d), d2._bits,\n                Object.keys(m), Object.keys(PathFinder), Object.keys(PathFinder.CostMatrix.prototype), m.set(1, 1, 1)];\n        }"
+    ],
+    [
+     "use",
+     "() => {\n            PathFinder.use(true);\n            const a = Game.rooms.W1N1.findPath(new RoomPosition(25, 25, 'W1N1'), new RoomPosition(28, 28, 'W1N1')).length;\n            PathFinder.use(false);\n            PathFinder.use(0);\n            PathFinder.use(1);\n            return a;\n        }"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "search",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "$arr": [
+            {
+             "$pos": [
+              26,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122193434
+            },
+            {
+             "$pos": [
+              27,
+              27,
+              "W1N1"
+             ],
+             "packed": 2122193691
+            },
+            {
+             "$pos": [
+              28,
+              28,
+              "W1N1"
+             ],
+             "packed": 2122193948
+            },
+            {
+             "$pos": [
+              29,
+              29,
+              "W1N1"
+             ],
+             "packed": 2122194205
+            },
+            {
+             "$pos": [
+              30,
+              30,
+              "W1N1"
+             ],
+             "packed": 2122194462
+            }
+           ]
+          },
+          4,
+          5,
+          false,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": [
+            {
+             "$pos": [
+              26,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122193434
+            },
+            {
+             "$pos": [
+              27,
+              27,
+              "W1N1"
+             ],
+             "packed": 2122193691
+            }
+           ]
+          },
+          1,
+          2,
+          false,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": [
+            {
+             "$pos": [
+              26,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122193434
+            },
+            {
+             "$pos": [
+              27,
+              27,
+              "W1N1"
+             ],
+             "packed": 2122193691
+            },
+            {
+             "$pos": [
+              28,
+              28,
+              "W1N1"
+             ],
+             "packed": 2122193948
+            },
+            {
+             "$pos": [
+              29,
+              29,
+              "W1N1"
+             ],
+             "packed": 2122194205
+            }
+           ]
+          },
+          3,
+          4,
+          false,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": [
+            {
+             "$pos": [
+              24,
+              24,
+              "W1N1"
+             ],
+             "packed": 2122192920
+            },
+            {
+             "$pos": [
+              23,
+              24,
+              "W1N1"
+             ],
+             "packed": 2122192664
+            },
+            {
+             "$pos": [
+              22,
+              24,
+              "W1N1"
+             ],
+             "packed": 2122192408
+            }
+           ]
+          },
+          2,
+          3,
+          false,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        },
+        {
+         "path": {
+          "$arr": []
+         },
+         "ops": 0
+        },
+        {
+         "path": {
+          "$arr": []
+         },
+         "ops": 0
+        },
+        {
+         "path": {
+          "$arr": []
+         },
+         "ops": 0
+        },
+        {
+         "$arr": [
+          {
+           "$arr": []
+          },
+          0,
+          0,
+          false,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": []
+          },
+          0,
+          0,
+          false,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": [
+            {
+             "$pos": [
+              24,
+              24,
+              "W1N1"
+             ],
+             "packed": 2122192920
+            },
+            {
+             "$pos": [
+              23,
+              23,
+              "W1N1"
+             ],
+             "packed": 2122192663
+            },
+            {
+             "$pos": [
+              23,
+              22,
+              "W1N1"
+             ],
+             "packed": 2122192662
+            },
+            {
+             "$pos": [
+              23,
+              21,
+              "W1N1"
+             ],
+             "packed": 2122192661
+            },
+            {
+             "$pos": [
+              23,
+              20,
+              "W1N1"
+             ],
+             "packed": 2122192660
+            },
+            {
+             "$pos": [
+              23,
+              19,
+              "W1N1"
+             ],
+             "packed": 2122192659
+            },
+            {
+             "$pos": [
+              22,
+              18,
+              "W1N1"
+             ],
+             "packed": 2122192402
+            },
+            {
+             "$pos": [
+              22,
+              17,
+              "W1N1"
+             ],
+             "packed": 2122192401
+            },
+            {
+             "$pos": [
+              22,
+              16,
+              "W1N1"
+             ],
+             "packed": 2122192400
+            },
+            {
+             "$pos": [
+              22,
+              15,
+              "W1N1"
+             ],
+             "packed": 2122192399
+            },
+            {
+             "$pos": [
+              22,
+              14,
+              "W1N1"
+             ],
+             "packed": 2122192398
+            },
+            {
+             "$pos": [
+              23,
+              13,
+              "W1N1"
+             ],
+             "packed": 2122192653
+            },
+            {
+             "$pos": [
+              24,
+              12,
+              "W1N1"
+             ],
+             "packed": 2122192908
+            },
+            {
+             "$pos": [
+              24,
+              11,
+              "W1N1"
+             ],
+             "packed": 2122192907
+            },
+            {
+             "$pos": [
+              24,
+              10,
+              "W1N1"
+             ],
+             "packed": 2122192906
+            },
+            {
+             "$pos": [
+              24,
+              9,
+              "W1N1"
+             ],
+             "packed": 2122192905
+            },
+            {
+             "$pos": [
+              24,
+              8,
+              "W1N1"
+             ],
+             "packed": 2122192904
+            },
+            {
+             "$pos": [
+              24,
+              7,
+              "W1N1"
+             ],
+             "packed": 2122192903
+            },
+            {
+             "$pos": [
+              24,
+              6,
+              "W1N1"
+             ],
+             "packed": 2122192902
+            },
+            {
+             "$pos": [
+              24,
+              5,
+              "W1N1"
+             ],
+             "packed": 2122192901
+            },
+            {
+             "$pos": [
+              24,
+              4,
+              "W1N1"
+             ],
+             "packed": 2122192900
+            },
+            {
+             "$pos": [
+              24,
+              3,
+              "W1N1"
+             ],
+             "packed": 2122192899
+            },
+            {
+             "$pos": [
+              23,
+              2,
+              "W1N1"
+             ],
+             "packed": 2122192642
+            },
+            {
+             "$pos": [
+              22,
+              1,
+              "W1N1"
+             ],
+             "packed": 2122192385
+            },
+            {
+             "$pos": [
+              22,
+              0,
+              "W1N1"
+             ],
+             "packed": 2122192384
+            },
+            {
+             "$pos": [
+              22,
+              49,
+              "W1N2"
+             ],
+             "packed": 2122126897
+            },
+            {
+             "$pos": [
+              23,
+              48,
+              "W1N2"
+             ],
+             "packed": 2122127152
+            },
+            {
+             "$pos": [
+              24,
+              47,
+              "W1N2"
+             ],
+             "packed": 2122127407
+            },
+            {
+             "$pos": [
+              25,
+              46,
+              "W1N2"
+             ],
+             "packed": 2122127662
+            },
+            {
+             "$pos": [
+              25,
+              45,
+              "W1N2"
+             ],
+             "packed": 2122127661
+            },
+            {
+             "$pos": [
+              25,
+              44,
+              "W1N2"
+             ],
+             "packed": 2122127660
+            },
+            {
+             "$pos": [
+              24,
+              43,
+              "W1N2"
+             ],
+             "packed": 2122127403
+            },
+            {
+             "$pos": [
+              23,
+              42,
+              "W1N2"
+             ],
+             "packed": 2122127146
+            },
+            {
+             "$pos": [
+              24,
+              41,
+              "W1N2"
+             ],
+             "packed": 2122127401
+            },
+            {
+             "$pos": [
+              24,
+              40,
+              "W1N2"
+             ],
+             "packed": 2122127400
+            },
+            {
+             "$pos": [
+              23,
+              39,
+              "W1N2"
+             ],
+             "packed": 2122127143
+            },
+            {
+             "$pos": [
+              22,
+              38,
+              "W1N2"
+             ],
+             "packed": 2122126886
+            },
+            {
+             "$pos": [
+              21,
+              37,
+              "W1N2"
+             ],
+             "packed": 2122126629
+            },
+            {
+             "$pos": [
+              20,
+              36,
+              "W1N2"
+             ],
+             "packed": 2122126372
+            },
+            {
+             "$pos": [
+              19,
+              35,
+              "W1N2"
+             ],
+             "packed": 2122126115
+            },
+            {
+             "$pos": [
+              20,
+              34,
+              "W1N2"
+             ],
+             "packed": 2122126370
+            },
+            {
+             "$pos": [
+              19,
+              33,
+              "W1N2"
+             ],
+             "packed": 2122126113
+            },
+            {
+             "$pos": [
+              18,
+              32,
+              "W1N2"
+             ],
+             "packed": 2122125856
+            },
+            {
+             "$pos": [
+              19,
+              31,
+              "W1N2"
+             ],
+             "packed": 2122126111
+            },
+            {
+             "$pos": [
+              20,
+              30,
+              "W1N2"
+             ],
+             "packed": 2122126366
+            },
+            {
+             "$pos": [
+              21,
+              29,
+              "W1N2"
+             ],
+             "packed": 2122126621
+            },
+            {
+             "$pos": [
+              22,
+              28,
+              "W1N2"
+             ],
+             "packed": 2122126876
+            },
+            {
+             "$pos": [
+              23,
+              27,
+              "W1N2"
+             ],
+             "packed": 2122127131
+            },
+            {
+             "$pos": [
+              24,
+              26,
+              "W1N2"
+             ],
+             "packed": 2122127386
+            },
+            {
+             "$pos": [
+              25,
+              25,
+              "W1N2"
+             ],
+             "packed": 2122127641
+            }
+           ]
+          },
+          34,
+          50,
+          false,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": [
+            {
+             "$pos": [
+              24,
+              24,
+              "W1N1"
+             ],
+             "packed": 2122192920
+            },
+            {
+             "$pos": [
+              23,
+              23,
+              "W1N1"
+             ],
+             "packed": 2122192663
+            },
+            {
+             "$pos": [
+              23,
+              22,
+              "W1N1"
+             ],
+             "packed": 2122192662
+            },
+            {
+             "$pos": [
+              23,
+              21,
+              "W1N1"
+             ],
+             "packed": 2122192661
+            },
+            {
+             "$pos": [
+              23,
+              20,
+              "W1N1"
+             ],
+             "packed": 2122192660
+            },
+            {
+             "$pos": [
+              23,
+              19,
+              "W1N1"
+             ],
+             "packed": 2122192659
+            },
+            {
+             "$pos": [
+              22,
+              18,
+              "W1N1"
+             ],
+             "packed": 2122192402
+            },
+            {
+             "$pos": [
+              22,
+              17,
+              "W1N1"
+             ],
+             "packed": 2122192401
+            },
+            {
+             "$pos": [
+              22,
+              16,
+              "W1N1"
+             ],
+             "packed": 2122192400
+            },
+            {
+             "$pos": [
+              22,
+              15,
+              "W1N1"
+             ],
+             "packed": 2122192399
+            },
+            {
+             "$pos": [
+              22,
+              14,
+              "W1N1"
+             ],
+             "packed": 2122192398
+            },
+            {
+             "$pos": [
+              23,
+              13,
+              "W1N1"
+             ],
+             "packed": 2122192653
+            },
+            {
+             "$pos": [
+              24,
+              12,
+              "W1N1"
+             ],
+             "packed": 2122192908
+            },
+            {
+             "$pos": [
+              24,
+              11,
+              "W1N1"
+             ],
+             "packed": 2122192907
+            },
+            {
+             "$pos": [
+              24,
+              10,
+              "W1N1"
+             ],
+             "packed": 2122192906
+            },
+            {
+             "$pos": [
+              24,
+              9,
+              "W1N1"
+             ],
+             "packed": 2122192905
+            },
+            {
+             "$pos": [
+              24,
+              8,
+              "W1N1"
+             ],
+             "packed": 2122192904
+            },
+            {
+             "$pos": [
+              24,
+              7,
+              "W1N1"
+             ],
+             "packed": 2122192903
+            },
+            {
+             "$pos": [
+              24,
+              6,
+              "W1N1"
+             ],
+             "packed": 2122192902
+            },
+            {
+             "$pos": [
+              24,
+              5,
+              "W1N1"
+             ],
+             "packed": 2122192901
+            },
+            {
+             "$pos": [
+              24,
+              4,
+              "W1N1"
+             ],
+             "packed": 2122192900
+            },
+            {
+             "$pos": [
+              24,
+              3,
+              "W1N1"
+             ],
+             "packed": 2122192899
+            },
+            {
+             "$pos": [
+              23,
+              2,
+              "W1N1"
+             ],
+             "packed": 2122192642
+            },
+            {
+             "$pos": [
+              22,
+              1,
+              "W1N1"
+             ],
+             "packed": 2122192385
+            },
+            {
+             "$pos": [
+              22,
+              0,
+              "W1N1"
+             ],
+             "packed": 2122192384
+            }
+           ]
+          },
+          1563,
+          25,
+          true,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": [
+            {
+             "$pos": [
+              26,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122193434
+            },
+            {
+             "$pos": [
+              27,
+              27,
+              "W1N1"
+             ],
+             "packed": 2122193691
+            },
+            {
+             "$pos": [
+              28,
+              27,
+              "W1N1"
+             ],
+             "packed": 2122193947
+            },
+            {
+             "$pos": [
+              29,
+              27,
+              "W1N1"
+             ],
+             "packed": 2122194203
+            },
+            {
+             "$pos": [
+              30,
+              27,
+              "W1N1"
+             ],
+             "packed": 2122194459
+            },
+            {
+             "$pos": [
+              31,
+              27,
+              "W1N1"
+             ],
+             "packed": 2122194715
+            },
+            {
+             "$pos": [
+              32,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122194970
+            },
+            {
+             "$pos": [
+              33,
+              25,
+              "W1N1"
+             ],
+             "packed": 2122195225
+            },
+            {
+             "$pos": [
+              34,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122195482
+            },
+            {
+             "$pos": [
+              35,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122195738
+            },
+            {
+             "$pos": [
+              36,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122195994
+            },
+            {
+             "$pos": [
+              37,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122196250
+            },
+            {
+             "$pos": [
+              38,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122196506
+            },
+            {
+             "$pos": [
+              39,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122196762
+            },
+            {
+             "$pos": [
+              40,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122197018
+            },
+            {
+             "$pos": [
+              41,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122197274
+            },
+            {
+             "$pos": [
+              42,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122197530
+            },
+            {
+             "$pos": [
+              43,
+              25,
+              "W1N1"
+             ],
+             "packed": 2122197785
+            },
+            {
+             "$pos": [
+              44,
+              24,
+              "W1N1"
+             ],
+             "packed": 2122198040
+            },
+            {
+             "$pos": [
+              45,
+              23,
+              "W1N1"
+             ],
+             "packed": 2122198295
+            },
+            {
+             "$pos": [
+              46,
+              22,
+              "W1N1"
+             ],
+             "packed": 2122198550
+            },
+            {
+             "$pos": [
+              47,
+              21,
+              "W1N1"
+             ],
+             "packed": 2122198805
+            },
+            {
+             "$pos": [
+              48,
+              20,
+              "W1N1"
+             ],
+             "packed": 2122199060
+            },
+            {
+             "$pos": [
+              49,
+              19,
+              "W1N1"
+             ],
+             "packed": 2122199315
+            }
+           ]
+          },
+          1559,
+          24,
+          true,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": []
+          },
+          0,
+          0,
+          true,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": [
+            {
+             "$pos": [
+              26,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122193434
+            }
+           ]
+          },
+          0,
+          254,
+          true,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": [
+            {
+             "$pos": [
+              26,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122193434
+            }
+           ]
+          },
+          0,
+          1,
+          true,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$arr": [
+            {
+             "$pos": [
+              26,
+              26,
+              "W1N1"
+             ],
+             "packed": 2122193434
+            },
+            {
+             "$pos": [
+              27,
+              27,
+              "W1N1"
+             ],
+             "packed": 2122193691
+            },
+            {
+             "$pos": [
+              28,
+              28,
+              "W1N1"
+             ],
+             "packed": 2122193948
+            },
+            {
+             "$pos": [
+              29,
+              29,
+              "W1N1"
+             ],
+             "packed": 2122194205
+            },
+            {
+             "$pos": [
+              30,
+              30,
+              "W1N1"
+             ],
+             "packed": 2122194462
+            }
+           ]
+          },
+          4,
+          5,
+          false,
+          {
+           "$arr": [
+            "path",
+            "ops",
+            "cost",
+            "incomplete"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "search errors",
+      {
+       "$arr": [
+        "Invalid room name",
+        "Invalid room name",
+        "Invalid room position",
+        "Cannot read properties of undefined (reading 'x')",
+        "cb boom",
+        "Cannot read properties of undefined (reading 'x')",
+        {
+         "$arr": [
+          {
+           "$arr": []
+          },
+          0,
+          false
+         ]
+        },
+        "Invalid room name"
+       ]
+      }
+     ],
+     [
+      "callback matrix",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "$pos": [
+            26,
+            26,
+            "W1N1"
+           ],
+           "packed": 2122193434
+          }
+         ]
+        },
+        true,
+        1
+       ]
+      }
+     ],
+     [
+      "costmatrix",
+      {
+       "$arr": [
+        3,
+        7,
+        255,
+        0,
+        0,
+        2,
+        9,
+        {
+         "$": "undefined"
+        },
+        {
+         "$": "undefined"
+        },
+        3,
+        9,
+        3,
+        625,
+        {
+         "$arr": [
+          0,
+          0,
+          0,
+          0
+         ]
+        },
+        4278190080,
+        3,
+        true,
+        {
+         "$arr": [
+          "_bits"
+         ]
+        },
+        {
+         "$ta": "Uint8Array",
+         "len": 12,
+         "v": "1,0x3,2,0x4,1,0x2"
+        },
+        {
+         "$arr": [
+          "_bits"
+         ]
+        },
+        {
+         "$arr": [
+          "CostMatrix",
+          "search",
+          "use"
+         ]
+        },
+        {
+         "$arr": [
+          "set",
+          "get",
+          "clone",
+          "serialize"
+         ]
+        },
+        {
+         "$": "undefined"
+        }
+       ]
+      }
+     ],
+     [
+      "use",
+      3
+     ]
+    ],
+    "intents": {},
+    "intentsCpu": 0,
+    "console": {
+     "$arr": [
+      {
+       "message": "`PathFinder.use` is considered deprecated and will be removed soon.",
+       "escape": true
+      }
+     ]
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  }
+ ]
+}

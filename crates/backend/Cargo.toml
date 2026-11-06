@@ -1,0 +1,9 @@
+[package]
+name = "backend"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+util = { path = "../util" }
+engine = { path = "../engine" }

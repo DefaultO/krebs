@@ -1,0 +1,7 @@
+# The crates.io v8-152.2.0 crate minus its V8 source tree, which tools/v8-ptrcomp.ps1 extracts from the same
+# .crate (sha256 pinned) with the two pieces the crate leaves out and the toolchains the build downloads.
+/build/
+/buildtools/
+/third_party/
+/tools/
+/v8/

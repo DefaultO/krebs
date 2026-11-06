@@ -1,0 +1,2133 @@
+{
+ "name": "find-all-types",
+ "tags": [
+  "game/rooms.js:584",
+  "game/rooms.js:592"
+ ],
+ "world": {
+  "user": "u1",
+  "users": {
+   "2": {
+    "username": "Invader"
+   },
+   "3": {
+    "username": "Source Keeper"
+   },
+   "u1": {
+    "username": "Alice"
+   },
+   "u2": {
+    "username": "Bob"
+   }
+  },
+  "time": 1000,
+  "objects": [
+   {
+    "_id": "c1",
+    "type": "controller",
+    "room": "W1N1",
+    "x": 25,
+    "y": 22,
+    "user": "u1",
+    "level": 3,
+    "progress": 100,
+    "progressTotal": 45000,
+    "downgradeTime": 20000,
+    "safeModeAvailable": 1
+   },
+   {
+    "_id": "s1",
+    "type": "source",
+    "room": "W1N1",
+    "x": 22,
+    "y": 24,
+    "energy": 3000,
+    "energyCapacity": 3000,
+    "nextRegenerationTime": 1250
+   },
+   {
+    "_id": "s2",
+    "type": "source",
+    "room": "W1N1",
+    "x": 28,
+    "y": 28,
+    "energy": 0,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "m1",
+    "type": "mineral",
+    "room": "W1N1",
+    "x": 30,
+    "y": 20,
+    "mineralType": "H",
+    "mineralAmount": 50000,
+    "density": 3
+   },
+   {
+    "_id": "sp1",
+    "type": "spawn",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Spawn1",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex1",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 23,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex2",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 22,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "off": true,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "r1",
+    "type": "road",
+    "room": "W1N1",
+    "x": 25,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "r2",
+    "type": "road",
+    "room": "W1N1",
+    "x": 26,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "w1",
+    "type": "constructedWall",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 1000,
+    "hitsMax": 300000000
+   },
+   {
+    "_id": "cr1",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Harv1",
+    "hits": 300,
+    "hitsMax": 300,
+    "body": [
+     {
+      "type": "work",
+      "hits": 100
+     },
+     {
+      "type": "carry",
+      "hits": 100
+     },
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {
+     "energy": 10
+    },
+    "storeCapacity": 50,
+    "fatigue": 0,
+    "ageTime": 2400,
+    "spawning": false,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "cr2",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "name": "Bob1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 2000,
+    "spawning": false
+   },
+   {
+    "_id": "cr3",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Baby",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "spawning": true
+   },
+   {
+    "_id": "e1",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "energy",
+    "energy": 100
+   },
+   {
+    "_id": "e2",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "H",
+    "H": 20
+   },
+   {
+    "_id": "cs1",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 29,
+    "y": 29,
+    "user": "u1",
+    "structureType": "extension",
+    "progress": 0,
+    "progressTotal": 3000
+   },
+   {
+    "_id": "cs2",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 29,
+    "user": "u2",
+    "structureType": "road",
+    "progress": 10,
+    "progressTotal": 300
+   },
+   {
+    "_id": "ra1",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs3",
+    "type": "constructionSite",
+    "room": "W2N2",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "structureType": "spawn",
+    "name": "Spawn2",
+    "progress": 5,
+    "progressTotal": 15000
+   },
+   {
+    "_id": "c2",
+    "type": "controller",
+    "room": "W1N2",
+    "x": 25,
+    "y": 21,
+    "user": "u2",
+    "level": 2,
+    "progress": 0,
+    "progressTotal": 45000,
+    "downgradeTime": 20000
+   },
+   {
+    "_id": "sp2",
+    "type": "spawn",
+    "room": "W1N2",
+    "x": 25,
+    "y": 25,
+    "user": "u2",
+    "name": "BobSpawn",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null
+   },
+   {
+    "_id": "s3",
+    "type": "source",
+    "room": "W1N2",
+    "x": 21,
+    "y": 21,
+    "energy": 1500,
+    "energyCapacity": 1500
+   },
+   {
+    "_id": "cr4",
+    "type": "creep",
+    "room": "W1N2",
+    "x": 20,
+    "y": 30,
+    "user": "u1",
+    "name": "Scout",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 1500,
+    "spawning": false
+   },
+   {
+    "_id": "k1",
+    "type": "keeperLair",
+    "room": "W1N2",
+    "x": 30,
+    "y": 30,
+    "user": "3",
+    "nextSpawnTime": 1100
+   },
+   {
+    "_id": "s4",
+    "type": "source",
+    "room": "W2N1",
+    "x": 25,
+    "y": 25,
+    "energy": 3000,
+    "energyCapacity": 3000
+   }
+  ],
+  "flags": [
+   {
+    "room": "W1N1",
+    "data": "Flag1~1~1~25~25|My$VLINE$Flag~2~3~20~20|Edge~5~5~0~10"
+   },
+   {
+    "room": "W2N2",
+    "data": "Far~3~3~10~10"
+   }
+  ],
+  "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}",
+  "eventLog": {
+   "W1N1": "[{\"event\":1,\"objectId\":\"cr2\",\"data\":{\"targetId\":\"cr1\",\"damage\":10}}]"
+  }
+ },
+ "ticks": [
+  {
+   "probes": [
+    [
+     "all",
+     "() => {\n            const r = Game.rooms.W1N1, out = {};\n            for (const k of Object.keys(global).filter(k => /^FIND_/.test(k)).sort()) out[k] = r.find(global[k]);\n            return out;\n        }"
+    ],
+    [
+     "other room",
+     "() => [FIND_STRUCTURES, FIND_HOSTILE_STRUCTURES, FIND_MY_CREEPS, FIND_SOURCES, FIND_FLAGS].map(t => Game.rooms.W1N2.find(t))"
+    ],
+    [
+     "unknown",
+     "() => [Game.rooms.W1N1.find(), Game.rooms.W1N1.find('creeps'), Game.rooms.W1N1.find(999), Game.rooms.W1N1.find(null, {filter: () => true})]"
+    ],
+    [
+     "filter fn",
+     "() => Game.rooms.W1N1.find(FIND_STRUCTURES, {filter: (s, i, coll) => s.structureType == 'road' || i === 0 && Array.isArray(coll)})"
+    ],
+    [
+     "filter obj",
+     "() => [\n            Game.rooms.W1N1.find(FIND_CREEPS, {filter: {my: true}}),\n            Game.rooms.W1N1.find(FIND_STRUCTURES, {filter: {structureType: 'extension', my: true}}),\n            Game.rooms.W1N1.find(FIND_CREEPS, {filter: {owner: {username: 'Bob'}}}),\n            Game.rooms.W1N1.find(FIND_CREEPS, {filter: {pos: {x: 25}}}),\n        ]"
+    ],
+    [
+     "filter string",
+     "() => [Game.rooms.W1N1.find(FIND_SOURCES, {filter: 'energy'}), Game.rooms.W1N1.find(FIND_CREEPS, {filter: 'my'})]"
+    ],
+    [
+     "clone",
+     "() => {\n            const r = Game.rooms.W1N1, a = r.find(FIND_SOURCES), b = r.find(FIND_SOURCES);\n            a.push(1);\n            return [a === b, a.length, b.length, r.find(FIND_SOURCES).length, a[0] === b[0]];\n        }"
+    ],
+    [
+     "exit sides",
+     "() => {\n            const r = Game.rooms.W1N1;\n            return [FIND_EXIT_TOP, FIND_EXIT_RIGHT, FIND_EXIT_BOTTOM, FIND_EXIT_LEFT].map(t => r.find(t));\n        }"
+    ],
+    [
+     "exit pollution",
+     "() => {\n            const r = Game.rooms.W1N2;\n            const first = r.find(FIND_EXIT, {filter: p => p.x % 2 == 0});\n            return [first, r.find(FIND_EXIT), r.find(FIND_EXIT_TOP), r.find(FIND_EXIT, {filter: p => p.y == 0})];\n        }"
+    ],
+    [
+     "filter mutates cache",
+     "() => {\n            const r = Game.rooms.W1N1;\n            r.find(FIND_MINERALS, {filter: (m, i, coll) => { coll.push('junk'); return true; }});\n            return r.find(FIND_MINERALS);\n        }"
+    ],
+    [
+     "instances",
+     "() => {\n            const r = Game.rooms.W1N1;\n            return r.find(FIND_MY_SPAWNS)[0] === Game.spawns.Spawn1 && r.find(FIND_SOURCES)[0] === Game.getObjectById('s1');\n        }"
+    ],
+    [
+     "no room",
+     "() => Object.keys(Game.rooms)"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "all",
+      {
+       "FIND_CONSTRUCTION_SITES": {
+        "$arr": [
+         {
+          "$obj": "ConstructionSite",
+          "id": "cs2",
+          "same": true
+         },
+         {
+          "$obj": "ConstructionSite",
+          "id": "cs1",
+          "same": true
+         }
+        ]
+       },
+       "FIND_CREEPS": {
+        "$arr": [
+         {
+          "$obj": "Creep",
+          "id": "cr2",
+          "same": true
+         },
+         {
+          "$obj": "Creep",
+          "id": "cr1",
+          "same": true
+         }
+        ]
+       },
+       "FIND_DEPOSITS": {
+        "$arr": []
+       },
+       "FIND_DROPPED_RESOURCES": {
+        "$arr": [
+         {
+          "$obj": "Resource",
+          "id": "e1",
+          "same": true
+         },
+         {
+          "$obj": "Resource",
+          "id": "e2",
+          "same": true
+         }
+        ]
+       },
+       "FIND_EXIT": {
+        "$arr": [
+         {
+          "$pos": [
+           22,
+           0,
+           "W1N1"
+          ],
+          "packed": 2122192384
+         },
+         {
+          "$pos": [
+           23,
+           0,
+           "W1N1"
+          ],
+          "packed": 2122192640
+         },
+         {
+          "$pos": [
+           31,
+           0,
+           "W1N1"
+          ],
+          "packed": 2122194688
+         },
+         {
+          "$pos": [
+           32,
+           0,
+           "W1N1"
+          ],
+          "packed": 2122194944
+         },
+         {
+          "$pos": [
+           33,
+           0,
+           "W1N1"
+          ],
+          "packed": 2122195200
+         },
+         {
+          "$pos": [
+           34,
+           0,
+           "W1N1"
+          ],
+          "packed": 2122195456
+         },
+         {
+          "$pos": [
+           6,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122188337
+         },
+         {
+          "$pos": [
+           7,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122188593
+         },
+         {
+          "$pos": [
+           8,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122188849
+         },
+         {
+          "$pos": [
+           9,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122189105
+         },
+         {
+          "$pos": [
+           26,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122193457
+         },
+         {
+          "$pos": [
+           27,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122193713
+         },
+         {
+          "$pos": [
+           28,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122193969
+         },
+         {
+          "$pos": [
+           29,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122194225
+         },
+         {
+          "$pos": [
+           30,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122194481
+         },
+         {
+          "$pos": [
+           31,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122194737
+         },
+         {
+          "$pos": [
+           49,
+           19,
+           "W1N1"
+          ],
+          "packed": 2122199315
+         },
+         {
+          "$pos": [
+           49,
+           20,
+           "W1N1"
+          ],
+          "packed": 2122199316
+         },
+         {
+          "$pos": [
+           49,
+           21,
+           "W1N1"
+          ],
+          "packed": 2122199317
+         },
+         {
+          "$pos": [
+           49,
+           22,
+           "W1N1"
+          ],
+          "packed": 2122199318
+         },
+         {
+          "$pos": [
+           49,
+           34,
+           "W1N1"
+          ],
+          "packed": 2122199330
+         },
+         {
+          "$pos": [
+           49,
+           35,
+           "W1N1"
+          ],
+          "packed": 2122199331
+         },
+         {
+          "$pos": [
+           49,
+           36,
+           "W1N1"
+          ],
+          "packed": 2122199332
+         },
+         {
+          "$pos": [
+           49,
+           37,
+           "W1N1"
+          ],
+          "packed": 2122199333
+         },
+         {
+          "$pos": [
+           49,
+           38,
+           "W1N1"
+          ],
+          "packed": 2122199334
+         },
+         {
+          "$pos": [
+           49,
+           39,
+           "W1N1"
+          ],
+          "packed": 2122199335
+         },
+         {
+          "$pos": [
+           49,
+           40,
+           "W1N1"
+          ],
+          "packed": 2122199336
+         },
+         {
+          "$pos": [
+           0,
+           2,
+           "W1N1"
+          ],
+          "packed": 2122186754
+         },
+         {
+          "$pos": [
+           0,
+           3,
+           "W1N1"
+          ],
+          "packed": 2122186755
+         },
+         {
+          "$pos": [
+           0,
+           4,
+           "W1N1"
+          ],
+          "packed": 2122186756
+         },
+         {
+          "$pos": [
+           0,
+           5,
+           "W1N1"
+          ],
+          "packed": 2122186757
+         },
+         {
+          "$pos": [
+           0,
+           6,
+           "W1N1"
+          ],
+          "packed": 2122186758
+         },
+         {
+          "$pos": [
+           0,
+           7,
+           "W1N1"
+          ],
+          "packed": 2122186759
+         },
+         {
+          "$pos": [
+           0,
+           8,
+           "W1N1"
+          ],
+          "packed": 2122186760
+         },
+         {
+          "$pos": [
+           0,
+           9,
+           "W1N1"
+          ],
+          "packed": 2122186761
+         },
+         {
+          "$pos": [
+           0,
+           25,
+           "W1N1"
+          ],
+          "packed": 2122186777
+         },
+         {
+          "$pos": [
+           0,
+           26,
+           "W1N1"
+          ],
+          "packed": 2122186778
+         },
+         {
+          "$pos": [
+           0,
+           27,
+           "W1N1"
+          ],
+          "packed": 2122186779
+         },
+         {
+          "$pos": [
+           0,
+           28,
+           "W1N1"
+          ],
+          "packed": 2122186780
+         },
+         {
+          "$pos": [
+           0,
+           29,
+           "W1N1"
+          ],
+          "packed": 2122186781
+         },
+         {
+          "$pos": [
+           0,
+           30,
+           "W1N1"
+          ],
+          "packed": 2122186782
+         }
+        ]
+       },
+       "FIND_EXIT_BOTTOM": {
+        "$arr": [
+         {
+          "$pos": [
+           6,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122188337
+         },
+         {
+          "$pos": [
+           7,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122188593
+         },
+         {
+          "$pos": [
+           8,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122188849
+         },
+         {
+          "$pos": [
+           9,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122189105
+         },
+         {
+          "$pos": [
+           26,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122193457
+         },
+         {
+          "$pos": [
+           27,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122193713
+         },
+         {
+          "$pos": [
+           28,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122193969
+         },
+         {
+          "$pos": [
+           29,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122194225
+         },
+         {
+          "$pos": [
+           30,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122194481
+         },
+         {
+          "$pos": [
+           31,
+           49,
+           "W1N1"
+          ],
+          "packed": 2122194737
+         }
+        ]
+       },
+       "FIND_EXIT_LEFT": {
+        "$arr": [
+         {
+          "$pos": [
+           0,
+           2,
+           "W1N1"
+          ],
+          "packed": 2122186754
+         },
+         {
+          "$pos": [
+           0,
+           3,
+           "W1N1"
+          ],
+          "packed": 2122186755
+         },
+         {
+          "$pos": [
+           0,
+           4,
+           "W1N1"
+          ],
+          "packed": 2122186756
+         },
+         {
+          "$pos": [
+           0,
+           5,
+           "W1N1"
+          ],
+          "packed": 2122186757
+         },
+         {
+          "$pos": [
+           0,
+           6,
+           "W1N1"
+          ],
+          "packed": 2122186758
+         },
+         {
+          "$pos": [
+           0,
+           7,
+           "W1N1"
+          ],
+          "packed": 2122186759
+         },
+         {
+          "$pos": [
+           0,
+           8,
+           "W1N1"
+          ],
+          "packed": 2122186760
+         },
+         {
+          "$pos": [
+           0,
+           9,
+           "W1N1"
+          ],
+          "packed": 2122186761
+         },
+         {
+          "$pos": [
+           0,
+           25,
+           "W1N1"
+          ],
+          "packed": 2122186777
+         },
+         {
+          "$pos": [
+           0,
+           26,
+           "W1N1"
+          ],
+          "packed": 2122186778
+         },
+         {
+          "$pos": [
+           0,
+           27,
+           "W1N1"
+          ],
+          "packed": 2122186779
+         },
+         {
+          "$pos": [
+           0,
+           28,
+           "W1N1"
+          ],
+          "packed": 2122186780
+         },
+         {
+          "$pos": [
+           0,
+           29,
+           "W1N1"
+          ],
+          "packed": 2122186781
+         },
+         {
+          "$pos": [
+           0,
+           30,
+           "W1N1"
+          ],
+          "packed": 2122186782
+         }
+        ]
+       },
+       "FIND_EXIT_RIGHT": {
+        "$arr": [
+         {
+          "$pos": [
+           49,
+           19,
+           "W1N1"
+          ],
+          "packed": 2122199315
+         },
+         {
+          "$pos": [
+           49,
+           20,
+           "W1N1"
+          ],
+          "packed": 2122199316
+         },
+         {
+          "$pos": [
+           49,
+           21,
+           "W1N1"
+          ],
+          "packed": 2122199317
+         },
+         {
+          "$pos": [
+           49,
+           22,
+           "W1N1"
+          ],
+          "packed": 2122199318
+         },
+         {
+          "$pos": [
+           49,
+           34,
+           "W1N1"
+          ],
+          "packed": 2122199330
+         },
+         {
+          "$pos": [
+           49,
+           35,
+           "W1N1"
+          ],
+          "packed": 2122199331
+         },
+         {
+          "$pos": [
+           49,
+           36,
+           "W1N1"
+          ],
+          "packed": 2122199332
+         },
+         {
+          "$pos": [
+           49,
+           37,
+           "W1N1"
+          ],
+          "packed": 2122199333
+         },
+         {
+          "$pos": [
+           49,
+           38,
+           "W1N1"
+          ],
+          "packed": 2122199334
+         },
+         {
+          "$pos": [
+           49,
+           39,
+           "W1N1"
+          ],
+          "packed": 2122199335
+         },
+         {
+          "$pos": [
+           49,
+           40,
+           "W1N1"
+          ],
+          "packed": 2122199336
+         }
+        ]
+       },
+       "FIND_EXIT_TOP": {
+        "$arr": [
+         {
+          "$pos": [
+           22,
+           0,
+           "W1N1"
+          ],
+          "packed": 2122192384
+         },
+         {
+          "$pos": [
+           23,
+           0,
+           "W1N1"
+          ],
+          "packed": 2122192640
+         },
+         {
+          "$pos": [
+           31,
+           0,
+           "W1N1"
+          ],
+          "packed": 2122194688
+         },
+         {
+          "$pos": [
+           32,
+           0,
+           "W1N1"
+          ],
+          "packed": 2122194944
+         },
+         {
+          "$pos": [
+           33,
+           0,
+           "W1N1"
+          ],
+          "packed": 2122195200
+         },
+         {
+          "$pos": [
+           34,
+           0,
+           "W1N1"
+          ],
+          "packed": 2122195456
+         }
+        ]
+       },
+       "FIND_FLAGS": {
+        "$arr": [
+         {
+          "$obj": "Flag",
+          "id": null,
+          "name": "Flag1",
+          "same": true
+         },
+         {
+          "$obj": "Flag",
+          "id": null,
+          "name": "My|Flag",
+          "same": true
+         },
+         {
+          "$obj": "Flag",
+          "id": null,
+          "name": "Edge",
+          "same": true
+         }
+        ]
+       },
+       "FIND_HOSTILE_CONSTRUCTION_SITES": {
+        "$arr": [
+         {
+          "$obj": "ConstructionSite",
+          "id": "cs2",
+          "same": true
+         }
+        ]
+       },
+       "FIND_HOSTILE_CREEPS": {
+        "$arr": [
+         {
+          "$obj": "Creep",
+          "id": "cr2",
+          "same": true
+         }
+        ]
+       },
+       "FIND_HOSTILE_POWER_CREEPS": {
+        "$arr": []
+       },
+       "FIND_HOSTILE_SPAWNS": {
+        "$arr": []
+       },
+       "FIND_HOSTILE_STRUCTURES": {
+        "$arr": [
+         {
+          "$obj": "StructureRampart",
+          "id": "ra1",
+          "same": true
+         }
+        ]
+       },
+       "FIND_MINERALS": {
+        "$arr": [
+         {
+          "$obj": "Mineral",
+          "id": "m1",
+          "same": true
+         }
+        ]
+       },
+       "FIND_MY_CONSTRUCTION_SITES": {
+        "$arr": [
+         {
+          "$obj": "ConstructionSite",
+          "id": "cs1",
+          "same": true
+         }
+        ]
+       },
+       "FIND_MY_CREEPS": {
+        "$arr": [
+         {
+          "$obj": "Creep",
+          "id": "cr1",
+          "same": true
+         }
+        ]
+       },
+       "FIND_MY_POWER_CREEPS": {
+        "$arr": []
+       },
+       "FIND_MY_SPAWNS": {
+        "$arr": [
+         {
+          "$obj": "StructureSpawn",
+          "id": "sp1",
+          "same": true
+         }
+        ]
+       },
+       "FIND_MY_STRUCTURES": {
+        "$arr": [
+         {
+          "$obj": "StructureController",
+          "id": "c1",
+          "same": true
+         },
+         {
+          "$obj": "StructureSpawn",
+          "id": "sp1",
+          "same": true
+         },
+         {
+          "$obj": "StructureExtension",
+          "id": "ex1",
+          "same": true
+         },
+         {
+          "$obj": "StructureExtension",
+          "id": "ex2",
+          "same": true
+         }
+        ]
+       },
+       "FIND_NUKES": {
+        "$arr": []
+       },
+       "FIND_POWER_CREEPS": {
+        "$arr": []
+       },
+       "FIND_RUINS": {
+        "$arr": []
+       },
+       "FIND_SOURCES": {
+        "$arr": [
+         {
+          "$obj": "Source",
+          "id": "s1",
+          "same": true
+         },
+         {
+          "$obj": "Source",
+          "id": "s2",
+          "same": true
+         }
+        ]
+       },
+       "FIND_SOURCES_ACTIVE": {
+        "$arr": [
+         {
+          "$obj": "Source",
+          "id": "s1",
+          "same": true
+         }
+        ]
+       },
+       "FIND_STRUCTURES": {
+        "$arr": [
+         {
+          "$obj": "StructureRoad",
+          "id": "r1",
+          "same": true
+         },
+         {
+          "$obj": "StructureRoad",
+          "id": "r2",
+          "same": true
+         },
+         {
+          "$obj": "StructureWall",
+          "id": "w1",
+          "same": true
+         },
+         {
+          "$obj": "StructureRampart",
+          "id": "ra1",
+          "same": true
+         },
+         {
+          "$obj": "StructureController",
+          "id": "c1",
+          "same": true
+         },
+         {
+          "$obj": "StructureSpawn",
+          "id": "sp1",
+          "same": true
+         },
+         {
+          "$obj": "StructureExtension",
+          "id": "ex1",
+          "same": true
+         },
+         {
+          "$obj": "StructureExtension",
+          "id": "ex2",
+          "same": true
+         }
+        ]
+       },
+       "FIND_TOMBSTONES": {
+        "$arr": []
+       }
+      }
+     ],
+     [
+      "other room",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "$obj": "StructureController",
+           "id": "c2",
+           "same": true
+          },
+          {
+           "$obj": "StructureSpawn",
+           "id": "sp2",
+           "same": true
+          },
+          {
+           "$obj": "StructureKeeperLair",
+           "id": "k1",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "StructureController",
+           "id": "c2",
+           "same": true
+          },
+          {
+           "$obj": "StructureSpawn",
+           "id": "sp2",
+           "same": true
+          },
+          {
+           "$obj": "StructureKeeperLair",
+           "id": "k1",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "Creep",
+           "id": "cr4",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "Source",
+           "id": "s3",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": []
+        }
+       ]
+      }
+     ],
+     [
+      "unknown",
+      {
+       "$arr": [
+        {
+         "$arr": []
+        },
+        {
+         "$arr": []
+        },
+        {
+         "$arr": []
+        },
+        {
+         "$arr": []
+        }
+       ]
+      }
+     ],
+     [
+      "filter fn",
+      {
+       "$arr": [
+        {
+         "$obj": "StructureRoad",
+         "id": "r1",
+         "same": true
+        },
+        {
+         "$obj": "StructureRoad",
+         "id": "r2",
+         "same": true
+        }
+       ]
+      }
+     ],
+     [
+      "filter obj",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "$obj": "Creep",
+           "id": "cr1",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "StructureExtension",
+           "id": "ex1",
+           "same": true
+          },
+          {
+           "$obj": "StructureExtension",
+           "id": "ex2",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "Creep",
+           "id": "cr2",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "Creep",
+           "id": "cr1",
+           "same": true
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "filter string",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "$obj": "Source",
+           "id": "s1",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "Creep",
+           "id": "cr1",
+           "same": true
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "clone",
+      {
+       "$arr": [
+        false,
+        3,
+        2,
+        2,
+        true
+       ]
+      }
+     ],
+     [
+      "exit sides",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "$pos": [
+            22,
+            0,
+            "W1N1"
+           ],
+           "packed": 2122192384
+          },
+          {
+           "$pos": [
+            23,
+            0,
+            "W1N1"
+           ],
+           "packed": 2122192640
+          },
+          {
+           "$pos": [
+            31,
+            0,
+            "W1N1"
+           ],
+           "packed": 2122194688
+          },
+          {
+           "$pos": [
+            32,
+            0,
+            "W1N1"
+           ],
+           "packed": 2122194944
+          },
+          {
+           "$pos": [
+            33,
+            0,
+            "W1N1"
+           ],
+           "packed": 2122195200
+          },
+          {
+           "$pos": [
+            34,
+            0,
+            "W1N1"
+           ],
+           "packed": 2122195456
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$pos": [
+            49,
+            19,
+            "W1N1"
+           ],
+           "packed": 2122199315
+          },
+          {
+           "$pos": [
+            49,
+            20,
+            "W1N1"
+           ],
+           "packed": 2122199316
+          },
+          {
+           "$pos": [
+            49,
+            21,
+            "W1N1"
+           ],
+           "packed": 2122199317
+          },
+          {
+           "$pos": [
+            49,
+            22,
+            "W1N1"
+           ],
+           "packed": 2122199318
+          },
+          {
+           "$pos": [
+            49,
+            34,
+            "W1N1"
+           ],
+           "packed": 2122199330
+          },
+          {
+           "$pos": [
+            49,
+            35,
+            "W1N1"
+           ],
+           "packed": 2122199331
+          },
+          {
+           "$pos": [
+            49,
+            36,
+            "W1N1"
+           ],
+           "packed": 2122199332
+          },
+          {
+           "$pos": [
+            49,
+            37,
+            "W1N1"
+           ],
+           "packed": 2122199333
+          },
+          {
+           "$pos": [
+            49,
+            38,
+            "W1N1"
+           ],
+           "packed": 2122199334
+          },
+          {
+           "$pos": [
+            49,
+            39,
+            "W1N1"
+           ],
+           "packed": 2122199335
+          },
+          {
+           "$pos": [
+            49,
+            40,
+            "W1N1"
+           ],
+           "packed": 2122199336
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$pos": [
+            6,
+            49,
+            "W1N1"
+           ],
+           "packed": 2122188337
+          },
+          {
+           "$pos": [
+            7,
+            49,
+            "W1N1"
+           ],
+           "packed": 2122188593
+          },
+          {
+           "$pos": [
+            8,
+            49,
+            "W1N1"
+           ],
+           "packed": 2122188849
+          },
+          {
+           "$pos": [
+            9,
+            49,
+            "W1N1"
+           ],
+           "packed": 2122189105
+          },
+          {
+           "$pos": [
+            26,
+            49,
+            "W1N1"
+           ],
+           "packed": 2122193457
+          },
+          {
+           "$pos": [
+            27,
+            49,
+            "W1N1"
+           ],
+           "packed": 2122193713
+          },
+          {
+           "$pos": [
+            28,
+            49,
+            "W1N1"
+           ],
+           "packed": 2122193969
+          },
+          {
+           "$pos": [
+            29,
+            49,
+            "W1N1"
+           ],
+           "packed": 2122194225
+          },
+          {
+           "$pos": [
+            30,
+            49,
+            "W1N1"
+           ],
+           "packed": 2122194481
+          },
+          {
+           "$pos": [
+            31,
+            49,
+            "W1N1"
+           ],
+           "packed": 2122194737
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$pos": [
+            0,
+            2,
+            "W1N1"
+           ],
+           "packed": 2122186754
+          },
+          {
+           "$pos": [
+            0,
+            3,
+            "W1N1"
+           ],
+           "packed": 2122186755
+          },
+          {
+           "$pos": [
+            0,
+            4,
+            "W1N1"
+           ],
+           "packed": 2122186756
+          },
+          {
+           "$pos": [
+            0,
+            5,
+            "W1N1"
+           ],
+           "packed": 2122186757
+          },
+          {
+           "$pos": [
+            0,
+            6,
+            "W1N1"
+           ],
+           "packed": 2122186758
+          },
+          {
+           "$pos": [
+            0,
+            7,
+            "W1N1"
+           ],
+           "packed": 2122186759
+          },
+          {
+           "$pos": [
+            0,
+            8,
+            "W1N1"
+           ],
+           "packed": 2122186760
+          },
+          {
+           "$pos": [
+            0,
+            9,
+            "W1N1"
+           ],
+           "packed": 2122186761
+          },
+          {
+           "$pos": [
+            0,
+            25,
+            "W1N1"
+           ],
+           "packed": 2122186777
+          },
+          {
+           "$pos": [
+            0,
+            26,
+            "W1N1"
+           ],
+           "packed": 2122186778
+          },
+          {
+           "$pos": [
+            0,
+            27,
+            "W1N1"
+           ],
+           "packed": 2122186779
+          },
+          {
+           "$pos": [
+            0,
+            28,
+            "W1N1"
+           ],
+           "packed": 2122186780
+          },
+          {
+           "$pos": [
+            0,
+            29,
+            "W1N1"
+           ],
+           "packed": 2122186781
+          },
+          {
+           "$pos": [
+            0,
+            30,
+            "W1N1"
+           ],
+           "packed": 2122186782
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "exit pollution",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "$pos": [
+            22,
+            49,
+            "W1N2"
+           ],
+           "packed": 2122126897
+          },
+          {
+           "$pos": [
+            32,
+            49,
+            "W1N2"
+           ],
+           "packed": 2122129457
+          },
+          {
+           "$pos": [
+            34,
+            49,
+            "W1N2"
+           ],
+           "packed": 2122129969
+          },
+          {
+           "$pos": [
+            0,
+            26,
+            "W1N2"
+           ],
+           "packed": 2122121242
+          },
+          {
+           "$pos": [
+            0,
+            27,
+            "W1N2"
+           ],
+           "packed": 2122121243
+          },
+          {
+           "$pos": [
+            0,
+            28,
+            "W1N2"
+           ],
+           "packed": 2122121244
+          },
+          {
+           "$pos": [
+            0,
+            29,
+            "W1N2"
+           ],
+           "packed": 2122121245
+          },
+          {
+           "$pos": [
+            0,
+            30,
+            "W1N2"
+           ],
+           "packed": 2122121246
+          },
+          {
+           "$pos": [
+            0,
+            31,
+            "W1N2"
+           ],
+           "packed": 2122121247
+          },
+          {
+           "$pos": [
+            0,
+            32,
+            "W1N2"
+           ],
+           "packed": 2122121248
+          },
+          {
+           "$pos": [
+            0,
+            33,
+            "W1N2"
+           ],
+           "packed": 2122121249
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$pos": [
+            22,
+            49,
+            "W1N2"
+           ],
+           "packed": 2122126897
+          },
+          {
+           "$pos": [
+            32,
+            49,
+            "W1N2"
+           ],
+           "packed": 2122129457
+          },
+          {
+           "$pos": [
+            34,
+            49,
+            "W1N2"
+           ],
+           "packed": 2122129969
+          },
+          {
+           "$pos": [
+            0,
+            26,
+            "W1N2"
+           ],
+           "packed": 2122121242
+          },
+          {
+           "$pos": [
+            0,
+            27,
+            "W1N2"
+           ],
+           "packed": 2122121243
+          },
+          {
+           "$pos": [
+            0,
+            28,
+            "W1N2"
+           ],
+           "packed": 2122121244
+          },
+          {
+           "$pos": [
+            0,
+            29,
+            "W1N2"
+           ],
+           "packed": 2122121245
+          },
+          {
+           "$pos": [
+            0,
+            30,
+            "W1N2"
+           ],
+           "packed": 2122121246
+          },
+          {
+           "$pos": [
+            0,
+            31,
+            "W1N2"
+           ],
+           "packed": 2122121247
+          },
+          {
+           "$pos": [
+            0,
+            32,
+            "W1N2"
+           ],
+           "packed": 2122121248
+          },
+          {
+           "$pos": [
+            0,
+            33,
+            "W1N2"
+           ],
+           "packed": 2122121249
+          }
+         ]
+        },
+        {
+         "$arr": []
+        },
+        {
+         "$arr": []
+        }
+       ]
+      }
+     ],
+     [
+      "filter mutates cache",
+      {
+       "$arr": [
+        {
+         "$obj": "Mineral",
+         "id": "m1",
+         "same": true
+        },
+        "junk"
+       ]
+      }
+     ],
+     [
+      "instances",
+      true
+     ],
+     [
+      "no room",
+      {
+       "$arr": [
+        "W1N2",
+        "W1N1"
+       ]
+      }
+     ]
+    ],
+    "intents": {},
+    "intentsCpu": 0,
+    "console": {
+     "$arr": []
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  }
+ ]
+}

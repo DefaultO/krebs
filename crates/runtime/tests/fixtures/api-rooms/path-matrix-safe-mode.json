@@ -1,0 +1,691 @@
+{
+ "name": "path-matrix-safe-mode",
+ "tags": [
+  "game/rooms.js:157",
+  "game/rooms.js:198"
+ ],
+ "world": {
+  "user": "u1",
+  "users": {
+   "2": {
+    "username": "Invader"
+   },
+   "3": {
+    "username": "Source Keeper"
+   },
+   "u1": {
+    "username": "Alice"
+   },
+   "u2": {
+    "username": "Bob"
+   }
+  },
+  "time": 1000,
+  "objects": [
+   {
+    "_id": "c1",
+    "type": "controller",
+    "room": "W1N1",
+    "x": 25,
+    "y": 22,
+    "user": "u1",
+    "level": 3,
+    "progress": 100,
+    "progressTotal": 45000,
+    "downgradeTime": 20000,
+    "safeModeAvailable": 1,
+    "safeMode": 1500
+   },
+   {
+    "_id": "s1",
+    "type": "source",
+    "room": "W1N1",
+    "x": 22,
+    "y": 24,
+    "energy": 3000,
+    "energyCapacity": 3000,
+    "nextRegenerationTime": 1250
+   },
+   {
+    "_id": "s2",
+    "type": "source",
+    "room": "W1N1",
+    "x": 28,
+    "y": 28,
+    "energy": 0,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "m1",
+    "type": "mineral",
+    "room": "W1N1",
+    "x": 30,
+    "y": 20,
+    "mineralType": "H",
+    "mineralAmount": 50000,
+    "density": 3
+   },
+   {
+    "_id": "sp1",
+    "type": "spawn",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Spawn1",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex1",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 23,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex2",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 22,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "off": true,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "r1",
+    "type": "road",
+    "room": "W1N1",
+    "x": 25,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "r2",
+    "type": "road",
+    "room": "W1N1",
+    "x": 26,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "w1",
+    "type": "constructedWall",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 1000,
+    "hitsMax": 300000000
+   },
+   {
+    "_id": "cr1",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Harv1",
+    "hits": 300,
+    "hitsMax": 300,
+    "body": [
+     {
+      "type": "work",
+      "hits": 100
+     },
+     {
+      "type": "carry",
+      "hits": 100
+     },
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {
+     "energy": 10
+    },
+    "storeCapacity": 50,
+    "fatigue": 0,
+    "ageTime": 2400,
+    "spawning": false,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "cr2",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "name": "Bob1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 2000,
+    "spawning": false
+   },
+   {
+    "_id": "cr3",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Baby",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "spawning": true
+   },
+   {
+    "_id": "e1",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "energy",
+    "energy": 100
+   },
+   {
+    "_id": "e2",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "H",
+    "H": 20
+   },
+   {
+    "_id": "cs1",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 29,
+    "y": 29,
+    "user": "u1",
+    "structureType": "extension",
+    "progress": 0,
+    "progressTotal": 3000
+   },
+   {
+    "_id": "cs2",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 29,
+    "user": "u2",
+    "structureType": "road",
+    "progress": 10,
+    "progressTotal": 300
+   },
+   {
+    "_id": "ra1",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs3",
+    "type": "constructionSite",
+    "room": "W2N2",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "structureType": "spawn",
+    "name": "Spawn2",
+    "progress": 5,
+    "progressTotal": 15000
+   },
+   {
+    "_id": "c2",
+    "type": "controller",
+    "room": "W1N2",
+    "x": 25,
+    "y": 21,
+    "user": "u2",
+    "level": 2,
+    "progress": 0,
+    "progressTotal": 45000,
+    "downgradeTime": 20000
+   },
+   {
+    "_id": "sp2",
+    "type": "spawn",
+    "room": "W1N2",
+    "x": 25,
+    "y": 25,
+    "user": "u2",
+    "name": "BobSpawn",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null
+   },
+   {
+    "_id": "s3",
+    "type": "source",
+    "room": "W1N2",
+    "x": 21,
+    "y": 21,
+    "energy": 1500,
+    "energyCapacity": 1500
+   },
+   {
+    "_id": "cr4",
+    "type": "creep",
+    "room": "W1N2",
+    "x": 20,
+    "y": 30,
+    "user": "u1",
+    "name": "Scout",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 1500,
+    "spawning": false
+   },
+   {
+    "_id": "k1",
+    "type": "keeperLair",
+    "room": "W1N2",
+    "x": 30,
+    "y": 30,
+    "user": "3",
+    "nextSpawnTime": 1100
+   },
+   {
+    "_id": "s4",
+    "type": "source",
+    "room": "W2N1",
+    "x": 25,
+    "y": 25,
+    "energy": 3000,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "t1",
+    "type": "tombstone",
+    "room": "W1N1",
+    "x": 23,
+    "y": 23,
+    "user": "u2",
+    "deathTime": 990,
+    "decayTime": 1100,
+    "creepId": "old",
+    "creepName": "Old",
+    "creepBody": [
+     "move"
+    ],
+    "store": {
+     "energy": 5
+    }
+   },
+   {
+    "_id": "ru1",
+    "type": "ruin",
+    "room": "W1N1",
+    "x": 23,
+    "y": 23,
+    "destroyTime": 990,
+    "decayTime": 1200,
+    "structure": {
+     "id": "x",
+     "type": "road",
+     "hits": 0,
+     "hitsMax": 5000
+    },
+    "store": {}
+   },
+   {
+    "_id": "n1",
+    "type": "nuke",
+    "room": "W1N1",
+    "x": 24,
+    "y": 23,
+    "landTime": 1500,
+    "launchRoomName": "E2S2"
+   },
+   {
+    "_id": "d1",
+    "type": "deposit",
+    "room": "W1N1",
+    "x": 29,
+    "y": 23,
+    "depositType": "mist",
+    "harvested": 10,
+    "cooldownTime": 1005,
+    "decayTime": 5000
+   },
+   {
+    "_id": "pc1",
+    "type": "powerCreep",
+    "room": "W1N1",
+    "x": 26,
+    "y": 23,
+    "user": "u2",
+    "name": "PC",
+    "className": "operator",
+    "level": 1,
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {},
+    "storeCapacity": 100,
+    "ageTime": 5000
+   },
+   {
+    "_id": "po1",
+    "type": "portal",
+    "room": "W1N1",
+    "x": 30,
+    "y": 30,
+    "destination": {
+     "room": "E2S2",
+     "x": 25,
+     "y": 25
+    }
+   },
+   {
+    "_id": "ra2",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 21,
+    "y": 23,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": true
+   },
+   {
+    "_id": "ra3",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 21,
+    "y": 24,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs6",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 25,
+    "user": "u1",
+    "structureType": "road",
+    "progress": 0,
+    "progressTotal": 300
+   },
+   {
+    "_id": "cs7",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 26,
+    "user": "u2",
+    "structureType": "tower",
+    "progress": 0,
+    "progressTotal": 5000
+   },
+   {
+    "_id": "r3",
+    "type": "road",
+    "room": "W1N1",
+    "x": 21,
+    "y": 26,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "r4",
+    "type": "road",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "r5",
+    "type": "road",
+    "room": "W1N1",
+    "x": 0,
+    "y": 0,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "cr5",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 28,
+    "y": 26,
+    "user": "2",
+    "name": "Invader_1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "attack",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "spawning": false
+   },
+   {
+    "_id": "ct1",
+    "type": "container",
+    "room": "W1N1",
+    "x": 20,
+    "y": 24,
+    "hits": 250000,
+    "hitsMax": 250000,
+    "store": {},
+    "storeCapacity": 2000
+   }
+  ],
+  "flags": [
+   {
+    "room": "W1N1",
+    "data": "Flag1~1~1~25~25|My$VLINE$Flag~2~3~20~20|Edge~5~5~0~10"
+   },
+   {
+    "room": "W2N2",
+    "data": "Far~3~3~10~10"
+   }
+  ],
+  "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}",
+  "eventLog": {
+   "W1N1": "[{\"event\":1,\"objectId\":\"cr2\",\"data\":{\"targetId\":\"cr1\",\"damage\":10}}]"
+  }
+ },
+ "ticks": [
+  {
+   "probes": [
+    [
+     "safe",
+     "() => [Game.rooms.W1N1.controller.safeMode, Game.rooms.W1N1.controller.my]"
+    ],
+    [
+     "matrix",
+     "() => {\n    const sets = [{}, {ignoreCreeps: true}, {ignoreDestructibleStructures: true}, {ignoreRoads: true},\n        {ignoreCreeps: true, ignoreDestructibleStructures: true, ignoreRoads: true}];\n    return sets.map(o => {\n        let bits;\n        const r = Game.rooms.W1N1.findPath(new RoomPosition(25, 25, 'W1N1'), new RoomPosition(25, 20, 'W1N1'),\n            Object.assign({costCallback: (rn, m) => { if (rn == 'W1N1') bits = Array.from(m._bits); }}, o));\n        return [bits.map((v, i) => v ? i + ':' + v : '').filter(Boolean).join(' '), r.length];\n    });\n}"
+    ],
+    [
+     "cached",
+     "() => {\n            const ms = [];\n            const cb = (rn, m) => { ms.push(m); };\n            Game.rooms.W1N1.findPath(new RoomPosition(25, 25, 'W1N1'), new RoomPosition(25, 20, 'W1N1'), {costCallback: cb});\n            Game.rooms.W1N1.findPath(new RoomPosition(25, 25, 'W1N1'), new RoomPosition(25, 20, 'W1N1'), {costCallback: cb});\n            ms[0].set(25, 24, 255);\n            return [ms.length, ms[0] === ms[1], Game.rooms.W1N1.findPath(new RoomPosition(25, 25, 'W1N1'), new RoomPosition(25, 20, 'W1N1'))];\n        }"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "safe",
+      {
+       "$arr": [
+        500,
+        true
+       ]
+      }
+     ],
+     [
+      "matrix",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          "0:1 1071:255 1076:1 1124:255 1127:255 1177:255 1226:255 1272:255 1275:255 1277:1 1327:1 1374:255 1428:255 1473:255 1479:255 1520:255 1530:255",
+          5
+         ]
+        },
+        {
+         "$arr": [
+          "0:1 1071:255 1076:1 1124:255 1127:255 1177:255 1226:255 1272:255 1277:1 1327:1 1374:255 1428:255 1473:255 1479:255 1520:255 1530:255",
+          5
+         ]
+        },
+        {
+         "$arr": [
+          "0:1 1071:1 1076:1 1124:255 1226:255 1272:255 1275:255 1277:1 1327:1 1428:255 1473:255 1520:255 1530:255",
+          5
+         ]
+        },
+        {
+         "$arr": [
+          "1071:255 1124:255 1127:255 1177:255 1226:255 1272:255 1275:255 1374:255 1428:255 1473:255 1479:255 1520:255 1530:255",
+          5
+         ]
+        },
+        {
+         "$arr": [
+          "1124:255 1272:255 1428:255 1473:255 1520:255 1530:255",
+          5
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "cached",
+      {
+       "$arr": [
+        2,
+        false,
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 24,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 26,
+           "y": 23,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 26,
+           "y": 22,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 26,
+           "y": 21,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 25,
+           "y": 20,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    ],
+    "intents": {},
+    "intentsCpu": 0,
+    "console": {
+     "$arr": []
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  }
+ ]
+}

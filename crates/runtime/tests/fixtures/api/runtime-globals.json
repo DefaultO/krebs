@@ -1,0 +1,370 @@
+{
+ "name": "runtime-globals",
+ "tags": [
+  "runtime/runtime.js:1",
+  "runtime/runtime.js:55",
+  "runtime/user-vm.js:42",
+  "game/game.js:470"
+ ],
+ "substituted": [],
+ "ticks": [
+  {
+   "newVm": true,
+   "input": {
+    "meta": "{\"time\":100,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k00000000000004\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":11,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k00000000000006\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":30,\"y\":30,\"name\":\"Intruder\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50}]}"
+    ],
+    "eventLogs": [
+     null
+    ],
+    "memory": "",
+    "modules": {
+     "main": "\nmodule.exports.loop = function () {\n    // V8 builtins are non-enumerable (and differ between node versions): list what the runtime added. Assigning\n    // Date (the oracle's clock hook) or console through a node>=24 vm global makes them enumerable: skip them.\n    // Sorted: a node vm global's key order depends on the process's earlier contexts (oracle artifact).\n    var names = Object.keys(globalThis).filter(function (n) { return n !== 'Date' && n !== 'console'; }).sort();\n    console.log('globals', names.length, names.slice(0, 40).join(), names.filter(function (n) { return n[0] == '_'; }).join());\n    ['global', 'Game', 'RawMemory', 'console', '_', 'require', 'module', '__module', 'Creep', 'Room', 'RoomPosition', 'Store', 'Resource', 'OK', 'BODYPART_COST', 'PathFinder'].forEach(function (n) {\n        var d = Object.getOwnPropertyDescriptor(globalThis, n);\n        console.log(n, d ? [typeof d.value, d.writable, d.enumerable, d.configurable, typeof d.get].join() : 'absent');\n    });\n    console.log('absent', typeof setTimeout, typeof Buffer, typeof process, typeof _init, typeof __chitinDefine, typeof _natives, typeof structuredClone);\n    console.log('lodash', _.VERSION, typeof _.runInContext, require('lodash') === _);\n    global.persist = (global.persist || 0) + 1;\n    console.log('constants', BODYPART_COST.work, global.oldCost === BODYPART_COST, global.oldCost && global.oldCost.work);\n    BODYPART_COST.work = 1;\n    global.oldCost = BODYPART_COST;\n    console.log('persist', global.persist, global.prev === Game, global.prev && global.prev.time);\n    var old = global.prevCreep;\n    if (old) {\n        console.log('stale', old === Game.creeps.Harvester1, Object.keys(old), old.pos.x, old instanceof Creep);\n        try { console.log('getter', old.hits, old.fatigue); } catch (e) { console.log('getter', e.message); }\n        console.log('stale move', old.move(TOP));\n    }\n    global.prev = Game;\n    global.prevCreep = global.prevCreep || Game.creeps.Harvester1;\n};"
+    }
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "globals 473 ACCESS_KEY,ATTACK,ATTACK_POWER,BODYPARTS_ALL,BODYPART_COST,BOOSTS,BOTTOM,BOTTOM_LEFT,BOTTOM_RIGHT,BUILD_POWER,CARRY,CARRY_CAPACITY,CLAIM,COLORS_ALL,COLOR_BLUE,COLOR_BROWN,COLOR_CYAN,COLOR_GREEN,COLOR_GREY,COLOR_ORANGE,COLOR_PURPLE,COLOR_RED,COLOR_WHITE,COLOR_YELLOW,COMMODITIES,CONSTRUCTION_COST,CONSTRUCTION_COST_ROAD_SWAMP_RATIO,CONSTRUCTION_COST_ROAD_WALL_RATIO,CONTAINER_CAPACITY,CONTAINER_DECAY,CONTAINER_DECAY_TIME,CONTAINER_DECAY_TIME_OWNED,CONTAINER_HITS,CONTROLLER_ATTACK_BLOCKED_UPGRADE,CONTROLLER_CLAIM_DOWNGRADE,CONTROLLER_DOWNGRADE,CONTROLLER_DOWNGRADE_RESTORE,CONTROLLER_DOWNGRADE_SAFEMODE_THRESHOLD,CONTROLLER_LEVELS,CONTROLLER_MAX_UPGRADE_PER_TICK _,__module",
+       "escape": true
+      },
+      {
+       "message": "global object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "Game object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "RawMemory object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "console object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "_ function,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "require function,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "module object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "__module object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "Creep function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "Room function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "RoomPosition function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "Store function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "Resource function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "OK number,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "BODYPART_COST object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "PathFinder object,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "absent undefined undefined undefined undefined undefined undefined undefined",
+       "escape": true
+      },
+      {
+       "message": "lodash 3.10.1 function true",
+       "escape": true
+      },
+      {
+       "message": "constants 100 false undefined",
+       "escape": true
+      },
+      {
+       "message": "persist 1 false undefined",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  },
+  {
+   "input": {
+    "meta": "{\"time\":101,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k00000000000004\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":12,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":120,\"hitsMax\":300,\"fatigue\":4,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k00000000000006\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":30,\"y\":30,\"name\":\"Intruder\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50}]}"
+    ],
+    "eventLogs": [
+     null
+    ]
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "globals 477 ACCESS_KEY,ATTACK,ATTACK_POWER,BODYPARTS_ALL,BODYPART_COST,BOOSTS,BOTTOM,BOTTOM_LEFT,BOTTOM_RIGHT,BUILD_POWER,CARRY,CARRY_CAPACITY,CLAIM,COLORS_ALL,COLOR_BLUE,COLOR_BROWN,COLOR_CYAN,COLOR_GREEN,COLOR_GREY,COLOR_ORANGE,COLOR_PURPLE,COLOR_RED,COLOR_WHITE,COLOR_YELLOW,COMMODITIES,CONSTRUCTION_COST,CONSTRUCTION_COST_ROAD_SWAMP_RATIO,CONSTRUCTION_COST_ROAD_WALL_RATIO,CONTAINER_CAPACITY,CONTAINER_DECAY,CONTAINER_DECAY_TIME,CONTAINER_DECAY_TIME_OWNED,CONTAINER_HITS,CONTROLLER_ATTACK_BLOCKED_UPGRADE,CONTROLLER_CLAIM_DOWNGRADE,CONTROLLER_DOWNGRADE,CONTROLLER_DOWNGRADE_RESTORE,CONTROLLER_DOWNGRADE_SAFEMODE_THRESHOLD,CONTROLLER_LEVELS,CONTROLLER_MAX_UPGRADE_PER_TICK _,__module",
+       "escape": true
+      },
+      {
+       "message": "global object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "Game object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "RawMemory object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "console object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "_ function,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "require function,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "module object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "__module object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "Creep function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "Room function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "RoomPosition function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "Store function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "Resource function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "OK number,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "BODYPART_COST object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "PathFinder object,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "absent undefined undefined undefined undefined undefined undefined undefined",
+       "escape": true
+      },
+      {
+       "message": "lodash 3.10.1 function true",
+       "escape": true
+      },
+      {
+       "message": "constants 100 false 1",
+       "escape": true
+      },
+      {
+       "message": "persist 2 false 100",
+       "escape": true
+      },
+      {
+       "message": "stale false room,pos,id,_name,_spawning,_my 11 true",
+       "escape": true
+      },
+      {
+       "message": "getter 120 4",
+       "escape": true
+      },
+      {
+       "message": "stale move -11",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  },
+  {
+   "input": {
+    "meta": "{\"time\":102,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k00000000000006\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":30,\"y\":30,\"name\":\"Intruder\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50}]}"
+    ],
+    "eventLogs": [
+     null
+    ]
+   },
+   "expected": {
+    "status": "error",
+    "error": "Error: Could not find an object with ID k00000000000004\n    at module.exports.loop (main:23:39)\n    at __mainLoop:1:52\n    at __mainLoop:2:3\n",
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "globals 477 ACCESS_KEY,ATTACK,ATTACK_POWER,BODYPARTS_ALL,BODYPART_COST,BOOSTS,BOTTOM,BOTTOM_LEFT,BOTTOM_RIGHT,BUILD_POWER,CARRY,CARRY_CAPACITY,CLAIM,COLORS_ALL,COLOR_BLUE,COLOR_BROWN,COLOR_CYAN,COLOR_GREEN,COLOR_GREY,COLOR_ORANGE,COLOR_PURPLE,COLOR_RED,COLOR_WHITE,COLOR_YELLOW,COMMODITIES,CONSTRUCTION_COST,CONSTRUCTION_COST_ROAD_SWAMP_RATIO,CONSTRUCTION_COST_ROAD_WALL_RATIO,CONTAINER_CAPACITY,CONTAINER_DECAY,CONTAINER_DECAY_TIME,CONTAINER_DECAY_TIME_OWNED,CONTAINER_HITS,CONTROLLER_ATTACK_BLOCKED_UPGRADE,CONTROLLER_CLAIM_DOWNGRADE,CONTROLLER_DOWNGRADE,CONTROLLER_DOWNGRADE_RESTORE,CONTROLLER_DOWNGRADE_SAFEMODE_THRESHOLD,CONTROLLER_LEVELS,CONTROLLER_MAX_UPGRADE_PER_TICK _,__module",
+       "escape": true
+      },
+      {
+       "message": "global object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "Game object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "RawMemory object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "console object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "_ function,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "require function,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "module object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "__module object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "Creep function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "Room function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "RoomPosition function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "Store function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "Resource function,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "OK number,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "BODYPART_COST object,true,true,true,undefined",
+       "escape": true
+      },
+      {
+       "message": "PathFinder object,false,true,false,undefined",
+       "escape": true
+      },
+      {
+       "message": "absent undefined undefined undefined undefined undefined undefined undefined",
+       "escape": true
+      },
+      {
+       "message": "lodash 3.10.1 function true",
+       "escape": true
+      },
+      {
+       "message": "constants 100 false 1",
+       "escape": true
+      },
+      {
+       "message": "persist 3 false 101",
+       "escape": true
+      },
+      {
+       "message": "stale false room,pos,id,_name,_spawning,_my,_hits,_fatigue 11 true",
+       "escape": true
+      },
+      {
+       "message": "getter 120 4",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  }
+ ]
+}

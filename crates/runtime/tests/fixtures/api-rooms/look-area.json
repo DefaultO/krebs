@@ -1,0 +1,2058 @@
+{
+ "name": "look-area",
+ "tags": [
+  "game/rooms.js:707",
+  "game/rooms.js:808",
+  "game/rooms.js:847"
+ ],
+ "world": {
+  "user": "u1",
+  "users": {
+   "2": {
+    "username": "Invader"
+   },
+   "3": {
+    "username": "Source Keeper"
+   },
+   "u1": {
+    "username": "Alice"
+   },
+   "u2": {
+    "username": "Bob"
+   }
+  },
+  "time": 1000,
+  "objects": [
+   {
+    "_id": "c1",
+    "type": "controller",
+    "room": "W1N1",
+    "x": 25,
+    "y": 22,
+    "user": "u1",
+    "level": 3,
+    "progress": 100,
+    "progressTotal": 45000,
+    "downgradeTime": 20000,
+    "safeModeAvailable": 1
+   },
+   {
+    "_id": "s1",
+    "type": "source",
+    "room": "W1N1",
+    "x": 22,
+    "y": 24,
+    "energy": 3000,
+    "energyCapacity": 3000,
+    "nextRegenerationTime": 1250
+   },
+   {
+    "_id": "s2",
+    "type": "source",
+    "room": "W1N1",
+    "x": 28,
+    "y": 28,
+    "energy": 0,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "m1",
+    "type": "mineral",
+    "room": "W1N1",
+    "x": 30,
+    "y": 20,
+    "mineralType": "H",
+    "mineralAmount": 50000,
+    "density": 3
+   },
+   {
+    "_id": "sp1",
+    "type": "spawn",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Spawn1",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex1",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 23,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex2",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 22,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "off": true,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "r1",
+    "type": "road",
+    "room": "W1N1",
+    "x": 25,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "r2",
+    "type": "road",
+    "room": "W1N1",
+    "x": 26,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "w1",
+    "type": "constructedWall",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 1000,
+    "hitsMax": 300000000
+   },
+   {
+    "_id": "cr1",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Harv1",
+    "hits": 300,
+    "hitsMax": 300,
+    "body": [
+     {
+      "type": "work",
+      "hits": 100
+     },
+     {
+      "type": "carry",
+      "hits": 100
+     },
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {
+     "energy": 10
+    },
+    "storeCapacity": 50,
+    "fatigue": 0,
+    "ageTime": 2400,
+    "spawning": false,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "cr2",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "name": "Bob1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 2000,
+    "spawning": false
+   },
+   {
+    "_id": "cr3",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Baby",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "spawning": true
+   },
+   {
+    "_id": "e1",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "energy",
+    "energy": 100
+   },
+   {
+    "_id": "e2",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "H",
+    "H": 20
+   },
+   {
+    "_id": "cs1",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 29,
+    "y": 29,
+    "user": "u1",
+    "structureType": "extension",
+    "progress": 0,
+    "progressTotal": 3000
+   },
+   {
+    "_id": "cs2",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 29,
+    "user": "u2",
+    "structureType": "road",
+    "progress": 10,
+    "progressTotal": 300
+   },
+   {
+    "_id": "ra1",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs3",
+    "type": "constructionSite",
+    "room": "W2N2",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "structureType": "spawn",
+    "name": "Spawn2",
+    "progress": 5,
+    "progressTotal": 15000
+   },
+   {
+    "_id": "c2",
+    "type": "controller",
+    "room": "W1N2",
+    "x": 25,
+    "y": 21,
+    "user": "u2",
+    "level": 2,
+    "progress": 0,
+    "progressTotal": 45000,
+    "downgradeTime": 20000
+   },
+   {
+    "_id": "sp2",
+    "type": "spawn",
+    "room": "W1N2",
+    "x": 25,
+    "y": 25,
+    "user": "u2",
+    "name": "BobSpawn",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null
+   },
+   {
+    "_id": "s3",
+    "type": "source",
+    "room": "W1N2",
+    "x": 21,
+    "y": 21,
+    "energy": 1500,
+    "energyCapacity": 1500
+   },
+   {
+    "_id": "cr4",
+    "type": "creep",
+    "room": "W1N2",
+    "x": 20,
+    "y": 30,
+    "user": "u1",
+    "name": "Scout",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 1500,
+    "spawning": false
+   },
+   {
+    "_id": "k1",
+    "type": "keeperLair",
+    "room": "W1N2",
+    "x": 30,
+    "y": 30,
+    "user": "3",
+    "nextSpawnTime": 1100
+   },
+   {
+    "_id": "s4",
+    "type": "source",
+    "room": "W2N1",
+    "x": 25,
+    "y": 25,
+    "energy": 3000,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "rd20",
+    "type": "road",
+    "room": "W1N1",
+    "x": 20,
+    "y": 30,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "rd21",
+    "type": "road",
+    "room": "W1N1",
+    "x": 21,
+    "y": 30,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "rd22",
+    "type": "road",
+    "room": "W1N1",
+    "x": 22,
+    "y": 30,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "rd23",
+    "type": "road",
+    "room": "W1N1",
+    "x": 23,
+    "y": 30,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "rd24",
+    "type": "road",
+    "room": "W1N1",
+    "x": 24,
+    "y": 30,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "rd25",
+    "type": "road",
+    "room": "W1N1",
+    "x": 25,
+    "y": 30,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "rd26",
+    "type": "road",
+    "room": "W1N1",
+    "x": 26,
+    "y": 30,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "rd27",
+    "type": "road",
+    "room": "W1N1",
+    "x": 27,
+    "y": 30,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "rd28",
+    "type": "road",
+    "room": "W1N1",
+    "x": 28,
+    "y": 30,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "rd29",
+    "type": "road",
+    "room": "W1N1",
+    "x": 29,
+    "y": 30,
+    "hits": 5000,
+    "hitsMax": 5000
+   },
+   {
+    "_id": "rd30",
+    "type": "road",
+    "room": "W1N1",
+    "x": 30,
+    "y": 30,
+    "hits": 5000,
+    "hitsMax": 5000
+   }
+  ],
+  "flags": [
+   {
+    "room": "W1N1",
+    "data": "Flag1~1~1~25~25|My$VLINE$Flag~2~3~20~20|Edge~5~5~0~10"
+   },
+   {
+    "room": "W2N2",
+    "data": "Far~3~3~10~10"
+   }
+  ],
+  "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}",
+  "eventLog": {
+   "W1N1": "[{\"event\":1,\"objectId\":\"cr2\",\"data\":{\"targetId\":\"cr1\",\"damage\":10}}]"
+  }
+ },
+ "ticks": [
+  {
+   "probes": [
+    [
+     "area nested",
+     "() => Game.rooms.W1N1.lookAtArea(24, 24, 26, 27)"
+    ],
+    [
+     "area array",
+     "() => Game.rooms.W1N1.lookAtArea(24, 24, 26, 27, true)"
+    ],
+    [
+     "area big",
+     "() => Game.rooms.W1N1.lookAtArea(18, 18, 31, 31, true).filter(i => i.type != 'terrain')"
+    ],
+    [
+     "area roads small",
+     "() => [Game.rooms.W1N1.lookAtArea(29, 22, 31, 24, true), Game.rooms.W1N1.lookAtArea(29, 22, 31, 24)]"
+    ],
+    [
+     "area edge",
+     "() => {\r\n            const r = Game.rooms.W1N1, out = [];\r\n            for (const a of [[-1, -1, 1, 1], [29, 48, 31, 50], [48, 0, 50, 1]]) {\r\n                try { out.push(r.lookAtArea(...a, true).length); } catch (e) { out.push(e.message); }\r\n                try { out.push(Object.keys(r.lookAtArea(...a))); } catch (e) { out.push(e.message); }\r\n            }\r\n            const r2 = Game.rooms.W1N2;\r\n            out.push(r2.lookAtArea(-1, -1, 1, 1, true), r2.lookAtArea(48, 48, 50, 50), r2.lookForAtArea(LOOK_STRUCTURES, -5, -5, 60, 60, true));\r\n            return out;\r\n        }"
+    ],
+    [
+     "for area",
+     "() => {\r\n            const r = Game.rooms.W1N1;\r\n            return [r.lookForAtArea(LOOK_CREEPS, 24, 24, 26, 27), r.lookForAtArea(LOOK_CREEPS, 24, 24, 26, 27, true),\r\n                r.lookForAtArea(LOOK_STRUCTURES, 29, 22, 31, 24), r.lookForAtArea(LOOK_STRUCTURES, 29, 22, 31, 24, true),\r\n                r.lookForAtArea(LOOK_TERRAIN, 0, 20, 2, 23), r.lookForAtArea(LOOK_TERRAIN, 0, 20, 2, 23, true),\r\n                r.lookForAtArea(LOOK_ENERGY, 20, 20, 30, 30, true), r.lookForAtArea(LOOK_FLAGS, 0, 0, 49, 49)];\r\n        }"
+    ],
+    [
+     "for area bad type",
+     "() => { try { return Game.rooms.W1N1.lookForAtArea('nope', 1, 1, 2, 2); } catch (e) { return e.constructor.name; } }"
+    ],
+    [
+     "for area single",
+     "() => [Game.rooms.W1N1.lookForAtArea(LOOK_SOURCES, 24, 22, 24, 22, true), Game.rooms.W1N1.lookForAtArea(LOOK_SOURCES, 25, 25, 24, 24)]"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "area nested",
+      {
+       "24": {
+        "24": {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        },
+        "25": {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        },
+        "26": {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        },
+        "27": {
+         "$arr": [
+          {
+           "type": "creep",
+           "creep": {
+            "$obj": "Creep",
+            "id": "cr2",
+            "same": true
+           }
+          },
+          {
+           "type": "structure",
+           "structure": {
+            "$obj": "StructureRampart",
+            "id": "ra1",
+            "same": true
+           }
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        }
+       },
+       "25": {
+        "24": {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        },
+        "25": {
+         "$arr": [
+          {
+           "type": "creep",
+           "creep": {
+            "$obj": "Creep",
+            "id": "cr1",
+            "same": true
+           }
+          },
+          {
+           "type": "flag",
+           "flag": {
+            "$obj": "Flag",
+            "id": null,
+            "name": "Flag1",
+            "same": true
+           }
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        },
+        "26": {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        },
+        "27": {
+         "$arr": [
+          {
+           "type": "energy",
+           "energy": {
+            "$obj": "Resource",
+            "id": "e1",
+            "same": true
+           }
+          },
+          {
+           "type": "energy",
+           "energy": {
+            "$obj": "Resource",
+            "id": "e2",
+            "same": true
+           }
+          },
+          {
+           "type": "resource",
+           "resource": {
+            "$obj": "Resource",
+            "id": "e1",
+            "same": true
+           }
+          },
+          {
+           "type": "resource",
+           "resource": {
+            "$obj": "Resource",
+            "id": "e2",
+            "same": true
+           }
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        }
+       },
+       "26": {
+        "24": {
+         "$arr": [
+          {
+           "type": "creep",
+           "creep": {
+            "$obj": "Creep",
+            "id": "cr3",
+            "same": true
+           }
+          },
+          {
+           "type": "structure",
+           "structure": {
+            "$obj": "StructureSpawn",
+            "id": "sp1",
+            "same": true
+           }
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        },
+        "25": {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        },
+        "26": {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        },
+        "27": {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "plain"
+          }
+         ]
+        }
+       }
+      }
+     ],
+     [
+      "area array",
+      {
+       "$arr": [
+        {
+         "x": 27,
+         "y": 24,
+         "type": "creep",
+         "creep": {
+          "$obj": "Creep",
+          "id": "cr2",
+          "same": true
+         }
+        },
+        {
+         "x": 25,
+         "y": 25,
+         "type": "creep",
+         "creep": {
+          "$obj": "Creep",
+          "id": "cr1",
+          "same": true
+         }
+        },
+        {
+         "x": 24,
+         "y": 26,
+         "type": "creep",
+         "creep": {
+          "$obj": "Creep",
+          "id": "cr3",
+          "same": true
+         }
+        },
+        {
+         "x": 27,
+         "y": 25,
+         "type": "energy",
+         "energy": {
+          "$obj": "Resource",
+          "id": "e1",
+          "same": true
+         }
+        },
+        {
+         "x": 27,
+         "y": 25,
+         "type": "energy",
+         "energy": {
+          "$obj": "Resource",
+          "id": "e2",
+          "same": true
+         }
+        },
+        {
+         "x": 27,
+         "y": 25,
+         "type": "resource",
+         "resource": {
+          "$obj": "Resource",
+          "id": "e1",
+          "same": true
+         }
+        },
+        {
+         "x": 27,
+         "y": 25,
+         "type": "resource",
+         "resource": {
+          "$obj": "Resource",
+          "id": "e2",
+          "same": true
+         }
+        },
+        {
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRampart",
+          "id": "ra1",
+          "same": true
+         },
+         "x": 27,
+         "y": 24
+        },
+        {
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureSpawn",
+          "id": "sp1",
+          "same": true
+         },
+         "x": 24,
+         "y": 26
+        },
+        {
+         "x": 25,
+         "y": 25,
+         "type": "flag",
+         "flag": {
+          "$obj": "Flag",
+          "id": null,
+          "name": "Flag1",
+          "same": true
+         }
+        },
+        {
+         "type": "terrain",
+         "terrain": "plain",
+         "x": 24,
+         "y": 24
+        },
+        {
+         "type": "terrain",
+         "terrain": "plain",
+         "x": 25,
+         "y": 24
+        },
+        {
+         "type": "terrain",
+         "terrain": "plain",
+         "x": 26,
+         "y": 24
+        },
+        {
+         "type": "terrain",
+         "terrain": "plain",
+         "x": 27,
+         "y": 24
+        },
+        {
+         "type": "terrain",
+         "terrain": "plain",
+         "x": 24,
+         "y": 25
+        },
+        {
+         "type": "terrain",
+         "terrain": "plain",
+         "x": 25,
+         "y": 25
+        },
+        {
+         "type": "terrain",
+         "terrain": "plain",
+         "x": 26,
+         "y": 25
+        },
+        {
+         "type": "terrain",
+         "terrain": "plain",
+         "x": 27,
+         "y": 25
+        },
+        {
+         "type": "terrain",
+         "terrain": "plain",
+         "x": 24,
+         "y": 26
+        },
+        {
+         "type": "terrain",
+         "terrain": "plain",
+         "x": 25,
+         "y": 26
+        },
+        {
+         "type": "terrain",
+         "terrain": "plain",
+         "x": 26,
+         "y": 26
+        },
+        {
+         "type": "terrain",
+         "terrain": "plain",
+         "x": 27,
+         "y": 26
+        }
+       ]
+      }
+     ],
+     [
+      "area big",
+      {
+       "$arr": [
+        {
+         "x": 27,
+         "y": 24,
+         "type": "creep",
+         "creep": {
+          "$obj": "Creep",
+          "id": "cr2",
+          "same": true
+         }
+        },
+        {
+         "x": 25,
+         "y": 25,
+         "type": "creep",
+         "creep": {
+          "$obj": "Creep",
+          "id": "cr1",
+          "same": true
+         }
+        },
+        {
+         "x": 24,
+         "y": 26,
+         "type": "creep",
+         "creep": {
+          "$obj": "Creep",
+          "id": "cr3",
+          "same": true
+         }
+        },
+        {
+         "x": 27,
+         "y": 25,
+         "type": "energy",
+         "energy": {
+          "$obj": "Resource",
+          "id": "e1",
+          "same": true
+         }
+        },
+        {
+         "x": 27,
+         "y": 25,
+         "type": "energy",
+         "energy": {
+          "$obj": "Resource",
+          "id": "e2",
+          "same": true
+         }
+        },
+        {
+         "x": 27,
+         "y": 25,
+         "type": "resource",
+         "resource": {
+          "$obj": "Resource",
+          "id": "e1",
+          "same": true
+         }
+        },
+        {
+         "x": 27,
+         "y": 25,
+         "type": "resource",
+         "resource": {
+          "$obj": "Resource",
+          "id": "e2",
+          "same": true
+         }
+        },
+        {
+         "x": 22,
+         "y": 24,
+         "type": "source",
+         "source": {
+          "$obj": "Source",
+          "id": "s1",
+          "same": true
+         }
+        },
+        {
+         "x": 28,
+         "y": 28,
+         "type": "source",
+         "source": {
+          "$obj": "Source",
+          "id": "s2",
+          "same": true
+         }
+        },
+        {
+         "x": 30,
+         "y": 20,
+         "type": "mineral",
+         "mineral": {
+          "$obj": "Mineral",
+          "id": "m1",
+          "same": true
+         }
+        },
+        {
+         "x": 25,
+         "y": 27,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "r1",
+          "same": true
+         }
+        },
+        {
+         "x": 26,
+         "y": 27,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "r2",
+          "same": true
+         }
+        },
+        {
+         "x": 21,
+         "y": 21,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureWall",
+          "id": "w1",
+          "same": true
+         }
+        },
+        {
+         "x": 27,
+         "y": 24,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRampart",
+          "id": "ra1",
+          "same": true
+         }
+        },
+        {
+         "x": 20,
+         "y": 30,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "rd20",
+          "same": true
+         }
+        },
+        {
+         "x": 21,
+         "y": 30,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "rd21",
+          "same": true
+         }
+        },
+        {
+         "x": 22,
+         "y": 30,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "rd22",
+          "same": true
+         }
+        },
+        {
+         "x": 23,
+         "y": 30,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "rd23",
+          "same": true
+         }
+        },
+        {
+         "x": 24,
+         "y": 30,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "rd24",
+          "same": true
+         }
+        },
+        {
+         "x": 25,
+         "y": 30,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "rd25",
+          "same": true
+         }
+        },
+        {
+         "x": 26,
+         "y": 30,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "rd26",
+          "same": true
+         }
+        },
+        {
+         "x": 27,
+         "y": 30,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "rd27",
+          "same": true
+         }
+        },
+        {
+         "x": 28,
+         "y": 30,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "rd28",
+          "same": true
+         }
+        },
+        {
+         "x": 29,
+         "y": 30,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "rd29",
+          "same": true
+         }
+        },
+        {
+         "x": 30,
+         "y": 30,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureRoad",
+          "id": "rd30",
+          "same": true
+         }
+        },
+        {
+         "x": 25,
+         "y": 22,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureController",
+          "id": "c1",
+          "same": true
+         }
+        },
+        {
+         "x": 24,
+         "y": 26,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureSpawn",
+          "id": "sp1",
+          "same": true
+         }
+        },
+        {
+         "x": 23,
+         "y": 27,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureExtension",
+          "id": "ex1",
+          "same": true
+         }
+        },
+        {
+         "x": 22,
+         "y": 27,
+         "type": "structure",
+         "structure": {
+          "$obj": "StructureExtension",
+          "id": "ex2",
+          "same": true
+         }
+        },
+        {
+         "x": 25,
+         "y": 25,
+         "type": "flag",
+         "flag": {
+          "$obj": "Flag",
+          "id": null,
+          "name": "Flag1",
+          "same": true
+         }
+        },
+        {
+         "x": 20,
+         "y": 20,
+         "type": "flag",
+         "flag": {
+          "$obj": "Flag",
+          "id": null,
+          "name": "My|Flag",
+          "same": true
+         }
+        },
+        {
+         "x": 21,
+         "y": 29,
+         "type": "constructionSite",
+         "constructionSite": {
+          "$obj": "ConstructionSite",
+          "id": "cs2",
+          "same": true
+         }
+        },
+        {
+         "x": 29,
+         "y": 29,
+         "type": "constructionSite",
+         "constructionSite": {
+          "$obj": "ConstructionSite",
+          "id": "cs1",
+          "same": true
+         }
+        }
+       ]
+      }
+     ],
+     [
+      "area roads small",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "type": "structure",
+           "structure": {
+            "$obj": "StructureRoad",
+            "id": "rd22",
+            "same": true
+           },
+           "x": 22,
+           "y": 30
+          },
+          {
+           "type": "structure",
+           "structure": {
+            "$obj": "StructureRoad",
+            "id": "rd23",
+            "same": true
+           },
+           "x": 23,
+           "y": 30
+          },
+          {
+           "type": "structure",
+           "structure": {
+            "$obj": "StructureRoad",
+            "id": "rd24",
+            "same": true
+           },
+           "x": 24,
+           "y": 30
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 22,
+           "y": 29
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 23,
+           "y": 29
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 24,
+           "y": 29
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 22,
+           "y": 30
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 23,
+           "y": 30
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 24,
+           "y": 30
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 22,
+           "y": 31
+          },
+          {
+           "type": "terrain",
+           "terrain": "swamp",
+           "x": 23,
+           "y": 31
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 24,
+           "y": 31
+          }
+         ]
+        },
+        {
+         "29": {
+          "22": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          },
+          "23": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          },
+          "24": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          }
+         },
+         "30": {
+          "22": {
+           "$arr": [
+            {
+             "type": "structure",
+             "structure": {
+              "$obj": "StructureRoad",
+              "id": "rd22",
+              "same": true
+             }
+            },
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          },
+          "23": {
+           "$arr": [
+            {
+             "type": "structure",
+             "structure": {
+              "$obj": "StructureRoad",
+              "id": "rd23",
+              "same": true
+             }
+            },
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          },
+          "24": {
+           "$arr": [
+            {
+             "type": "structure",
+             "structure": {
+              "$obj": "StructureRoad",
+              "id": "rd24",
+              "same": true
+             }
+            },
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          }
+         },
+         "31": {
+          "22": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          },
+          "23": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "swamp"
+            }
+           ]
+          },
+          "24": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          }
+         }
+        }
+       ]
+      }
+     ],
+     [
+      "area edge",
+      {
+       "$arr": [
+        "look coords are out of bounds",
+        "look coords are out of bounds",
+        "look coords are out of bounds",
+        "look coords are out of bounds",
+        "look coords are out of bounds",
+        "look coords are out of bounds",
+        {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": -1,
+           "y": -1
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 0,
+           "y": -1
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 1,
+           "y": -1
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": -1,
+           "y": 0
+          },
+          {
+           "type": "terrain",
+           "terrain": "wall",
+           "x": 0,
+           "y": 0
+          },
+          {
+           "type": "terrain",
+           "terrain": "wall",
+           "x": 1,
+           "y": 0
+          },
+          {
+           "type": "terrain",
+           "terrain": "wall",
+           "x": -1,
+           "y": 1
+          },
+          {
+           "type": "terrain",
+           "terrain": "wall",
+           "x": 0,
+           "y": 1
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 1,
+           "y": 1
+          }
+         ]
+        },
+        {
+         "48": {
+          "48": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          },
+          "49": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "wall"
+            }
+           ]
+          },
+          "50": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "wall"
+            }
+           ]
+          }
+         },
+         "49": {
+          "48": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "wall"
+            }
+           ]
+          },
+          "49": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "wall"
+            }
+           ]
+          },
+          "50": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          }
+         },
+         "50": {
+          "48": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          },
+          "49": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          },
+          "50": {
+           "$arr": [
+            {
+             "type": "terrain",
+             "terrain": "plain"
+            }
+           ]
+          }
+         }
+        },
+        {
+         "$arr": [
+          {
+           "x": 25,
+           "y": 21,
+           "structure": {
+            "$obj": "StructureController",
+            "id": "c2",
+            "same": true
+           }
+          },
+          {
+           "x": 25,
+           "y": 25,
+           "structure": {
+            "$obj": "StructureSpawn",
+            "id": "sp2",
+            "same": true
+           }
+          },
+          {
+           "x": 30,
+           "y": 30,
+           "structure": {
+            "$obj": "StructureKeeperLair",
+            "id": "k1",
+            "same": true
+           }
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "for area",
+      {
+       "$arr": [
+        {
+         "24": {
+          "27": {
+           "$arr": [
+            {
+             "$obj": "Creep",
+             "id": "cr2",
+             "same": true
+            }
+           ]
+          }
+         },
+         "25": {
+          "25": {
+           "$arr": [
+            {
+             "$obj": "Creep",
+             "id": "cr1",
+             "same": true
+            }
+           ]
+          }
+         },
+         "26": {
+          "24": {
+           "$arr": [
+            {
+             "$obj": "Creep",
+             "id": "cr3",
+             "same": true
+            }
+           ]
+          }
+         }
+        },
+        {
+         "$arr": [
+          {
+           "x": 27,
+           "y": 24,
+           "creep": {
+            "$obj": "Creep",
+            "id": "cr2",
+            "same": true
+           }
+          },
+          {
+           "x": 25,
+           "y": 25,
+           "creep": {
+            "$obj": "Creep",
+            "id": "cr1",
+            "same": true
+           }
+          },
+          {
+           "x": 24,
+           "y": 26,
+           "creep": {
+            "$obj": "Creep",
+            "id": "cr3",
+            "same": true
+           }
+          }
+         ]
+        },
+        {
+         "29": {
+          "22": {
+           "$arr": []
+          },
+          "23": {
+           "$arr": []
+          },
+          "24": {
+           "$arr": []
+          }
+         },
+         "30": {
+          "22": {
+           "$arr": [
+            {
+             "$obj": "StructureRoad",
+             "id": "rd22",
+             "same": true
+            }
+           ]
+          },
+          "23": {
+           "$arr": [
+            {
+             "$obj": "StructureRoad",
+             "id": "rd23",
+             "same": true
+            }
+           ]
+          },
+          "24": {
+           "$arr": [
+            {
+             "$obj": "StructureRoad",
+             "id": "rd24",
+             "same": true
+            }
+           ]
+          }
+         },
+         "31": {
+          "22": {
+           "$arr": []
+          },
+          "23": {
+           "$arr": []
+          },
+          "24": {
+           "$arr": []
+          }
+         }
+        },
+        {
+         "$arr": [
+          {
+           "type": "structure",
+           "structure": {
+            "$obj": "StructureRoad",
+            "id": "rd22",
+            "same": true
+           },
+           "x": 22,
+           "y": 30
+          },
+          {
+           "type": "structure",
+           "structure": {
+            "$obj": "StructureRoad",
+            "id": "rd23",
+            "same": true
+           },
+           "x": 23,
+           "y": 30
+          },
+          {
+           "type": "structure",
+           "structure": {
+            "$obj": "StructureRoad",
+            "id": "rd24",
+            "same": true
+           },
+           "x": 24,
+           "y": 30
+          }
+         ]
+        },
+        {
+         "0": {
+          "20": {
+           "$arr": [
+            "wall"
+           ]
+          },
+          "21": {
+           "$arr": [
+            "wall"
+           ]
+          },
+          "22": {
+           "$arr": [
+            "plain"
+           ]
+          },
+          "23": {
+           "$arr": [
+            "plain"
+           ]
+          }
+         },
+         "1": {
+          "20": {
+           "$arr": [
+            "wall"
+           ]
+          },
+          "21": {
+           "$arr": [
+            "wall"
+           ]
+          },
+          "22": {
+           "$arr": [
+            "plain"
+           ]
+          },
+          "23": {
+           "$arr": [
+            "plain"
+           ]
+          }
+         },
+         "2": {
+          "20": {
+           "$arr": [
+            "plain"
+           ]
+          },
+          "21": {
+           "$arr": [
+            "plain"
+           ]
+          },
+          "22": {
+           "$arr": [
+            "plain"
+           ]
+          },
+          "23": {
+           "$arr": [
+            "plain"
+           ]
+          }
+         }
+        },
+        {
+         "$arr": [
+          {
+           "type": "terrain",
+           "terrain": "wall",
+           "x": 20,
+           "y": 0
+          },
+          {
+           "type": "terrain",
+           "terrain": "wall",
+           "x": 21,
+           "y": 0
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 22,
+           "y": 0
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 23,
+           "y": 0
+          },
+          {
+           "type": "terrain",
+           "terrain": "wall",
+           "x": 20,
+           "y": 1
+          },
+          {
+           "type": "terrain",
+           "terrain": "wall",
+           "x": 21,
+           "y": 1
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 22,
+           "y": 1
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 23,
+           "y": 1
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 20,
+           "y": 2
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 21,
+           "y": 2
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 22,
+           "y": 2
+          },
+          {
+           "type": "terrain",
+           "terrain": "plain",
+           "x": 23,
+           "y": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 27,
+           "y": 25,
+           "energy": {
+            "$obj": "Resource",
+            "id": "e1",
+            "same": true
+           }
+          },
+          {
+           "x": 27,
+           "y": 25,
+           "energy": {
+            "$obj": "Resource",
+            "id": "e2",
+            "same": true
+           }
+          }
+         ]
+        },
+        {
+         "0": {},
+         "1": {},
+         "2": {},
+         "3": {},
+         "4": {},
+         "5": {},
+         "6": {},
+         "7": {},
+         "8": {},
+         "9": {},
+         "10": {
+          "0": {
+           "$arr": [
+            {
+             "$obj": "Flag",
+             "id": null,
+             "name": "Edge",
+             "same": true
+            }
+           ]
+          }
+         },
+         "11": {},
+         "12": {},
+         "13": {},
+         "14": {},
+         "15": {},
+         "16": {},
+         "17": {},
+         "18": {},
+         "19": {},
+         "20": {
+          "20": {
+           "$arr": [
+            {
+             "$obj": "Flag",
+             "id": null,
+             "name": "My|Flag",
+             "same": true
+            }
+           ]
+          }
+         },
+         "21": {},
+         "22": {},
+         "23": {},
+         "24": {},
+         "25": {
+          "25": {
+           "$arr": [
+            {
+             "$obj": "Flag",
+             "id": null,
+             "name": "Flag1",
+             "same": true
+            }
+           ]
+          }
+         },
+         "26": {},
+         "27": {},
+         "28": {},
+         "29": {},
+         "30": {},
+         "31": {},
+         "32": {},
+         "33": {},
+         "34": {},
+         "35": {},
+         "36": {},
+         "37": {},
+         "38": {},
+         "39": {},
+         "40": {},
+         "41": {},
+         "42": {},
+         "43": {},
+         "44": {},
+         "45": {},
+         "46": {},
+         "47": {},
+         "48": {},
+         "49": {}
+        }
+       ]
+      }
+     ],
+     [
+      "for area bad type",
+      "TypeError"
+     ],
+     [
+      "for area single",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "type": "source",
+           "source": {
+            "$obj": "Source",
+            "id": "s1",
+            "same": true
+           },
+           "x": 22,
+           "y": 24
+          }
+         ]
+        },
+        {}
+       ]
+      }
+     ]
+    ],
+    "intents": {},
+    "intentsCpu": 0,
+    "console": {
+     "$arr": []
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  }
+ ]
+}

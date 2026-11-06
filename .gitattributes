@@ -1,0 +1,7 @@
+* text=auto eol=lf
+# cmd.exe needs CRLF.
+*.bat text eol=crlf
+# Fixtures are compared byte-for-byte; keep git from touching them.
+**/tests/fixtures/** -text
+# Vendored crates stay byte-for-byte as published.
+vendor/** -text

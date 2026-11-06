@@ -1,0 +1,30 @@
+{
+  "http": { "host": "127.0.0.1", "port": 21025, "maxConnections": 2048, "requestTimeoutS": 120, "serverPassword": null },
+  "cli": { "host": "127.0.0.1", "port": 21026 },
+  "auth": { "steam": "single-user:player" },
+  "data": "data",
+  "world": { "sectors": "2x2", "seed": 1, "wideCoords": false, "open": true },
+  "compat": "private",
+  "shardName": "shard0",
+  "engine": {
+    "tickRateMs": 1000,
+    "mainLoopResetInterval": 5000,
+    "cpuMaxPerTick": 500,
+    "cpuBucketSize": 10000,
+    "historyChunkSize": 20,
+    "socketUpdateThrottle": 200,
+    "disabledCronjobs": []
+  },
+  "runner": {
+    "threads": 0,
+    "heapMb": 256,
+    "semiSpaceMb": 0,
+    "heapBudgetMb": 0,
+    "meter": "thread",
+    "hardTimeoutMs": 5000,
+    "idleEvictS": 180,
+    "watchdogPollUs": 500
+  },
+  "persist": { "intervalS": 60 },
+  "mods": []
+}

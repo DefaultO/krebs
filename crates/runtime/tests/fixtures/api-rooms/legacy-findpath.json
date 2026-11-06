@@ -1,0 +1,1879 @@
+{
+ "name": "legacy-findpath",
+ "tags": [
+  "game/rooms.js:16",
+  "game/rooms.js:32",
+  "game/rooms.js:130",
+  "game/rooms.js:873",
+  "game/rooms.js:1099",
+  "game/rooms.js:1447"
+ ],
+ "world": {
+  "user": "u1",
+  "users": {
+   "2": {
+    "username": "Invader"
+   },
+   "3": {
+    "username": "Source Keeper"
+   },
+   "u1": {
+    "username": "Alice"
+   },
+   "u2": {
+    "username": "Bob"
+   }
+  },
+  "time": 1000,
+  "objects": [
+   {
+    "_id": "c1",
+    "type": "controller",
+    "room": "W1N1",
+    "x": 25,
+    "y": 22,
+    "user": "u1",
+    "level": 3,
+    "progress": 100,
+    "progressTotal": 45000,
+    "downgradeTime": 20000,
+    "safeModeAvailable": 1
+   },
+   {
+    "_id": "s1",
+    "type": "source",
+    "room": "W1N1",
+    "x": 22,
+    "y": 24,
+    "energy": 3000,
+    "energyCapacity": 3000,
+    "nextRegenerationTime": 1250
+   },
+   {
+    "_id": "s2",
+    "type": "source",
+    "room": "W1N1",
+    "x": 28,
+    "y": 28,
+    "energy": 0,
+    "energyCapacity": 3000
+   },
+   {
+    "_id": "m1",
+    "type": "mineral",
+    "room": "W1N1",
+    "x": 30,
+    "y": 20,
+    "mineralType": "H",
+    "mineralAmount": 50000,
+    "density": 3
+   },
+   {
+    "_id": "sp1",
+    "type": "spawn",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Spawn1",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex1",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 23,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "ex2",
+    "type": "extension",
+    "room": "W1N1",
+    "x": 22,
+    "y": 27,
+    "user": "u1",
+    "hits": 1000,
+    "hitsMax": 1000,
+    "off": true,
+    "store": {
+     "energy": 50
+    },
+    "storeCapacityResource": {
+     "energy": 50
+    },
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "r1",
+    "type": "road",
+    "room": "W1N1",
+    "x": 25,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "r2",
+    "type": "road",
+    "room": "W1N1",
+    "x": 26,
+    "y": 27,
+    "hits": 5000,
+    "hitsMax": 5000,
+    "nextDecayTime": 2000
+   },
+   {
+    "_id": "w1",
+    "type": "constructedWall",
+    "room": "W1N1",
+    "x": 21,
+    "y": 21,
+    "hits": 1000,
+    "hitsMax": 300000000
+   },
+   {
+    "_id": "cr1",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "name": "Harv1",
+    "hits": 300,
+    "hitsMax": 300,
+    "body": [
+     {
+      "type": "work",
+      "hits": 100
+     },
+     {
+      "type": "carry",
+      "hits": 100
+     },
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {
+     "energy": 10
+    },
+    "storeCapacity": 50,
+    "fatigue": 0,
+    "ageTime": 2400,
+    "spawning": false,
+    "notifyWhenAttacked": true
+   },
+   {
+    "_id": "cr2",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "name": "Bob1",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 2000,
+    "spawning": false
+   },
+   {
+    "_id": "cr3",
+    "type": "creep",
+    "room": "W1N1",
+    "x": 24,
+    "y": 26,
+    "user": "u1",
+    "name": "Baby",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "spawning": true
+   },
+   {
+    "_id": "e1",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "energy",
+    "energy": 100
+   },
+   {
+    "_id": "e2",
+    "type": "energy",
+    "room": "W1N1",
+    "x": 27,
+    "y": 25,
+    "resourceType": "H",
+    "H": 20
+   },
+   {
+    "_id": "cs1",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 29,
+    "y": 29,
+    "user": "u1",
+    "structureType": "extension",
+    "progress": 0,
+    "progressTotal": 3000
+   },
+   {
+    "_id": "cs2",
+    "type": "constructionSite",
+    "room": "W1N1",
+    "x": 21,
+    "y": 29,
+    "user": "u2",
+    "structureType": "road",
+    "progress": 10,
+    "progressTotal": 300
+   },
+   {
+    "_id": "ra1",
+    "type": "rampart",
+    "room": "W1N1",
+    "x": 27,
+    "y": 24,
+    "user": "u2",
+    "hits": 1000,
+    "hitsMax": 300000,
+    "isPublic": false
+   },
+   {
+    "_id": "cs3",
+    "type": "constructionSite",
+    "room": "W2N2",
+    "x": 25,
+    "y": 25,
+    "user": "u1",
+    "structureType": "spawn",
+    "name": "Spawn2",
+    "progress": 5,
+    "progressTotal": 15000
+   },
+   {
+    "_id": "c2",
+    "type": "controller",
+    "room": "W1N2",
+    "x": 25,
+    "y": 21,
+    "user": "u2",
+    "level": 2,
+    "progress": 0,
+    "progressTotal": 45000,
+    "downgradeTime": 20000
+   },
+   {
+    "_id": "sp2",
+    "type": "spawn",
+    "room": "W1N2",
+    "x": 25,
+    "y": 25,
+    "user": "u2",
+    "name": "BobSpawn",
+    "hits": 5000,
+    "hitsMax": 5000,
+    "store": {
+     "energy": 300
+    },
+    "storeCapacityResource": {
+     "energy": 300
+    },
+    "spawning": null
+   },
+   {
+    "_id": "s3",
+    "type": "source",
+    "room": "W1N2",
+    "x": 21,
+    "y": 21,
+    "energy": 1500,
+    "energyCapacity": 1500
+   },
+   {
+    "_id": "cr4",
+    "type": "creep",
+    "room": "W1N2",
+    "x": 20,
+    "y": 30,
+    "user": "u1",
+    "name": "Scout",
+    "hits": 100,
+    "hitsMax": 100,
+    "body": [
+     {
+      "type": "move",
+      "hits": 100
+     }
+    ],
+    "store": {},
+    "storeCapacity": 0,
+    "fatigue": 0,
+    "ageTime": 1500,
+    "spawning": false
+   },
+   {
+    "_id": "k1",
+    "type": "keeperLair",
+    "room": "W1N2",
+    "x": 30,
+    "y": 30,
+    "user": "3",
+    "nextSpawnTime": 1100
+   },
+   {
+    "_id": "s4",
+    "type": "source",
+    "room": "W2N1",
+    "x": 25,
+    "y": 25,
+    "energy": 3000,
+    "energyCapacity": 3000
+   }
+  ],
+  "flags": [
+   {
+    "room": "W1N1",
+    "data": "Flag1~1~1~25~25|My$VLINE$Flag~2~3~20~20|Edge~5~5~0~10"
+   },
+   {
+    "room": "W2N2",
+    "data": "Far~3~3~10~10"
+   }
+  ],
+  "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}",
+  "eventLog": {
+   "W1N1": "[{\"event\":1,\"objectId\":\"cr2\",\"data\":{\"targetId\":\"cr1\",\"damage\":10}}]"
+  }
+ },
+ "ticks": [
+  {
+   "probes": [
+    [
+     "use",
+     "() => { PathFinder.use(false); return 1; }"
+    ],
+    [
+     "findPath",
+     "() => {\n            const r = Game.rooms.W1N1, from = new RoomPosition(25, 25, 'W1N1');\n            const a = r.findPath(from, new RoomPosition(30, 30, 'W1N1'));\n            const b = r.findPath(from, new RoomPosition(30, 30, 'W1N1'));\n            a.push('junk');\n            return [a, b === a, r.findPath(from, new RoomPosition(30, 30, 'W1N1'), {serialize: true}), r.findPath(from, new RoomPosition(26, 26, 'W1N1')),\n                r.findPath(from, new RoomPosition(25, 25, 'W1N1')), r.findPath(from, new RoomPosition(25, 25, 'W1N2')),\n                r.findPath(from, new RoomPosition(21, 21, 'W1N1')), r.findPath(from, new RoomPosition(28, 25, 'W1N1'), {ignoreCreeps: true}),\n                r.findPath(from, new RoomPosition(29, 21, 'W1N1'), {maxOps: 3}), r.findPath(from, new RoomPosition(29, 21, 'W1N1'), {heuristicWeight: 5}),\n                r.findPath(from, new RoomPosition(25, 29, 'W1N1'), {ignoreDestructibleStructures: true})];\n        }"
+    ],
+    [
+     "avoid/ignore",
+     "() => {\n            const r = Game.rooms.W1N1, from = new RoomPosition(25, 25, 'W1N1'), to = new RoomPosition(30, 25, 'W1N1');\n            const o = {avoid: [new RoomPosition(26, 25, 'W1N1'), {x: 26, y: 24}, Game.creeps.Harv1], ignore: [Game.getObjectById('cr2'), {x: 27, y: 25}]};\n            const res = [r.findPath(from, to, o), o.avoid, o.ignore, r.findPath(from, to, {avoid: [{x: 26, y: 24}, new RoomPosition(26, 25, 'W1N1')]})];\n            for (const bad of [{avoid: 'x'}, {ignore: 5}, {avoid: [5]}, {avoid: [null]}, {ignore: [null, 0]}]) { try { res.push(r.findPath(from, to, bad)); } catch (e) { res.push(e.message); } }\n            return res;\n        }"
+    ],
+    [
+     "findPathTo",
+     "() => {\n            const p = Game.creeps.Harv1.pos;\n            return [p.findPathTo(30, 30), p.findPathTo(new RoomPosition(10, 10, 'W1N2')), p.findPathTo(new RoomPosition(10, 10, 'W0N1'), {serialize: true}),\n                p.findPathTo(new RoomPosition(10, 10, 'W2N2')), p.findPathTo(Game.creeps.Scout)];\n        }"
+    ],
+    [
+     "closest",
+     "() => {\n            const p = Game.creeps.Harv1.pos;\n            return [p.findClosestByPath(FIND_SOURCES), p.findClosestByPath(FIND_STRUCTURES), p.findClosestByPath(FIND_EXIT_TOP),\n                p.findClosestByPath(FIND_SOURCES, {algorithm: 'dijkstra'}), p.findClosestByPath(FIND_SOURCES, {algorithm: 'astar'}),\n                p.findClosestByPath(FIND_SOURCES, {filter: s => s.energy > 0}), p.findClosestByPath([new RoomPosition(30, 30, 'W1N1'), new RoomPosition(20, 22, 'W1N1')]),\n                p.findClosestByPath([Game.getObjectById('m1'), Game.getObjectById('s2')], {algorithm: 'dijkstra'}), p.findClosestByPath(FIND_CREEPS),\n                p.findClosestByPath([{x: 25, y: 26}]), p.findClosestByPath(FIND_NUKES), p.findClosestByPath(FIND_EXIT, {algorithm: 'other'})];\n        }"
+    ],
+    [
+     "endNodes",
+     "() => {\n            const r = Game.rooms.W1N1, out = [];\n            out.push(r.getEndNodes(FIND_SOURCES), r.getEndNodes(FIND_SOURCES, {filter: s => s.energy}), r.getEndNodes([new RoomPosition(1, 1, 'W1N1')]),\n                r.getEndNodes([new RoomPosition(1, 1, 'W1N1')]), r.getEndNodes('str'));\n            try { r.getEndNodes(); } catch (e) { out.push(e.message); }\n            out.push(r.findPath(new RoomPosition(25, 25, 'W1N1'), 105), r.findPath(new RoomPosition(25, 25, 'W1N1'), 3), r.findPath(new RoomPosition(25, 25, 'W1N1'), 1));\n            return out;\n        }"
+    ]
+   ],
+   "expect": {
+    "probes": [
+     [
+      "use",
+      1
+     ],
+     [
+      "findPath",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "x": 25,
+           "y": 26,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 26,
+           "y": 27,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 27,
+           "y": 28,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 28,
+           "y": 29,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 29,
+           "y": 30,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 30,
+           "y": 30,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          "junk"
+         ]
+        },
+        false,
+        "2526544443",
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 26,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          }
+         ]
+        },
+        {
+         "$arr": []
+        },
+        {
+         "$arr": []
+        },
+        {
+         "$arr": [
+          {
+           "x": 24,
+           "y": 24,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 23,
+           "y": 23,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 22,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 21,
+           "y": 21,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 27,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 28,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 24,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 27,
+           "y": 23,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 24,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 27,
+           "y": 23,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 28,
+           "y": 22,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 29,
+           "y": 21,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 25,
+           "y": 26,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 25,
+           "y": 27,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 25,
+           "y": 28,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 25,
+           "y": 29,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "avoid/ignore",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 26,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 27,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 28,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 29,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 30,
+           "y": 25,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$pos": [
+            26,
+            25,
+            "W1N1"
+           ],
+           "packed": 2122193433
+          },
+          {
+           "$pos": [
+            26,
+            24,
+            "W1N1"
+           ],
+           "packed": 2122193432
+          },
+          {
+           "$obj": "Creep",
+           "id": "cr1",
+           "same": true
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "$obj": "Creep",
+           "id": "cr2",
+           "same": true
+          },
+          {
+           "$pos": [
+            27,
+            25,
+            "W1N1"
+           ],
+           "packed": 2122193689
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 26,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 27,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 28,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 29,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 30,
+           "y": 25,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        "option `avoid` is not an array",
+        "option `ignore` is not an array",
+        "Invalid position 5, check your `opts` property",
+        "Invalid position null, check your `opts` property",
+        "Invalid position null, check your `opts` property"
+       ]
+      }
+     ],
+     [
+      "findPathTo",
+      {
+       "$arr": [
+        {
+         "$arr": [
+          {
+           "x": 25,
+           "y": 26,
+           "dx": 0,
+           "dy": 1,
+           "direction": 5
+          },
+          {
+           "x": 26,
+           "y": 27,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 27,
+           "y": 28,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 28,
+           "y": 29,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 29,
+           "y": 30,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 30,
+           "y": 30,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 25,
+           "y": 24,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 25,
+           "y": 23,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 24,
+           "y": 22,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 24,
+           "y": 21,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 24,
+           "y": 20,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 24,
+           "y": 19,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 18,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 23,
+           "y": 17,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 16,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 15,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 14,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 13,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 12,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 11,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 10,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 23,
+           "y": 9,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 8,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 7,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 6,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 5,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 4,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 3,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 2,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 1,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 0,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        },
+        "2625333344333323333333223223",
+        {
+         "$arr": [
+          {
+           "x": 25,
+           "y": 24,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 24,
+           "y": 23,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 23,
+           "y": 22,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 21,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 21,
+           "y": 20,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 20,
+           "y": 20,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 19,
+           "y": 19,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 18,
+           "y": 18,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 17,
+           "y": 17,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 16,
+           "y": 16,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 15,
+           "y": 15,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 14,
+           "y": 14,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 13,
+           "y": 14,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 12,
+           "y": 13,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 11,
+           "y": 12,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 10,
+           "y": 11,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 9,
+           "y": 10,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 8,
+           "y": 10,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 7,
+           "y": 9,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 6,
+           "y": 9,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 5,
+           "y": 9,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 4,
+           "y": 8,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 3,
+           "y": 8,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 2,
+           "y": 8,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 1,
+           "y": 8,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 0,
+           "y": 8,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 25,
+           "y": 24,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 25,
+           "y": 23,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 24,
+           "y": 22,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 24,
+           "y": 21,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 24,
+           "y": 20,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 24,
+           "y": 19,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 18,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 23,
+           "y": 17,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 16,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 15,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 14,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 13,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 12,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 11,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 10,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 23,
+           "y": 9,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 8,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 7,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 6,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 5,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 4,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 3,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 2,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 1,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 0,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     [
+      "closest",
+      {
+       "$arr": [
+        {
+         "$obj": "Source",
+         "id": "s2",
+         "same": true
+        },
+        {
+         "$obj": "StructureSpawn",
+         "id": "sp1",
+         "same": true
+        },
+        {
+         "$pos": [
+          23,
+          0,
+          "W1N1"
+         ],
+         "packed": 2122192640
+        },
+        {
+         "$obj": "Source",
+         "id": "s1",
+         "same": true
+        },
+        {
+         "$obj": "Source",
+         "id": "s2",
+         "same": true
+        },
+        {
+         "$obj": "Source",
+         "id": "s1",
+         "same": true
+        },
+        {
+         "$pos": [
+          20,
+          22,
+          "W1N1"
+         ],
+         "packed": 2122191894
+        },
+        {
+         "$obj": "Source",
+         "id": "s2",
+         "same": true
+        },
+        {
+         "$obj": "Creep",
+         "id": "cr1",
+         "same": true
+        },
+        null,
+        null,
+        null
+       ]
+      }
+     ],
+     [
+      "endNodes",
+      {
+       "$arr": [
+        {
+         "key": 105,
+         "objects": {
+          "$arr": [
+           {
+            "$obj": "Source",
+            "id": "s1",
+            "same": true
+           },
+           {
+            "$obj": "Source",
+            "id": "s2",
+            "same": true
+           }
+          ]
+         }
+        },
+        {
+         "key": 8,
+         "objects": {
+          "$arr": [
+           {
+            "$obj": "Source",
+            "id": "s1",
+            "same": true
+           }
+          ]
+         }
+        },
+        {
+         "key": 12,
+         "objects": {
+          "$arr": [
+           {
+            "$pos": [
+             1,
+             1,
+             "W1N1"
+            ],
+            "packed": 2122187009
+           }
+          ]
+         }
+        },
+        {
+         "key": 12,
+         "objects": {
+          "$ref": 6
+         }
+        },
+        {
+         "key": 0,
+         "objects": "str"
+        },
+        "Find type cannot be undefined",
+        {
+         "$arr": [
+          {
+           "x": 24,
+           "y": 25,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          },
+          {
+           "x": 23,
+           "y": 24,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 24,
+           "dx": -1,
+           "dy": 0,
+           "direction": 7
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 26,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 27,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 28,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 29,
+           "y": 25,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 30,
+           "y": 26,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 31,
+           "y": 27,
+           "dx": 1,
+           "dy": 1,
+           "direction": 4
+          },
+          {
+           "x": 32,
+           "y": 27,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 33,
+           "y": 27,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 34,
+           "y": 27,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 35,
+           "y": 27,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 36,
+           "y": 26,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 37,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 38,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 39,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 40,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 41,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 42,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 43,
+           "y": 26,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 44,
+           "y": 25,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 45,
+           "y": 24,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 46,
+           "y": 24,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          },
+          {
+           "x": 47,
+           "y": 23,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 48,
+           "y": 22,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 49,
+           "y": 22,
+           "dx": 1,
+           "dy": 0,
+           "direction": 3
+          }
+         ]
+        },
+        {
+         "$arr": [
+          {
+           "x": 25,
+           "y": 24,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 25,
+           "y": 23,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 24,
+           "y": 22,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 24,
+           "y": 21,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 24,
+           "y": 20,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 24,
+           "y": 19,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 18,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 23,
+           "y": 17,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 16,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 15,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 14,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 13,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 12,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 11,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 10,
+           "dx": 1,
+           "dy": -1,
+           "direction": 2
+          },
+          {
+           "x": 23,
+           "y": 9,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 8,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 23,
+           "y": 7,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 6,
+           "dx": -1,
+           "dy": -1,
+           "direction": 8
+          },
+          {
+           "x": 22,
+           "y": 5,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 4,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 3,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 2,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 1,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          },
+          {
+           "x": 22,
+           "y": 0,
+           "dx": 0,
+           "dy": -1,
+           "direction": 1
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    ],
+    "intents": {},
+    "intentsCpu": 0,
+    "console": {
+     "$arr": [
+      {
+       "message": "`PathFinder.use` is considered deprecated and will be removed soon.",
+       "escape": true
+      }
+     ]
+    },
+    "visual": {},
+    "memory": "{\"rooms\":{\"W1N1\":{\"a\":1}},\"flags\":{\"Flag1\":{\"b\":2}}}"
+   }
+  }
+ ]
+}

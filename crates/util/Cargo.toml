@@ -1,0 +1,10 @@
+[package]
+name = "util"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+# Throughput / overhead numbers: cargo bench -p util
+[[bench]]
+name = "bench"
+harness = false

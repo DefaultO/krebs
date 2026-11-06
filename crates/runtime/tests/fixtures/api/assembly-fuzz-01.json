@@ -1,0 +1,295 @@
+{
+ "name": "assembly-fuzz-01",
+ "tags": [
+  "runtime/data.js:113",
+  "game/game.js:260"
+ ],
+ "substituted": [],
+ "ticks": [
+  {
+   "newVm": true,
+   "input": {
+    "meta": "{\"time\":2001,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W0N1\",1,6],[\"W0N3\",1,0],[\"W2N0\",1,2],[\"W3N0\",1,7],[\"null\",1,-1],[\"W3N1\",1,1],[\"W1N0\",1,8],[\"W2N1\",0,12]],\"flags\":[{\"_id\":\"fl0\",\"user\":\"5a1b2c3d4e5f601\",\"room\":\"W0N0\",\"data\":\"F0a~1~2~3~4|F0b~5~5~6~7\"},{\"_id\":\"fl1\",\"user\":\"5a1b2c3d4e5f601\",\"room\":\"W0N1\",\"data\":\"F1a~1~2~3~4|F1b~5~5~6~7\"}],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W0N1\",\"status\":\"normal\"},\"seq\":[4,21],\"objects\":[{\"_id\":\"c00000000000015\",\"type\":\"controller\",\"room\":\"W0N1\",\"x\":19,\"y\":45,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"r00000000000026\",\"type\":\"energy\",\"room\":\"W0N1\",\"x\":27,\"y\":28,\"energy\":154,\"resourceType\":\"energy\"}]}",
+     "{\"room\":{\"_id\":\"W0N3\",\"status\":\"normal\"},\"seq\":[6,11,29],\"objects\":[{\"_id\":\"a00000000000017\",\"type\":\"spawn\",\"room\":\"W0N3\",\"x\":24,\"y\":7,\"name\":\"s1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300},\"off\":false},{\"_id\":\"c0000000000001c\",\"type\":\"controller\",\"room\":\"W0N3\",\"x\":30,\"y\":35,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"a0000000000002e\",\"type\":\"spawn\",\"room\":\"W0N3\",\"x\":22,\"y\":10,\"name\":\"s3\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300},\"off\":false}]}",
+     "{\"room\":{\"_id\":\"W2N0\",\"status\":\"normal\"},\"seq\":[13],\"objects\":[{\"_id\":\"e0000000000001e\",\"type\":\"extension\",\"room\":\"W2N0\",\"x\":7,\"y\":9,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50},\"off\":false}]}",
+     "{\"room\":{\"_id\":\"W3N0\",\"status\":\"normal\"},\"seq\":[0,17,26],\"objects\":[{\"_id\":\"s00000000000011\",\"type\":\"source\",\"room\":\"W3N0\",\"x\":25,\"y\":39,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"o00000000000022\",\"type\":\"observer\",\"room\":\"W3N0\",\"x\":33,\"y\":48,\"user\":\"5a1b2c3d4e5f601\",\"hits\":500,\"hitsMax\":500,\"observeRoom\":null,\"notifyWhenAttacked\":true},{\"_id\":\"b0000000000002b\",\"type\":\"constructionSite\",\"room\":\"W3N0\",\"x\":27,\"y\":35,\"structureType\":\"road\",\"user\":\"6b2c3d4e5f60712\",\"progress\":0,\"progressTotal\":3000}]}",
+     null,
+     "{\"room\":{\"_id\":\"W3N1\",\"status\":\"normal\"},\"seq\":[16,19,20,22,24],\"objects\":[{\"_id\":\"s00000000000021\",\"type\":\"source\",\"room\":\"W3N1\",\"x\":2,\"y\":30,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"o00000000000024\",\"type\":\"observer\",\"room\":\"W3N1\",\"x\":19,\"y\":13,\"user\":\"5a1b2c3d4e5f601\",\"hits\":500,\"hitsMax\":500,\"observeRoom\":\"W2N0\",\"notifyWhenAttacked\":true},{\"_id\":\"c00000000000025\",\"type\":\"controller\",\"room\":\"W3N1\",\"x\":38,\"y\":4,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false},{\"_id\":\"s00000000000027\",\"type\":\"source\",\"room\":\"W3N1\",\"x\":32,\"y\":7,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"r00000000000029\",\"type\":\"energy\",\"room\":\"W3N1\",\"x\":20,\"y\":12,\"energy\":72,\"resourceType\":\"energy\"}]}",
+     "{\"room\":{\"_id\":\"W1N0\",\"status\":\"normal\"},\"seq\":[27],\"objects\":[{\"_id\":\"e0000000000002c\",\"type\":\"extension\",\"room\":\"W1N0\",\"x\":10,\"y\":13,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50},\"off\":false}]}",
+     "{\"room\":{\"_id\":\"W2N1\",\"status\":\"normal\"},\"seq\":[3],\"objects\":[{\"_id\":\"b00000000000014\",\"type\":\"constructionSite\",\"room\":\"W2N1\",\"x\":31,\"y\":47,\"structureType\":\"extension\",\"user\":\"5a1b2c3d4e5f601\",\"progress\":0,\"progressTotal\":3000}]}"
+    ],
+    "eventLogs": [
+     null,
+     null,
+     "[{\"event\":3}]",
+     null,
+     null,
+     "[{\"event\":8}]",
+     null
+    ],
+    "memory": "",
+    "modules": {
+     "main": "\nmodule.exports.loop = function () {\n    var ids = function (h) { return Object.keys(h).map(function (k) { return k + ':' + (h[k].id || h[k].name); }).join(); };\n    console.log('rooms', Object.keys(Game.rooms).join());\n    console.log('creeps', ids(Game.creeps));\n    console.log('structures', Object.keys(Game.structures).join());\n    console.log('spawns', ids(Game.spawns));\n    console.log('sites', Object.keys(Game.constructionSites).join());\n    console.log('flags', Object.keys(Game.flags).join());\n    for (var name in Game.rooms) {\n        var r = Game.rooms[name];\n        [FIND_CREEPS, FIND_STRUCTURES, FIND_SOURCES, FIND_CONSTRUCTION_SITES, FIND_DROPPED_RESOURCES, FIND_FLAGS, FIND_MY_STRUCTURES, FIND_HOSTILE_CREEPS].forEach(function (t) {\n            console.log(name, t, r.find(t).map(function (o) { return o.id || o.name; }).join());\n        });\n        console.log(name, 'energy', r.energyAvailable, r.energyCapacityAvailable, JSON.stringify(r.getEventLog(true)));\n    }\n};"
+    }
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "rooms W0N3,W3N1,W2N0,W0N1,W3N0,W1N0",
+       "escape": true
+      },
+      {
+       "message": "creeps \"\"",
+       "escape": true
+      },
+      {
+       "message": "structures c00000000000015,a00000000000017,c0000000000001c,e0000000000001e,o00000000000022,o00000000000024,e0000000000002c,a0000000000002e",
+       "escape": true
+      },
+      {
+       "message": "spawns s1:a00000000000017,s3:a0000000000002e",
+       "escape": true
+      },
+      {
+       "message": "sites b00000000000014",
+       "escape": true
+      },
+      {
+       "message": "flags F0a,F0b,F1a,F1b",
+       "escape": true
+      },
+      {
+       "message": "W0N3 101 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N3 107 a00000000000017,c0000000000001c,a0000000000002e",
+       "escape": true
+      },
+      {
+       "message": "W0N3 105 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N3 111 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N3 106 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N3 110 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N3 108 a00000000000017,c0000000000001c,a0000000000002e",
+       "escape": true
+      },
+      {
+       "message": "W0N3 103 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N3 energy 600 600 \"[]\"",
+       "escape": true
+      },
+      {
+       "message": "W3N1 101 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W3N1 107 c00000000000025,o00000000000024",
+       "escape": true
+      },
+      {
+       "message": "W3N1 105 s00000000000021,s00000000000027",
+       "escape": true
+      },
+      {
+       "message": "W3N1 111 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W3N1 106 r00000000000029",
+       "escape": true
+      },
+      {
+       "message": "W3N1 110 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W3N1 108 o00000000000024",
+       "escape": true
+      },
+      {
+       "message": "W3N1 103 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W3N1 energy 0 0 \"[{\\\"event\\\":8}]\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 101 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 107 e0000000000001e",
+       "escape": true
+      },
+      {
+       "message": "W2N0 105 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 111 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 106 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 110 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 108 e0000000000001e",
+       "escape": true
+      },
+      {
+       "message": "W2N0 103 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W2N0 energy 50 50 \"[{\\\"event\\\":3}]\"",
+       "escape": true
+      },
+      {
+       "message": "W0N1 101 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N1 107 c00000000000015",
+       "escape": true
+      },
+      {
+       "message": "W0N1 105 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N1 111 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N1 106 r00000000000026",
+       "escape": true
+      },
+      {
+       "message": "W0N1 110 F1a,F1b",
+       "escape": true
+      },
+      {
+       "message": "W0N1 108 c00000000000015",
+       "escape": true
+      },
+      {
+       "message": "W0N1 103 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W0N1 energy 0 0 \"[]\"",
+       "escape": true
+      },
+      {
+       "message": "W3N0 101 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W3N0 107 o00000000000022",
+       "escape": true
+      },
+      {
+       "message": "W3N0 105 s00000000000011",
+       "escape": true
+      },
+      {
+       "message": "W3N0 111 b0000000000002b",
+       "escape": true
+      },
+      {
+       "message": "W3N0 106 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W3N0 110 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W3N0 108 o00000000000022",
+       "escape": true
+      },
+      {
+       "message": "W3N0 103 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W3N0 energy 0 0 \"[]\"",
+       "escape": true
+      },
+      {
+       "message": "W1N0 101 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N0 107 e0000000000002c",
+       "escape": true
+      },
+      {
+       "message": "W1N0 105 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N0 111 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N0 106 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N0 110 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N0 108 e0000000000002c",
+       "escape": true
+      },
+      {
+       "message": "W1N0 103 \"\"",
+       "escape": true
+      },
+      {
+       "message": "W1N0 energy 50 50 \"[]\"",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  }
+ ]
+}

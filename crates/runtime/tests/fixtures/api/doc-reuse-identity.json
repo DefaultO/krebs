@@ -1,0 +1,173 @@
+{
+ "name": "doc-reuse-identity",
+ "tags": [
+  "game/creeps.js:92",
+  "game/structures.js:1395",
+  "game/store.js:19",
+  "game/rooms.js:1833"
+ ],
+ "substituted": [],
+ "ticks": [
+  {
+   "newVm": true,
+   "input": {
+    "meta": "{\"time\":100,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5,8,9,10,11],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k00000000000004\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":11,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k00000000000006\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":30,\"y\":30,\"name\":\"Intruder\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"a00000000000009\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":35,\"y\":35,\"name\":\"Spawn2\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":{\"name\":\"Baby\",\"needTime\":9,\"spawnTime\":105,\"directions\":[1,3]},\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k0000000000000a\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":35,\"y\":35,\"name\":\"Baby\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":true,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"s0000000000000b\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":40,\"y\":40,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300,\"effects\":[{\"power\":13,\"level\":1,\"endTime\":200}]},{\"_id\":\"t0000000000000c\",\"type\":\"container\",\"room\":\"W1N1\",\"x\":9,\"y\":9,\"hits\":250000,\"hitsMax\":250000,\"store\":{\"energy\":10,\"H\":5},\"storeCapacity\":2000}]}"
+    ],
+    "eventLogs": [
+     null
+    ],
+    "memory": "",
+    "modules": {
+     "main": "\nfunction find(type) { return Game.rooms.W1N1.find(FIND_STRUCTURES, {filter: {structureType: type}}); }\nfunction report(g) {\n    var c = Game.creeps.Harvester1, s = Game.spawns.Spawn2, ext = find(STRUCTURE_EXTENSION)[0], box = find(STRUCTURE_CONTAINER)[0];\n    var src = Game.rooms.W1N1.find(FIND_SOURCES), boosted = src.filter(function (x) { return x.effects && x.effects.length; })[0];\n    console.log('same', c === g.c, c.body === g.body, s === g.s, s.store === g.store, s.spawning && s.spawning.directions === g.dirs,\n        ext === g.ext, Game.getObjectById(src[0].id) === g.src);\n    console.log('body', JSON.stringify(c.body), 'stores', JSON.stringify(s.store), JSON.stringify(ext.store), JSON.stringify(box.store),\n        box.store.getUsedCapacity(), ext.store.getFreeCapacity(RESOURCE_ENERGY));\n    console.log('spawning', JSON.stringify(s.spawning), 'effects', boosted && JSON.stringify(boosted.effects),\n        'owner', JSON.stringify(Game.rooms.W1N1.controller.owner), Game.rooms.W1N1.find(FIND_DROPPED_RESOURCES).length);\n    return {c: c, s: s, ext: ext, box: box, src: src[0], boosted: boosted};\n}\nmodule.exports.loop = function () {\n    var o = report(global.prev || {});\n    // everything the player reaches, written to: none of it may reach the next tick\n    o.c.body[0].hits = 1;\n    o.c.body[1].type = 'attack';\n    o.c.body.push({type: 'tough', hits: 7});\n    o.s.store.energy = 1;\n    o.ext.store.energy = 2;\n    o.box.store.H = 99;\n    o.s.spawning.directions.push(8);\n    o.s.spawning.directions[0] = 5;\n    if (o.boosted) o.boosted.effects[0].ticksRemaining = 1;\n    Game.rooms.W1N1.controller.owner.username = 'Mallory';\n    global.prev = {c: o.c, body: o.c.body, s: o.s, store: o.s.store, dirs: o.s.spawning.directions, ext: o.ext, src: o.src};\n};"
+    }
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "same false false false false false false false",
+       "escape": true
+      },
+      {
+       "message": "body [{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}] stores {\"energy\":300} {\"energy\":50} {\"energy\":10,\"H\":5} 15 0",
+       "escape": true
+      },
+      {
+       "message": "spawning {\"name\":\"Baby\",\"needTime\":9,\"remainingTime\":5,\"directions\":[1,3]} effects [{\"power\":13,\"level\":1,\"ticksRemaining\":100}] owner {\"username\":\"Alice\"} 0",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  },
+  {
+   "input": {
+    "meta": "{\"time\":101,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5,8,9,10,11],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k00000000000004\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":11,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":40},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k00000000000006\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":30,\"y\":30,\"name\":\"Intruder\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"a00000000000009\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":35,\"y\":35,\"name\":\"Spawn2\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":{\"name\":\"Baby\",\"needTime\":9,\"spawnTime\":105,\"directions\":[1,3]},\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k0000000000000a\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":35,\"y\":35,\"name\":\"Baby\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":true,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"s0000000000000b\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":40,\"y\":40,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300,\"effects\":[{\"power\":13,\"level\":1,\"endTime\":200}]},{\"_id\":\"t0000000000000c\",\"type\":\"container\",\"room\":\"W1N1\",\"x\":9,\"y\":9,\"hits\":250000,\"hitsMax\":250000,\"store\":{\"energy\":10,\"H\":5},\"storeCapacity\":2000}]}"
+    ],
+    "eventLogs": [
+     null
+    ]
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "same false false false false false false false",
+       "escape": true
+      },
+      {
+       "message": "body [{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}] stores {\"energy\":300} {\"energy\":40} {\"energy\":10,\"H\":5} 15 10",
+       "escape": true
+      },
+      {
+       "message": "spawning {\"name\":\"Baby\",\"needTime\":9,\"remainingTime\":4,\"directions\":[1,3]} effects [{\"power\":13,\"level\":1,\"ticksRemaining\":99}] owner {\"username\":\"Alice\"} 0",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  },
+  {
+   "input": {
+    "meta": "{\"time\":102,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,7,8,9,10,11],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k00000000000004\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":11,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":40},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"a00000000000009\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":35,\"y\":35,\"name\":\"Spawn2\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":{\"name\":\"Baby\",\"needTime\":9,\"spawnTime\":105,\"directions\":[1,3]},\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k0000000000000a\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":35,\"y\":35,\"name\":\"Baby\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":true,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"s0000000000000b\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":40,\"y\":40,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300,\"effects\":[{\"power\":13,\"level\":1,\"endTime\":200}]},{\"_id\":\"t0000000000000c\",\"type\":\"container\",\"room\":\"W1N1\",\"x\":9,\"y\":9,\"hits\":250000,\"hitsMax\":250000,\"store\":{\"energy\":10,\"H\":5},\"storeCapacity\":2000},{\"_id\":\"r00000000000025\",\"type\":\"energy\",\"room\":\"W1N1\",\"x\":12,\"y\":12,\"energy\":25,\"resourceType\":\"energy\"}]}"
+    ],
+    "eventLogs": [
+     null
+    ]
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "same false false false false false false false",
+       "escape": true
+      },
+      {
+       "message": "body [{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}] stores {\"energy\":300} {\"energy\":40} {\"energy\":10,\"H\":5} 15 10",
+       "escape": true
+      },
+      {
+       "message": "spawning {\"name\":\"Baby\",\"needTime\":9,\"remainingTime\":3,\"directions\":[1,3]} effects [{\"power\":13,\"level\":1,\"ticksRemaining\":98}] owner {\"username\":\"Alice\"} 1",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  },
+  {
+   "input": {
+    "meta": "{\"time\":103,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1]],\"flags\":[],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,7,8,9,10,11],\"objects\":[{\"_id\":\"c00000000000001\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s00000000000002\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a00000000000003\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k00000000000004\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":11,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000005\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":40},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"a00000000000009\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":35,\"y\":35,\"name\":\"Spawn2\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":{\"name\":\"Baby\",\"needTime\":9,\"spawnTime\":105,\"directions\":[1,3]},\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k0000000000000a\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":35,\"y\":35,\"name\":\"Baby\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":true,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"s0000000000000b\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":40,\"y\":40,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300,\"effects\":[{\"power\":13,\"level\":1,\"endTime\":200}]},{\"_id\":\"t0000000000000c\",\"type\":\"container\",\"room\":\"W1N1\",\"x\":9,\"y\":9,\"hits\":250000,\"hitsMax\":250000,\"store\":{\"energy\":10,\"H\":5},\"storeCapacity\":2000},{\"_id\":\"r00000000000025\",\"type\":\"energy\",\"room\":\"W1N1\",\"x\":12,\"y\":12,\"energy\":25,\"resourceType\":\"energy\"}]}"
+    ],
+    "eventLogs": [
+     null
+    ]
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     []
+    ],
+    "intentsCpu": 0,
+    "console": {
+     "log": [
+      {
+       "message": "same false false false false false false false",
+       "escape": true
+      },
+      {
+       "message": "body [{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}] stores {\"energy\":300} {\"energy\":40} {\"energy\":10,\"H\":5} 15 10",
+       "escape": true
+      },
+      {
+       "message": "spawning {\"name\":\"Baby\",\"needTime\":9,\"remainingTime\":2,\"directions\":[1,3]} effects [{\"power\":13,\"level\":1,\"ticksRemaining\":97}] owner {\"username\":\"Alice\"} 1",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  }
+ ]
+}

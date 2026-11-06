@@ -1,0 +1,119 @@
+[
+ {
+  "in": {
+   "main": "x",
+   "a.b": 1
+  },
+  "toDb": {
+   "main": "x",
+   "a$DOT$b": 1
+  },
+  "fromDb": {
+   "main": "x",
+   "a.b": 1
+  }
+ },
+ {
+  "in": {
+   "lib/x.js": 2,
+   ".hidden": 3,
+   "$dollar": 4,
+   "main": ""
+  },
+  "toDb": {
+   "main": "",
+   "lib$SLASH$x$DOT$js": 2
+  },
+  "fromDb": {
+   "lib/x.js": 2,
+   ".hidden": 3,
+   "$dollar": 4,
+   "main": ""
+  }
+ },
+ {
+  "in": {
+   "a\\b": 1,
+   "/abs": 2,
+   "x$DOT$y": 5,
+   "x.y": 6
+  },
+  "toDb": {
+   "x$DOT$y": 6,
+   "a$BACKSLASH$b": 1,
+   "main": ""
+  },
+  "fromDb": {
+   "a\\b": 1,
+   "/abs": 2,
+   "x.y": 5
+  }
+ },
+ {
+  "in": {},
+  "toDb": {
+   "main": ""
+  },
+  "fromDb": {}
+ },
+ {
+  "in": {
+   "0": "z",
+   "1": "n",
+   "b.c": 2,
+   "main": 0
+  },
+  "toDb": {
+   "0": "z",
+   "1": "n",
+   "main": "",
+   "b$DOT$c": 2
+  },
+  "fromDb": {
+   "0": "z",
+   "1": "n",
+   "b.c": 2,
+   "main": 0
+  }
+ },
+ {
+  "in": {
+   "7.5": "num",
+   "q$SLASH$r": 1,
+   "s$BACKSLASH$t": 2,
+   "main": null
+  },
+  "toDb": {
+   "q$SLASH$r": 1,
+   "s$BACKSLASH$t": 2,
+   "main": "",
+   "7$DOT$5": "num"
+  },
+  "fromDb": {
+   "7.5": "num",
+   "main": null,
+   "q/r": 1,
+   "s\\t": 2
+  }
+ },
+ {
+  "in": {
+   "a.b.c": {
+    "binary": "AAAA"
+   },
+   "main": "m"
+  },
+  "toDb": {
+   "main": "m",
+   "a$DOT$b$DOT$c": {
+    "binary": "AAAA"
+   }
+  },
+  "fromDb": {
+   "a.b.c": {
+    "binary": "AAAA"
+   },
+   "main": "m"
+  }
+ }
+]

@@ -1,0 +1,108 @@
+diff --git a/v8/src/compiler/js-native-context-specialization.cc b/v8/src/compiler/js-native-context-specialization.cc
+--- a/v8/src/compiler/js-native-context-specialization.cc
++++ b/v8/src/compiler/js-native-context-specialization.cc
+@@ -43,6 +43,8 @@
+ #include "src/objects/feedback-vector.h"
+ #include "src/objects/heap-number.h"
+ #include "src/objects/property-details.h"
++#include "src/objects/property-cell-inl.h"
++#include "src/objects/string-inl.h"
+ #include "src/objects/string.h"
+ #include "src/objects/tagged-field.h"
+ 
+@@ -1014,6 +1016,16 @@ Reduction JSNativeContextSpecialization::ReduceGlobalAccess(
+     Node* node, Node* lookup_start_object, Node* receiver, Node* value,
+     NameRef name, AccessMode access_mode, Node* key,
+     PropertyCellRef property_cell, Node* effect) {
++  // chitin: Screeps replaces the global `Memory` every tick (vanilla redefines
++  // it as an accessor, players' memhack deletes and reassigns it), and
++  // replacing a global's cell deoptimizes all code compiled against it. Its
++  // accesses stay on the generic IC, which follows the new cell.
++  Tagged<Name> raw_name = property_cell.object()->name();
++  if (IsString(raw_name) &&
++      Cast<String>(raw_name)->IsEqualTo(base::StaticCharVector("Memory"),
++                                        broker()->local_isolate_or_isolate())) {
++    return NoChange();
++  }
+   if (!property_cell.Cache(broker())) {
+     TRACE_BROKER_MISSING(broker(), "usable data for " << property_cell);
+     return NoChange();
+diff --git a/v8/src/execution/isolate.cc b/v8/src/execution/isolate.cc
+--- a/v8/src/execution/isolate.cc
++++ b/v8/src/execution/isolate.cc
+@@ -6831,13 +6831,20 @@ void Isolate::DumpAndResetStats() {
+ void Isolate::DumpAndResetBuiltinsProfileData() {
+   if (BasicBlockProfiler::Get()->HasData(this)) {
+     if (v8_flags.turbo_profiling_output) {
+-      FILE* f = std::fopen(v8_flags.turbo_profiling_output, "w");
++      // chitin: every isolate's counts to a file of its own (<output>.<n>),
++      // closed, instead of each disposal truncating one file it never closes.
++      static std::atomic<int> dumps{0};
++      std::string name = std::string(v8_flags.turbo_profiling_output) + "." +
++                         std::to_string(dumps++);
++      FILE* f = std::fopen(name.c_str(), "w");
+       if (f == nullptr) {
+-        FATAL("Unable to open file \"%s\" for writing.\n",
+-              v8_flags.turbo_profiling_output.value());
++        FATAL("Unable to open file \"%s\" for writing.\n", name.c_str());
+       }
+-      OFStream pgo_stream(f);
+-      BasicBlockProfiler::Get()->Log(this, pgo_stream);
++      {
++        OFStream pgo_stream(f);
++        BasicBlockProfiler::Get()->Log(this, pgo_stream);
++      }
++      std::fclose(f);
+     } else {
+       StdoutStream out;
+       BasicBlockProfiler::Get()->Print(this, out);
+diff --git a/v8/src/maglev/maglev-graph-builder.cc b/v8/src/maglev/maglev-graph-builder.cc
+--- a/v8/src/maglev/maglev-graph-builder.cc
++++ b/v8/src/maglev/maglev-graph-builder.cc
+@@ -79,10 +79,12 @@
+ #include "src/objects/literal-objects-inl.h"
+ #include "src/objects/name-inl.h"
+ #include "src/objects/object-list-macros.h"
++#include "src/objects/property-cell-inl.h"
+ #include "src/objects/property-cell.h"
+ #include "src/objects/property-details.h"
+ #include "src/objects/shared-function-info.h"
+ #include "src/objects/slots-inl.h"
++#include "src/objects/string-inl.h"
+ #include "src/objects/string.h"
+ #include "src/objects/type-hints.h"
+ #include "src/roots/roots.h"
+@@ -3347,12 +3349,25 @@ MaybeReduceResult MaglevGraphBuilder::TryBuildScriptContextStore(
+       global_access_feedback.script_context().scope_info(broker()));
+ }
+ 
++// chitin: Screeps replaces the global `Memory` every tick (vanilla redefines it
++// as an accessor, players' memhack deletes and reassigns it), and replacing a
++// global's cell deoptimizes all code compiled against it. Its accesses stay on
++// the global IC, which follows the new cell without a deopt.
++static bool IsChitinVolatileGlobal(compiler::PropertyCellRef cell,
++                                   compiler::JSHeapBroker* broker) {
++  Tagged<Name> name = cell.object()->name();
++  return IsString(name) &&
++         Cast<String>(name)->IsEqualTo(base::StaticCharVector("Memory"),
++                                       broker->local_isolate_or_isolate());
++}
++
+ MaybeReduceResult MaglevGraphBuilder::TryBuildPropertyCellStore(
+     const compiler::GlobalAccessFeedback& global_access_feedback) {
+   DCHECK(global_access_feedback.IsPropertyCell());
+ 
+   compiler::PropertyCellRef property_cell =
+       global_access_feedback.property_cell();
++  if (IsChitinVolatileGlobal(property_cell, broker())) return {};
+   if (!property_cell.Cache(broker())) return {};
+ 
+   compiler::ObjectRef property_cell_value = property_cell.value(broker());
+@@ -3443,6 +3458,7 @@ MaybeReduceResult MaglevGraphBuilder::TryBuildPropertyCellLoad(
+ 
+   compiler::PropertyCellRef property_cell =
+       global_access_feedback.property_cell();
++  if (IsChitinVolatileGlobal(property_cell, broker())) return {};
+   if (!property_cell.Cache(broker())) return {};
+ 
+   compiler::ObjectRef property_cell_value = property_cell.value(broker());

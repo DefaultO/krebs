@@ -1,0 +1,100 @@
+{
+ "name": "game-construct-registry",
+ "tags": [
+  "game/game.js:184",
+  "game/game.js:260",
+  "game/game.js:325",
+  "game/game.js:366",
+  "game/game.js:397"
+ ],
+ "substituted": [],
+ "ticks": [
+  {
+   "newVm": true,
+   "input": {
+    "meta": "{\"time\":100,\"user\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"cpu\":100,\"cpuAvailable\":9000,\"gcl\":1234567,\"power\":2500,\"active\":10000,\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false},\"resources\":{\"pixel\":3,\"cpuUnlock\":1},\"money\":1500000},\"cpu\":500,\"cpuBucket\":9000,\"codeVersion\":1,\"rooms\":[[\"W1N1\",1,1],[\"W5N5\",0,3]],\"flags\":[{\"_id\":\"f1\",\"user\":\"5a1b2c3d4e5f601\",\"room\":\"W1N1\",\"data\":\"Home~1~2~10~12|Far$VLINE$Away~3~4~5~5\"},{\"_id\":\"f2\",\"user\":\"5a1b2c3d4e5f601\",\"room\":\"W9N9\",\"data\":\"Lost~5~5~1~1\"}],\"powerCreeps\":{},\"users\":{\"5a1b2c3d4e5f601\":{\"_id\":\"5a1b2c3d4e5f601\",\"username\":\"Alice\",\"badge\":{\"type\":1,\"color1\":\"#ff0000\",\"color2\":\"#00ff00\",\"color3\":\"#0000ff\",\"param\":0,\"flip\":false}},\"6b2c3d4e5f60712\":{\"_id\":\"6b2c3d4e5f60712\",\"username\":\"Bob\",\"badge\":{}}},\"transactions\":{\"outgoing\":[],\"incoming\":[]},\"consoleCommands\":[],\"myOrders\":[],\"segments\":{\"activeSegments\":[],\"foreign\":null,\"publicSegments\":\"\"},\"shard\":\"shard0\"}",
+    "blobs": [
+     "{\"room\":{\"_id\":\"W1N1\",\"status\":\"normal\"},\"seq\":[0,1,2,3,4,5,8,10,11],\"objects\":[{\"_id\":\"c00000000000009\",\"type\":\"controller\",\"room\":\"W1N1\",\"x\":20,\"y\":20,\"level\":2,\"progress\":100,\"downgradeTime\":20000,\"safeModeAvailable\":1,\"isPowerEnabled\":false,\"user\":\"5a1b2c3d4e5f601\"},{\"_id\":\"s0000000000000a\",\"type\":\"source\",\"room\":\"W1N1\",\"x\":10,\"y\":10,\"energy\":3000,\"energyCapacity\":3000,\"ticksToRegeneration\":300},{\"_id\":\"a0000000000000b\",\"type\":\"spawn\",\"room\":\"W1N1\",\"x\":25,\"y\":25,\"name\":\"Spawn1\",\"user\":\"5a1b2c3d4e5f601\",\"hits\":5000,\"hitsMax\":5000,\"spawning\":null,\"notifyWhenAttacked\":true,\"store\":{\"energy\":300},\"storeCapacityResource\":{\"energy\":300}},{\"_id\":\"k0000000000000c\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":11,\"y\":11,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e0000000000000d\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":26,\"y\":26,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50}},{\"_id\":\"k0000000000000e\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":30,\"y\":30,\"name\":\"Intruder\",\"user\":\"6b2c3d4e5f60712\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"b00000000000011\",\"type\":\"constructionSite\",\"room\":\"W1N1\",\"x\":30,\"y\":31,\"structureType\":\"extension\",\"user\":\"5a1b2c3d4e5f601\",\"progress\":0,\"progressTotal\":3000},{\"_id\":\"k00000000000013\",\"type\":\"creep\",\"room\":\"W1N1\",\"x\":12,\"y\":12,\"name\":\"Harvester1\",\"user\":\"5a1b2c3d4e5f601\",\"body\":[{\"type\":\"work\",\"hits\":100},{\"type\":\"carry\",\"hits\":100},{\"type\":\"move\",\"hits\":100}],\"hits\":300,\"hitsMax\":300,\"fatigue\":0,\"ageTime\":1500,\"spawning\":false,\"notifyWhenAttacked\":true,\"store\":{\"energy\":0},\"storeCapacity\":50},{\"_id\":\"e00000000000014\",\"type\":\"extension\",\"room\":\"W1N1\",\"x\":27,\"y\":27,\"user\":\"5a1b2c3d4e5f601\",\"hits\":1000,\"hitsMax\":1000,\"notifyWhenAttacked\":true,\"store\":{\"energy\":50},\"storeCapacityResource\":{\"energy\":50},\"off\":true}]}",
+     "{\"room\":{\"_id\":\"W5N5\",\"status\":\"normal\"},\"seq\":[9],\"objects\":[{\"_id\":\"b00000000000012\",\"type\":\"constructionSite\",\"room\":\"W5N5\",\"x\":30,\"y\":31,\"structureType\":\"road\",\"user\":\"5a1b2c3d4e5f601\",\"progress\":0,\"progressTotal\":3000}]}"
+    ],
+    "eventLogs": [
+     null
+    ],
+    "memory": "",
+    "modules": {
+     "main": "\nmodule.exports.loop = function () {\n    try { console.log(\"energy\", JSON.stringify([Game.rooms.W1N1.energyAvailable, Game.rooms.W1N1.energyCapacityAvailable, Game.rooms.W2N1.energyAvailable])); } catch (e) { console.log(\"energy\", 'threw', String(e)); }\n    try { console.log(\"memoKeys\", JSON.stringify(Object.keys(Game.creeps.Harvester1))); } catch (e) { console.log(\"memoKeys\", 'threw', String(e)); }\n    try { console.log(\"siteKeys\", JSON.stringify(Object.keys(Game.constructionSites).map(i => [Game.constructionSites[i].structureType, !!Game.constructionSites[i].room]))); } catch (e) { console.log(\"siteKeys\", 'threw', String(e)); }\n    try { console.log(\"flags\", JSON.stringify(Object.keys(Game.flags).map(n => [n, Game.flags[n].color, !!Game.flags[n].room]))); } catch (e) { console.log(\"flags\", 'threw', String(e)); }\n    try { console.log(\"flagById\", JSON.stringify(Game.getObjectById(\"flag_Home\") === Game.flags.Home)); } catch (e) { console.log(\"flagById\", 'threw', String(e)); }\n    try { console.log(\"find\", JSON.stringify([Game.rooms.W1N1.find(FIND_MY_CREEPS).length, Game.rooms.W1N1.find(FIND_HOSTILE_CREEPS).length])); } catch (e) { console.log(\"find\", 'threw', String(e)); }\n    try { console.log(\"owner\", JSON.stringify(Game.rooms.W1N1.find(FIND_HOSTILE_CREEPS)[0].owner)); } catch (e) { console.log(\"owner\", 'threw', String(e)); }\n    try { console.log(\"controller\", JSON.stringify(Game.rooms.W1N1.controller.my)); } catch (e) { console.log(\"controller\", 'threw', String(e)); }\n    try { console.log(\"dup\", JSON.stringify(Object.keys(Game.creeps).length)); } catch (e) { console.log(\"dup\", 'threw', String(e)); }\n};"
+    }
+   },
+   "expected": {
+    "status": "done",
+    "error": null,
+    "memory": "",
+    "intentsList": [
+     "o",
+     0,
+     [
+      [
+       "k00000000000013",
+       [
+        "o",
+        1,
+        [
+         [
+          "suicide",
+          [
+           "o",
+           2,
+           []
+          ]
+         ]
+        ]
+       ]
+      ]
+     ]
+    ],
+    "intentsCpu": 0.2,
+    "console": {
+     "log": [
+      {
+       "message": "energy threw TypeError: Cannot read properties of undefined (reading 'energyAvailable')",
+       "escape": true
+      },
+      {
+       "message": "memoKeys [\"room\",\"pos\",\"id\",\"_name\",\"_spawning\",\"_my\"]",
+       "escape": true
+      },
+      {
+       "message": "siteKeys [[\"extension\",true],[\"road\",false]]",
+       "escape": true
+      },
+      {
+       "message": "flags [[\"Home\",1,true],[\"Far|Away\",3,true],[\"Lost\",5,false]]",
+       "escape": true
+      },
+      {
+       "message": "flagById true",
+       "escape": true
+      },
+      {
+       "message": "find [2,1]",
+       "escape": true
+      },
+      {
+       "message": "owner {\"username\":\"Bob\"}",
+       "escape": true
+      },
+      {
+       "message": "controller true",
+       "escape": true
+      },
+      {
+       "message": "dup 1",
+       "escape": true
+      }
+     ],
+     "results": []
+    }
+   }
+  }
+ ]
+}
