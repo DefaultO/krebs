@@ -109,10 +109,11 @@ You need Windows, [Rust](https://rustup.rs) and the
 git clone --recursive https://github.com/DefaultO/krebs.git
 ```
 
-`https://gitea.defaul.to/DefaultO/krebs.git` works the same. Krebs is on [GitHub](https://github.com/DefaultO/krebs) and on
+Krebs is on [GitHub](https://github.com/DefaultO/krebs) and on
 [Gitea](https://gitea.defaul.to/DefaultO/krebs), and either one is enough: each has the code, the mods, the releases and the
-V8 library, so you can clone, build and download with the other switched off. The files are the same on both. The commit
-hashes are not, because each site's commits carry that site's own address.
+V8 library, so you can clone, build and download with the other switched off. The files are the same on both, apart from
+the commands in these READMEs, which name the site you read them on. The commit hashes differ, because each site's commits
+carry that site's own address.
 
 This gets the core and the mods that make Krebs what players see: lobbies, Battle Royale, the stripped client. Each mod is a
 repository of its own, added as a git submodule. See [mods/README.md](mods/README.md), which also says how to add a mod.
