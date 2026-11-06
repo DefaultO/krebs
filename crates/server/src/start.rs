@@ -8,16 +8,22 @@
 //! `--friends` listens on all interfaces. The CLI has no authentication, so it stays on this PC, and match servers never
 //! see the flag: `mods/bare` starts them on their own defaults, which are 127.0.0.1.
 //!
+//! A server other people can reach needs a Steam Web API key, so that Steam confirms each sign-in (`backend::steam_web`). A
+//! start with no command asks for one, and `serve` refuses to go on without. Alone on this PC nothing needs one.
+//!
 //! Not covered: a fatal V8 error or an out-of-memory abort end the process without unwinding, so nothing here runs.
 
 use crate::config::{Args, Config};
-use std::io::{Read, Write};
+use backend::steam_web::{self, Answer};
+use std::io::{BufRead, Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 const ALL_INTERFACES: &str = "0.0.0.0";
+/// The names for this PC alone. Anything else in `http.host` is a server others may reach.
+const LOCAL_HOSTS: [&str; 3] = ["127.0.0.1", "localhost", "::1"];
 const THIS_PC: &str = "127.0.0.1";
 const PLAYERS_MOD: &str = "bare";
 /// With the port open to a network, the room one caller can take up. A browser opens a handful of connections, so this
@@ -28,6 +34,11 @@ const FRIENDS_REQUEST_TIMEOUT_S: u64 = 30;
 const CRASHED: &str = "Krebs hit an internal error and had to stop. The lines above say where.\n\
 Your last automatic save is still there. Start Krebs again to carry on from it.";
 
+/// Without it every ticket is the same account, which is fine alone on this PC and the host's own account for anyone else.
+const ONE_ACCOUNT: &str = "Friends cannot join without the bare mod: everyone who connected would be the same player.\n\
+                           Put \"bare\" in mods in krebs.json, or use the download, which has it built in.\n\
+                           A plain server with passwords can open by setting steam under auth in krebs.json to off.";
+const NO_KEY: &str = "No key, so nobody else can join. Krebs.exe on its own still works for playing on this PC.";
 const IN_THE_ZIP: &str = "Krebs was started from inside the zip, so Windows gave it a throwaway folder and left the other files out.\n\
 Close this, right-click the zip and choose Extract All. Then start Krebs.exe from the new folder.";
 
@@ -70,7 +81,14 @@ fn start(args: &Args) {
     if args.flag("friends").is_some() {
         open_to_friends(&mut cfg);
     }
-    if let Some(problem) = folder_problem(&cfg.data).or_else(|| port_problem(&cfg)) {
+    if let Some(problem) = folder_problem(&cfg.data) {
+        give_up(&problem);
+    }
+    if needs_steam_key(&cfg) {
+        make_sure_of_steam_key(&cfg.data);
+    }
+    // the ports come last: the key can take minutes, and nothing holds a port until the server does
+    if let Some(problem) = steam_key(&cfg).err().or_else(|| port_problem(&cfg)) {
         give_up(&problem);
     }
     if !crate::spec_path(&cfg).exists() && !engine::persist::exists(&cfg.data) {
@@ -107,6 +125,86 @@ fn open_to_friends(cfg: &mut Config) {
     cfg.cli_host = THIS_PC.into();
     cfg.max_connections = cfg.max_connections.min(FRIENDS_MAX_CONNECTIONS);
     cfg.request_timeout_s = cfg.request_timeout_s.min(FRIENDS_REQUEST_TIMEOUT_S);
+}
+
+fn others_can_reach(cfg: &Config) -> bool {
+    !LOCAL_HOSTS.contains(&cfg.http_host.as_str())
+}
+
+fn needs_steam_key(cfg: &Config) -> bool {
+    others_can_reach(cfg) && cfg.mods.iter().any(|m| m == PLAYERS_MOD)
+}
+
+/// What `serve` gives the mods, or why it must not open. Alone on this PC there is no key, as no one else can use a ticket
+/// and Steam being away should not keep the host out of their own game. The plain server may open to others only with its
+/// ticket route off (`auth.steam`), and then it is on its own passwords.
+pub fn steam_key(cfg: &Config) -> Result<Option<String>, String> {
+    if others_can_reach(cfg) && !needs_steam_key(cfg) && cfg.steam.starts_with("single-user:") {
+        return Err(ONE_ACCOUNT.to_string());
+    }
+    if !needs_steam_key(cfg) {
+        return Ok(None);
+    }
+    let file = cfg.data.join(steam_web::KEY_FILE);
+    steam_web::key_in(&cfg.data).map(Some).ok_or_else(|| {
+        format!("Other PCs can reach this server, so it needs a Steam Web API key, for Steam to confirm who signs in.\nGet one at {} and put it in {}.", steam_web::KEY_PAGE, file.display())
+    })
+}
+
+/// A saved key Steam still takes, or a new one from the person at the window.
+fn make_sure_of_steam_key(data: &Path) {
+    match steam_web::key_in(data).map(|key| steam_web::try_key(&key)) {
+        Some(Answer::KeyRefused) => println!("\n  Steam no longer takes the key saved in {}.", data.join(steam_web::KEY_FILE).display()),
+        Some(_) => return,
+        None => {}
+    }
+    println!("{}", key_steps(data));
+    // on a line of its own, as give_up reads stdin too and the lock has to be gone by then
+    let key = read_key(&mut std::io::stdin().lock(), steam_web::try_key);
+    let key = key.unwrap_or_else(|| give_up(NO_KEY));
+    if let Err(e) = steam_web::save_key(data, &key) {
+        give_up(&format!("Krebs could not save the key in {} ({e}).", data.display()));
+    }
+    // the key was on screen, and the next thing people do with this window is share what it says
+    let _ = std::process::Command::new("cmd").args(["/c", "cls"]).status();
+    println!("  Thanks, Krebs saved that key.\n");
+}
+
+fn key_steps(data: &Path) -> String {
+    format!(
+        "\n  To let other people join, Krebs needs a Steam Web API key, so that Steam can confirm who signs in.\n\
+         \x20 It is free and you only do this once.\n\n\
+         \x20   1. Open {} in your browser and sign in to Steam.\n\
+         \x20   2. Enter any name as the Domain Name, like krebs.local, agree to the terms and press Register.\n\
+         \x20   3. Copy the key, paste it here with a right-click, and press Enter.\n\n\
+         \x20 Steam only gives keys to accounts that have spent at least 5 dollars on Steam.\n\
+         \x20 Krebs keeps the key in {} on this PC. Keep that file to yourself.\n\
+         \x20 To play alone, close this and start Krebs.exe instead. That needs no key.\n",
+        steam_web::KEY_PAGE,
+        data.join(steam_web::KEY_FILE).display()
+    )
+}
+
+/// Lines from `input` until Steam takes one. None when the input ends, as a closed window or a script would.
+fn read_key(input: &mut impl BufRead, try_key: impl Fn(&str) -> Answer) -> Option<String> {
+    loop {
+        print!("  Key: ");
+        let _ = std::io::stdout().flush();
+        let mut line = String::new();
+        if input.read_line(&mut line).unwrap_or(0) == 0 {
+            return None;
+        }
+        let key = line.trim();
+        if !steam_web::is_key(key) {
+            println!("  That is not a key. A key is 32 letters and digits, with nothing else around them. Try again.");
+            continue;
+        }
+        match try_key(key) {
+            Answer::KeyRefused => println!("  Steam did not take that key. Copy it again from the page and paste it here."),
+            Answer::NoAnswer => println!("  Steam did not answer. Check this PC's internet, then paste the key again."),
+            Answer::Good(_) | Answer::Bad => return Some(key.to_string()),
+        }
+    }
 }
 
 /// The world lives in `data`, so a folder that cannot be written to has to stop the start here, not at the first save.
@@ -261,19 +359,19 @@ fn lan_addresses() -> Vec<Ipv4Addr> {
     found
 }
 
-fn play_here(port: u16) -> String {
+fn play_here(host: &str, port: u16) -> String {
     format!(
         "  To play on this PC:\n\
          \x20   1. Open Screeps in Steam.\n\
          \x20   2. On the server list, switch from Community servers to Private server.\n\
-         \x20   3. Enter Host {THIS_PC} and Port {port}, then press Connect.\n"
+         \x20   3. Enter Host {host} and Port {port}, then press Connect.\n"
     )
 }
 
 /// `lan`: this PC's addresses, shown only when people can reach them.
-fn welcome_text(port: u16, friends: bool, lan: &[Ipv4Addr]) -> String {
+fn welcome_text(host: &str, port: u16, friends: bool, lan: &[Ipv4Addr]) -> String {
     let mut text = String::from("\n  Krebs is running.\n\n");
-    text += &play_here(port);
+    text += &play_here(host, port);
     if friends {
         text += "\n  To let other people join, give them the same steps with one of these as the Host:\n";
         if lan.is_empty() {
@@ -286,7 +384,7 @@ fn welcome_text(port: u16, friends: bool, lan: &[Ipv4Addr]) -> String {
             "  Those work for people on your own network. Try the first one first.\n\n\
              \x20 Windows Firewall may ask about Krebs. Allow it, or nobody else can connect. If friends cannot connect, README.txt says what to check.\n\
              \x20 Friends over the internet also need port {port} forwarded to this PC on your router, and then use your public address.\n\n\
-             \x20 Krebs cannot check who people are, and anyone who reaches this port can sign in as anyone. Only share it with people you trust.\n"
+             \x20 Steam confirms everyone who signs in. Nothing is encrypted, so only share this with people you trust.\n"
         );
     }
     text += "\n  Keep this window open while you play. Close it to stop. Your world is saved, and any match that is running ends.\n";
@@ -294,8 +392,15 @@ fn welcome_text(port: u16, friends: bool, lan: &[Ipv4Addr]) -> String {
 }
 
 pub fn welcome(cfg: &Config) -> String {
-    let friends = cfg.http_host == ALL_INTERFACES;
-    welcome_text(cfg.http_port, friends, &if friends { lan_addresses() } else { Vec::new() })
+    let friends = needs_steam_key(cfg);
+    // one address named in krebs.json is then the only one that answers, for this PC too
+    let named = cfg.http_host.parse::<Ipv4Addr>().ok().filter(|ip| friends && !ip.is_unspecified());
+    let lan = match named {
+        Some(ip) => vec![ip],
+        None if friends => lan_addresses(),
+        None => Vec::new(),
+    };
+    welcome_text(&named.map_or(THIS_PC.to_string(), |ip| ip.to_string()), cfg.http_port, friends, &lan)
 }
 
 #[cfg(test)]
@@ -437,23 +542,98 @@ mod tests {
     }
 
     #[test]
+    fn only_a_server_others_can_reach_needs_a_steam_key() {
+        let mut cfg = config();
+        cfg.mods = vec![PLAYERS_MOD.to_string()];
+        assert!(!needs_steam_key(&cfg), "alone on this PC");
+        assert_eq!(steam_key(&cfg), Ok(None));
+        for host in LOCAL_HOSTS {
+            cfg.http_host = host.to_string();
+            assert!(!needs_steam_key(&cfg), "{host}");
+        }
+        open_to_friends(&mut cfg);
+        assert!(needs_steam_key(&cfg));
+        cfg.http_host = "192.168.1.20".to_string();
+        assert!(needs_steam_key(&cfg), "http.host in krebs.json counts too");
+        cfg.mods.clear();
+        assert!(!needs_steam_key(&cfg), "the plain server has no Steam sign-in of its own");
+    }
+
+    #[test]
+    fn the_plain_server_does_not_open_its_one_account_to_others() {
+        let mut cfg = config();
+        cfg.mods.clear();
+        assert_eq!(steam_key(&cfg), Ok(None), "alone on this PC that account is fine");
+        cfg.http_host = ALL_INTERFACES.to_string();
+        assert_eq!(steam_key(&cfg), Err(ONE_ACCOUNT.to_string()));
+        cfg.http_host = "192.168.1.20".to_string();
+        assert_eq!(steam_key(&cfg), Err(ONE_ACCOUNT.to_string()), "whatever the address");
+        cfg.steam = "off".to_string();
+        assert_eq!(steam_key(&cfg), Ok(None), "with the ticket route off there is no such account");
+    }
+
+    #[test]
+    fn a_server_others_can_reach_will_not_serve_without_a_key() {
+        let dir = std::env::temp_dir().join(format!("krebs-start-key-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut cfg = config();
+        cfg.mods = vec![PLAYERS_MOD.to_string()];
+        cfg.data = dir.clone();
+        open_to_friends(&mut cfg);
+        let said = steam_key(&cfg).unwrap_err();
+        for words in ["Steam Web API key", steam_web::KEY_PAGE, steam_web::KEY_FILE] {
+            assert!(said.contains(words), "{words}: {said}");
+        }
+        std::fs::write(dir.join(steam_web::KEY_FILE), "0123456789ABCDEF0123456789ABCDEF").unwrap();
+        assert_eq!(steam_key(&cfg), Ok(Some("0123456789ABCDEF0123456789ABCDEF".to_string())));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_key_is_asked_for_until_steam_takes_one() {
+        const GOOD: &str = "0123456789ABCDEF0123456789ABCDEF";
+        const WRONG: &str = "FEDCBA9876543210FEDCBA9876543210";
+        let steam = |key: &str| if key == GOOD { Answer::Bad } else { Answer::KeyRefused };
+        let mut input = format!("\nnot a key\n{WRONG}\n  {GOOD}\r\nnever read\n");
+        assert_eq!(read_key(&mut input.as_bytes(), steam).as_deref(), Some(GOOD));
+        input = "not a key\n".to_string();
+        assert_eq!(read_key(&mut input.as_bytes(), steam), None, "the window was closed");
+        assert_eq!(read_key(&mut "".as_bytes(), steam), None);
+        let away = std::cell::Cell::new(true);
+        let comes_back = |_: &str| if away.replace(false) { Answer::NoAnswer } else { Answer::Bad };
+        input = format!("{GOOD}\n{GOOD}\n");
+        assert_eq!(read_key(&mut input.as_bytes(), comes_back).as_deref(), Some(GOOD), "Steam away for a moment");
+    }
+
+    #[test]
+    fn one_address_in_krebs_json_is_the_one_the_welcome_gives() {
+        let mut cfg = config();
+        cfg.mods = vec![PLAYERS_MOD.to_string()];
+        cfg.http_host = "192.168.1.20".to_string();
+        let said = welcome(&cfg);
+        assert!(said.contains("Host 192.168.1.20 and Port") && !said.contains(THIS_PC), "{said}");
+        cfg.http_host = THIS_PC.to_string();
+        assert!(welcome(&cfg).contains("Host 127.0.0.1 and Port"));
+    }
+
+    #[test]
     fn the_welcome_says_what_to_do_next() {
-        let alone = welcome_text(21025, false, &[]);
+        let alone = welcome_text(THIS_PC, 21025, false, &[]);
         for words in ["Open Screeps in Steam", "Private server", "Host 127.0.0.1 and Port 21025", "Keep this window open", "Close it to stop", "any match that is running ends"] {
             assert!(alone.contains(words), "{words}: {alone}");
         }
         assert!(!alone.contains("Firewall") && !alone.contains("trust"), "{alone}");
-        let friends = welcome_text(21500, true, &[Ipv4Addr::new(192, 168, 1, 20)]);
-        for words in ["192.168.1.20", "Windows Firewall", "README.txt says what to check", "port 21500 forwarded", "cannot check who people are", "people you trust"] {
+        let friends = welcome_text(THIS_PC, 21500, true, &[Ipv4Addr::new(192, 168, 1, 20)]);
+        for words in ["192.168.1.20", "Windows Firewall", "README.txt says what to check", "port 21500 forwarded", "Steam confirms everyone", "people you trust"] {
             assert!(friends.contains(words), "{words}: {friends}");
         }
-        assert!(welcome_text(21500, true, &[]).contains("ipconfig"));
+        assert!(welcome_text(THIS_PC, 21500, true, &[]).contains("ipconfig"));
     }
 
     #[test]
     fn the_words_stay_plain() {
         let here = std::env::current_dir().unwrap().display().to_string();
-        for text in [welcome_text(21025, true, &[]), CRASHED.to_string(), IN_THE_ZIP.to_string(), SAVING_AGAIN.to_string(), taken(&Holder::Krebs, 1, false), taken(&Holder::Krebs, 1, true), taken(&Holder::Other, 1, false), world_problem(Path::new("d"), "x"), mods_problem("x"), save_failed("x", 60), last_save_failed(Path::new("d"), "x")] {
+        for text in [welcome_text(THIS_PC, 21025, true, &[]), key_steps(Path::new("d")), NO_KEY.to_string(), CRASHED.to_string(), IN_THE_ZIP.to_string(), SAVING_AGAIN.to_string(), taken(&Holder::Krebs, 1, false), taken(&Holder::Krebs, 1, true), taken(&Holder::Other, 1, false), world_problem(Path::new("d"), "x"), mods_problem("x"), save_failed("x", 60), last_save_failed(Path::new("d"), "x")] {
             // The folder in a message is the user's own, in whatever language it is.
             let text = text.replace(&here, "");
             assert!(text.is_ascii(), "a console may not show it: {text}");

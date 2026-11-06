@@ -9,6 +9,7 @@ pub mod mods;
 pub mod png;
 pub mod server;
 pub mod sockjs;
+pub mod steam_web;
 pub mod ws;
 
 /// Game API endpoints (backend/lib/game/api/*.js, §8.3).

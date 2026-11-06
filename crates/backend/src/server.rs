@@ -238,7 +238,7 @@ pub(crate) fn invoke(handler: fn(&Request, &ApiCtx) -> Response, req: &Request, 
 /// Express Router defaults: paths are case-insensitive and a trailing slash is optional (`strict: false`).
 fn route_matches(r: &Route, req: &Request) -> bool {
     let path = req.path.strip_suffix('/').filter(|p| !p.is_empty()).unwrap_or(&req.path);
-    r.method == req.method && r.path.strip_suffix('*').map_or(r.path.eq_ignore_ascii_case(path), |p| req.path.starts_with(p))
+    r.method == req.method && r.path.strip_suffix('*').map_or(r.path.eq_ignore_ascii_case(path), |p| req.path.get(..p.len()).is_some_and(|head| head.eq_ignore_ascii_case(p)))
 }
 
 /// The token a request carries (AUTH-TOKEN-MW): `X-Token`, then `?token=` / `?_token=`, then `body.token`.
@@ -345,6 +345,17 @@ mod tests {
 
     fn body(r: &Response) -> Json {
         Json::parse(std::str::from_utf8(&r.body).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn a_wildcard_route_takes_any_case_like_the_others() {
+        let wild = Route { method: "POST", path: "/api/user/messages/*", handler: api::auth::steam_ticket };
+        assert!(route_matches(&wild, &req("POST", "/api/user/messages/send", &[])));
+        assert!(route_matches(&wild, &req("POST", "/API/USER/MESSAGES/SEND", &[])));
+        assert!(!route_matches(&wild, &req("POST", "/api/user/message", &[])));
+        assert!(!route_matches(&wild, &req("POST", "/\u{e9}", &[])), "a short path that is not ASCII");
+        let exact = Route { method: "POST", path: "/api/user/messages/send", handler: api::auth::steam_ticket };
+        assert!(route_matches(&exact, &req("POST", "/API/user/messages/SEND/", &[])));
     }
 
     #[test]

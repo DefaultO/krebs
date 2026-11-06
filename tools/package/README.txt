@@ -63,10 +63,14 @@ Playing with friends
 
 1. Double-click "Let friends join.bat" instead of Krebs.exe.
 
-2. Windows Firewall may ask about Krebs. Allow it, or nobody else can connect.
+2. The first time, it asks for a Steam Web API key and says where to get one. It is free,
+   you do it once, and Steam uses it to confirm who signs in. Steam only gives keys to
+   accounts that have spent at least 5 dollars there. Playing alone needs no key.
 
-3. The black window lists this PC's addresses. Give a friend the first one and Port 21025.
-   They do step 4 and step 5 above with that address as the Host.
+3. Windows Firewall may ask about Krebs. Allow it, or nobody else can connect.
+
+4. The black window lists this PC's addresses. Give a friend the first one and Port 21025.
+   They do steps 4 and 5 of Start with that address as the Host.
    If the first address does not work, try the next one.
 
 Your friends need a bot too. If they have none, send them the starter-bot folder.
@@ -88,8 +92,12 @@ These addresses work for people on your own network, at home for example. For fr
 over the internet, you have to forward port 21025 to this PC on your router, and give them
 your public address. Your router's manual says how. Krebs cannot do this for you.
 
-Be careful who you invite. Krebs cannot check who people are, and anyone who reaches the
-port can sign in as anyone. Nothing is encrypted. Only share it with people you trust.
+Steam confirms every sign-in, so nobody can make one up or reuse an old one. The host of a
+server you join does see your sign-in, though, and a dishonest one could pass it on to
+another Krebs server. Nothing is encrypted, so only join and share servers with people you
+trust.
+Your key is in the data folder, in steam-api-key.txt. Keep that file to yourself.
+While Steam cannot be reached, nobody can sign in.
 For each player, your PC asks Steam for their public profile picture.
 Every match runs on your PC, so more players means more work for it.
 
@@ -117,7 +125,9 @@ to. Keep the window open and fix that. Krebs tries again by itself and says when
 If you close the window first, you lose what happened since the last save.
 
 "An error occured while logging into your Steam account": this comes from the Screeps
-client and usually means Steam stopped answering. Restart Steam and try again.
+client and usually means Steam stopped answering. Restart Steam and try again. If that
+does not help, the server may have refused you. Ask the host to look in the black window
+for a line starting "Refused a sign-in". It says why.
 
 More help and the source code:
 https://gitea.defaul.to/DefaultO/krebs

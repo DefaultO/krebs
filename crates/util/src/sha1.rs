@@ -1,5 +1,5 @@
-//! SHA-1 (FIPS 180-4). Only for protocol needs such as the WebSocket
-//! Sec-WebSocket-Accept header; not for anything security-sensitive.
+//! SHA-1 (FIPS 180-4). Only where a protocol demands it: the WebSocket Sec-WebSocket-Accept header, tokens' HMAC, and the
+//! hash inside Steam's ticket signatures. Nothing new should choose it.
 
 pub fn sha1(data: &[u8]) -> [u8; 20] {
     let mut h: [u32; 5] = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];

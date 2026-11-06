@@ -14,3 +14,5 @@
 screeps.json
 *.pem
 *.key
+# The Steam Web API key lives in data. This catches a copy of it anywhere else.
+steam-api-key.txt

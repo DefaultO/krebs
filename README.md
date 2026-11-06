@@ -41,9 +41,12 @@ to the server list. One Krebs runs up to 4 matches at a time, and a lobby past t
 
 ### Playing with friends
 
-Double-click `Let friends join.bat` instead of `Krebs.exe`. The window lists this PC's addresses. A friend does steps 4
-and 5 above with one of those as the Host. Everyone needs their own copy of Screeps, and a bot: send them the `starter-bot`
-folder if they have none.
+Double-click `Let friends join.bat` instead of `Krebs.exe`. The first time, it asks for a Steam Web API key and says where to
+get one. It is free, you do it once, and Steam uses it to confirm who signs in. Steam only gives keys to accounts that have
+spent at least 5 dollars there. Playing alone needs no key.
+
+The window then lists this PC's addresses. A friend does steps 4 and 5 above with one of those as the Host. Everyone needs
+their own copy of Screeps, and a bot: send them the `starter-bot` folder if they have none.
 
 The limits, plainly:
 
@@ -52,8 +55,10 @@ The limits, plainly:
 - Windows Firewall may ask about Krebs. Allow it, or nobody else can connect. If friends cannot connect, look in Windows
   Defender Firewall with Advanced Security, under Inbound Rules, for a Block rule for `krebs.exe`, even if nothing ever asked
   you. Delete it and start `Let friends join.bat` again.
-- Krebs cannot check who people are. Anyone who reaches the port can sign in as anyone, and nothing is encrypted. Only share
-  it with people you trust, and do not run it as a public server.
+- Steam confirms every sign-in, so nobody can make one up or reuse an old one. The host of a server you join does see your
+  sign-in, though, and a dishonest one could pass it on to another Krebs server. Nothing is encrypted, so only join and share
+  servers with people you trust, and do not run a public one.
+- Your key is in `data\steam-api-key.txt`. Keep that file to yourself. While Steam cannot be reached, nobody can sign in.
 - For each player, your PC asks Steam for their public profile picture.
 - Every match runs on your PC, so more players means more work for it.
 
@@ -76,6 +81,8 @@ Krebs says what went wrong in its window and waits for Enter. These are the mess
 | `Check the mods list in krebs.json` | A mod named there is not built into this copy of Krebs. Put the `krebs.json` from the zip back, or delete it. |
 | `Krebs hit an internal error and had to stop` | Your last automatic save is still there, so start Krebs again. |
 | `The admin console is off` | Nothing to fix. Another program, often a second Krebs, holds port 21026. The game runs normally. |
+| `Refused a sign-in: ...` | Someone could not get in, and the rest of the line says why. If everyone you invited got in, you can ignore it. |
+| `Other PCs can reach this server` | Start `Let friends join.bat`, which asks for the key. Or set `host` under `http` in `krebs.json` back to `127.0.0.1`. |
 
 `krebs.json` from the zip has the port in it, so there is a number to change:
 
@@ -90,7 +97,7 @@ One more that does not come from Krebs:
 
 | You see | What to do |
 | --- | --- |
-| `An error occured while logging into your Steam account` | This comes from the Screeps client, and usually Steam has stopped answering. Restart Steam. |
+| `An error occured while logging into your Steam account` | This comes from the Screeps client, and usually Steam has stopped answering. Restart Steam. If that does not help, the server may have refused you: ask the host to look in the Krebs window for `Refused a sign-in`. |
 
 ## Develop
 

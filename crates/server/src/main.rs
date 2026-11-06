@@ -200,6 +200,7 @@ fn logical_cores() -> usize {
 // ---- serve ----
 
 fn serve(cfg: Config, args: &Args) {
+    let steam_key = start::steam_key(&cfg).unwrap_or_else(|e| fail(&e));
     // §2.1: TZ=UTC and V8 before any other thread (the pool, backend and watchdog threads lock isolates)
     runtime::init_v8();
     // world.json is what `new` decided; an imported world has only its checkpoint
@@ -225,7 +226,7 @@ fn serve(cfg: Config, args: &Args) {
         Some(Err(e)) => fail(&start::world_problem(&cfg.data, &e)),
         None => generate(&cfg, &spec, &pool),
     };
-    let (mod_names, registry, game_js) = mods::load(&cfg.mods, &cfg.data).unwrap_or_else(|e| fail(&start::mods_problem(&e)));
+    let (mod_names, registry, game_js) = mods::load(&cfg.mods, &cfg.data, steam_key).unwrap_or_else(|e| fail(&start::mods_problem(&e)));
     w.mods = mod_names.iter().map(|&n| n.into()).collect();
     let history = !registry.engine.save_room_history.is_empty();
     let mut config = copy_engine(&w.config);

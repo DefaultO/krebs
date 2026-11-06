@@ -29,7 +29,7 @@ pub fn built_in(name: &str) -> bool {
     MODS.iter().chain(modlist::MODS).any(|m| m.manifest().name == name)
 }
 
-pub fn load(enabled: &[String], data_dir: &std::path::Path) -> Result<(Vec<&'static str>, backend::mods::Registry, GameJs), String> {
+pub fn load(enabled: &[String], data_dir: &std::path::Path, steam_key: Option<String>) -> Result<(Vec<&'static str>, backend::mods::Registry, GameJs), String> {
     fn find(name: &str) -> Result<&'static dyn Mod, String> {
         let mut found = MODS.iter().chain(modlist::MODS).copied().filter(|m| m.manifest().name == name);
         let m = found.next().ok_or_else(|| format!("mod '{name}' is not available in this build"))?;
@@ -63,7 +63,7 @@ pub fn load(enabled: &[String], data_dir: &std::path::Path) -> Result<(Vec<&'sta
     for n in names {
         visit(n, &mut Vec::new(), &mut order)?;
     }
-    let mut r = backend::mods::Registry { data_dir: data_dir.to_path_buf(), ..Default::default() };
+    let mut r = backend::mods::Registry { data_dir: data_dir.to_path_buf(), steam_key, ..Default::default() };
     let mut game_js = GameJs::new();
     for name in &order {
         let before = r.js_game.len();

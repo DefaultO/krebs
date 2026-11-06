@@ -527,7 +527,7 @@ pub fn run(cfg: Config, args: &Args) {
     w.env = Arc::new(engine::world::EnvState { tick_rate_ms: 0, paused: false, last_accessible_update: env.last_accessible_update, status_dirty: env.status_dirty });
 
     // the mods enabled as for serve (`mods` in the config, `--mods`)
-    let (mod_names, registry, game_js) = crate::mods::load(&cfg.mods, &data).unwrap_or_else(|e| crate::fail(&e));
+    let (mod_names, registry, game_js) = crate::mods::load(&cfg.mods, &data, None).unwrap_or_else(|e| crate::fail(&e));
     if !mod_names.is_empty() {
         println!("mods: {}", mod_names.join(", "));
     }

@@ -31,4 +31,6 @@ pub struct Registry {
     pub js_game: Vec<&'static str>,
     /// The server's data directory (`--data`), where a mod keeps its files.
     pub data_dir: std::path::PathBuf,
+    /// The host's Steam Web API key. Only a server other people can reach has one (`steam_web`).
+    pub steam_key: Option<String>,
 }

@@ -150,6 +150,17 @@ fn a_damaged_world_is_left_as_it_was() {
 }
 
 #[test]
+fn friends_are_not_let_in_as_one_shared_account() {
+    let install = Install::new("shared", free_port());
+    std::fs::write(install.dir.join("krebs.json"), format!(r#"{{"http":{{"port":{}}},"cli":{{"port":{}}},"mods":[]}}"#, install.port, free_port())).unwrap();
+    let out = install.command().arg("--friends").output().unwrap();
+    let said = format!("{}{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr));
+    assert!(said.contains("Friends cannot join without the bare mod"), "{said}");
+    assert_eq!(out.status.code(), Some(1));
+    assert_eq!(version(install.port), "", "no server stayed behind");
+}
+
+#[test]
 fn a_mistake_in_krebs_json_is_a_plain_sentence() {
     let install = Install::new("settings", free_port());
     std::fs::write(install.dir.join("krebs.json"), "{ not json").unwrap();
