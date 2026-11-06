@@ -8,10 +8,10 @@ Each mod is a repository of its own, added here as a git submodule, and the core
 
 | Folder | Repository | What it is |
 | --- | --- | --- |
-| `mods/bare` | [krebs-bare](https://gitea.defaul.to/DefaultO/krebs-bare) | What players see: the stripped client, lobbies, Battle Royale. `run.bat` enables it. |
-| `mods/matchrun` | [krebs-matchrun](https://gitea.defaul.to/DefaultO/krebs-matchrun) | Runs inside a match's own server. `mods/bare` needs it. |
-| `mods/matchrules` | [krebs-matchrules](https://gitea.defaul.to/DefaultO/krebs-matchrules) | Match rules and stats. Nothing enables it yet. |
-| `mods/example` | [krebs-example](https://gitea.defaul.to/DefaultO/krebs-example) | Shows every kind of registration. Copy it to start a mod. |
+| `mods/bare` | krebs-bare, on [GitHub](https://github.com/DefaultO/krebs-bare) and [Gitea](https://gitea.defaul.to/DefaultO/krebs-bare) | What players see: the stripped client, lobbies, Battle Royale. `run.bat` enables it. |
+| `mods/matchrun` | krebs-matchrun, on [GitHub](https://github.com/DefaultO/krebs-matchrun) and [Gitea](https://gitea.defaul.to/DefaultO/krebs-matchrun) | Runs inside a match's own server. `mods/bare` needs it. |
+| `mods/matchrules` | krebs-matchrules, on [GitHub](https://github.com/DefaultO/krebs-matchrules) and [Gitea](https://gitea.defaul.to/DefaultO/krebs-matchrules) | Match rules and stats. Nothing enables it yet. |
+| `mods/example` | krebs-example, on [GitHub](https://github.com/DefaultO/krebs-example) and [Gitea](https://gitea.defaul.to/DefaultO/krebs-example) | Shows every kind of registration. Copy it to start a mod. |
 
 A clone without submodules leaves empty folders here, which is fine: the workspace does not list `mods/*`, and the
 block in `crates/modlist/Cargo.toml` is empty in the repository. A mod becomes a workspace member through the line

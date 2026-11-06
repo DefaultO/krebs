@@ -31,8 +31,11 @@ if exist "%FAST%\obj\rusty_v8.lib" (
     set "RUSTY_V8_ARCHIVE=%FAST%\obj\rusty_v8.lib"
     set "RUSTY_V8_SRC_BINDING_PATH=%FAST%\src_binding.rs"
 ) else (
-    set "RUSTY_V8_ARCHIVE=https://gitea.defaul.to/DefaultO/krebs/releases/download/v8-152.2.0-fast/rusty_v8.lib.gz"
-    set "RUSTY_V8_ARCHIVE_SHA256=104c007dafbc047dbd048ec4ae9c9e2b14feda2309c97f014a3973c8ea1c1812"
+    call tools\v8-download.bat
+    if errorlevel 1 (
+        pause
+        exit /b 1
+    )
 )
 
 rem Page files are read from here on every request, so a reconnect shows an edit.

@@ -15,8 +15,9 @@ This is an early proof of concept. Matches run, but they have no final standings
 
 ## Play
 
-1. Download the `Krebs-...-windows-x64.zip` file from the [latest release](https://gitea.defaul.to/DefaultO/krebs/releases/latest),
-   not the Source Code files.
+1. Download the `Krebs-...-windows-x64.zip` file from the latest release, not the Source Code files. It is the same file on
+   [GitHub](https://github.com/DefaultO/krebs/releases/latest) and on
+   [Gitea](https://gitea.defaul.to/DefaultO/krebs/releases/latest), so use whichever opens.
 2. Unzip it. Right-click the zip and choose Extract All. Do not start Krebs from inside the zip, and do not put it in
    Program Files. Documents or the Desktop are good places.
 3. Double-click `Krebs.exe`. A black window opens and says how to connect. Keep it open while you play.
@@ -105,8 +106,13 @@ You need Windows, [Rust](https://rustup.rs) and the
 [C++ build tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/). Rust's setup offers to install them.
 
 ```
-git clone --recursive https://gitea.defaul.to/DefaultO/krebs.git
+git clone --recursive https://github.com/DefaultO/krebs.git
 ```
+
+`https://gitea.defaul.to/DefaultO/krebs.git` works the same. Krebs is on [GitHub](https://github.com/DefaultO/krebs) and on
+[Gitea](https://gitea.defaul.to/DefaultO/krebs), and either one is enough: each has the code, the mods, the releases and the
+V8 library, so you can clone, build and download with the other switched off. The files are the same on both. The commit
+hashes are not, because each site's commits carry that site's own address.
 
 This gets the core and the mods that make Krebs what players see: lobbies, Battle Royale, the stripped client. Each mod is a
 repository of its own, added as a git submodule. See [mods/README.md](mods/README.md), which also says how to add a mod.
@@ -114,11 +120,11 @@ repository of its own, added as a git submodule. See [mods/README.md](mods/READM
 Leave out `--recursive` for the plain core alone, a Screeps private server for the stock client. `mods/` then holds empty
 folders, and `git submodule update --init` fetches the mods later.
 
-The submodule URLs are relative, so a fork needs its own copies of the mod repositories. Or point it at the originals, for
-each mod you want:
+The submodule URLs are relative, so a clone gets its mods from the site it came from, and a fork needs its own copies of the
+mod repositories. Or point it at the originals, for each mod you want:
 
 ```
-git config submodule.mods/bare.url https://gitea.defaul.to/DefaultO/krebs-bare.git
+git config submodule.mods/bare.url https://github.com/DefaultO/krebs-bare.git
 git submodule update --init mods/bare
 ```
 
@@ -143,17 +149,19 @@ tools\package.bat    the zip for players, in dist\, built in a clean copy
 
 Bots run on V8. Krebs uses its own build with pointer compression and profile-guided builtins, which makes ticks about 25%
 faster. `run.bat` downloads that library once, as a prebuilt, and the matching bindings are in `vendor/v8/gen`. You do not
-have to build it. `tools/v8-ptrcomp.ps1` is how it was made, which takes about 40 minutes.
+have to build it. `tools/v8-ptrcomp.ps1` is how it was made, which takes about 40 minutes. `tools/v8-download.bat` fetches it
+from GitHub, or from Gitea if that fails, and a pinned sha256 has to match either way.
 
 ### Tests
 
 ```
 cargo test
-set RUSTY_V8_ARCHIVE=https://gitea.defaul.to/DefaultO/krebs/releases/download/v8-152.2.0-fast/rusty_v8.lib.gz
+set RUSTY_V8_ARCHIVE=https://github.com/DefaultO/krebs/releases/download/v8-152.2.0-fast/rusty_v8.lib.gz
 cargo test --workspace --release --features runtime/ptrcomp -j 4 --no-fail-fast
 ```
 
-Those are for cmd: in PowerShell the middle line is `$env:RUSTY_V8_ARCHIVE="..."`. The first command runs the crates that need
+Those are for cmd: in PowerShell the middle line is `$env:RUSTY_V8_ARCHIVE="..."`. The address also works with
+`gitea.defaul.to` in place of `github.com`. The first command runs the crates that need
 no V8. The last runs everything, and has to be `--release`: debug V8 tests crash
 in `Isolate::new`. `-j 4` is there because V8 crates take a lot of memory to link. A mod that is checked out is tested with
 the rest.

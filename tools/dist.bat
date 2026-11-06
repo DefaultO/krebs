@@ -24,8 +24,8 @@ if defined RUSTY_V8_ARCHIVE (
     set "RUSTY_V8_ARCHIVE=%FAST%\obj\rusty_v8.lib"
     set "RUSTY_V8_SRC_BINDING_PATH=%FAST%\src_binding.rs"
 ) else (
-    set "RUSTY_V8_ARCHIVE=https://gitea.defaul.to/DefaultO/krebs/releases/download/v8-152.2.0-fast/rusty_v8.lib.gz"
-    set "RUSTY_V8_ARCHIVE_SHA256=104c007dafbc047dbd048ec4ae9c9e2b14feda2309c97f014a3973c8ea1c1812"
+    call tools\v8-download.bat
+    if errorlevel 1 exit /b 1
 )
 set "CARGO_FOLDER=%CARGO_HOME%"
 if not defined CARGO_FOLDER set "CARGO_FOLDER=%USERPROFILE%\.cargo"

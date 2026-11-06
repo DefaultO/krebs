@@ -129,7 +129,8 @@ client and usually means Steam stopped answering. Restart Steam and try again. I
 does not help, the server may have refused you. Ask the host to look in the black window
 for a line starting "Refused a sign-in". It says why.
 
-More help and the source code:
+More help and the source code are on both of these. If one does not open, use the other:
+https://github.com/DefaultO/krebs
 https://gitea.defaul.to/DefaultO/krebs
 
 
