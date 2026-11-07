@@ -2,7 +2,10 @@
 //! parity: DIVERGENT(USER-SET-ACTIVE-BRANCH): branch switches are atomic; writes apply at the next tick boundary
 //! (spec 10 §7); code timestamps use vclock(G); `world-start-room` falls back to an existing room when W5N5 is
 //! missing (USER-WORLD-START-ROOM GOTCHA); segments are stored as strings (`null`/objects become their `""+v`,
-//! an absent `data` removes the segment); `badge-svg` has no 1 h cache.
+//! an absent `data` removes the segment); `badge-svg` has no 1 h cache, and a badge colour must be the whole `#rrggbb`;
+//! the modules of an upload and the console queue have limits (`MAX_MODULES`, `MAX_CONSOLE_COMMANDS`); a module is text or
+//! `{binary: text}`, and a branch name or a console command is not an object or an array, where the original stores any
+//! value: their keys would go into the names the server keeps until it restarts (`engine::doc`).
 //! Every route is replayed against the official router in tests/fixtures/api (server.rs oracle), whose storage
 //! calls return Q promises as the real RPC does: `respawn` therefore resets every room's status to 'normal'
 //! (utils.js:147-150; spec 11 GEN-RESPAWN's "does nothing" is wrong, see `respawn_user`).
@@ -10,15 +13,26 @@
 
 use crate::http::{obj, Request, Response};
 use crate::{edit_user, field, iso_date, obj_set, s, str_field, truthy, user_brief, vnow, write, ApiCtx};
-use engine::doc::{Doc, DocRef, Obj, Val};
+use engine::doc::{json_truthy, Atom, Doc, DocRef, Obj, Val, OUTSIDE_NAME_BYTES};
 use engine::world::{CodeState, RoomIdx, UserIdx, World, WorldView};
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use util::json::Json;
 
 /// The most code `POST /api/user/code` stores, in UTF-16 units: the game's 5 MB, unless a mod changes it.
 pub static MAX_CODE_UNITS: AtomicUsize = AtomicUsize::new(5 * 1024 * 1024);
+
+/// The most modules one upload holds. The original has no such limit, but a small upload could hold hundreds of thousands
+/// of names, and each costs a stored key and a pass over the names, on the tick thread.
+pub const MAX_MODULES: usize = 4096;
+
+/// What one user's console queue holds. It empties when the user's code runs, so only someone whose code does not run
+/// gets near this, and then it would grow for good: nothing reads it, and every checkpoint writes it. Room for a few of
+/// the 1 MiB that `user/memory` takes.
+const MAX_CONSOLE_COMMANDS: usize = 256;
+const MAX_CONSOLE_BYTES: usize = 4 << 20;
 
 macro_rules! auth {
     ($ctx:expr) => {
@@ -62,38 +76,93 @@ fn js_set(m: &mut Vec<(String, Json)>, k: String, v: Json) {
     m.insert(at, (k, v));
 }
 
+/// One pass, as `code_event` runs this on the tick thread. A renamed key holds an escape or a separator, so it is never an
+/// array index, and it goes last, or takes the place of a key of that name.
 fn rename_keys(modules: Json, f: impl Fn(&str) -> Option<String>) -> Vec<(String, Json)> {
-    let mut m = match modules {
-        Json::Obj(m) => m,
-        _ => vec![],
-    };
-    let keys: Vec<String> = m.iter().map(|(k, _)| k.clone()).collect();
-    for key in keys {
+    let Json::Obj(m) = modules else { return vec![] };
+    let mut slots: HashMap<String, usize> = m.iter().enumerate().map(|(i, (k, _))| (k.clone(), i)).collect();
+    let mut out: Vec<Option<(String, Json)>> = m.into_iter().map(Some).collect();
+    for i in 0..out.len() {
+        let Some((key, v)) = out[i].take() else { continue };
         match f(&key) {
-            Some(new) if new == key => {}
+            Some(new) if new == key => out[i] = Some((key, v)),
             Some(new) => {
-                let Some(i) = m.iter().position(|(k, _)| *k == key) else { continue };
-                let v = m.remove(i).1;
-                js_set(&mut m, new, v);
+                slots.remove(&key);
+                match slots.get(&new) {
+                    Some(&j) => out[j].as_mut().expect("a slot in the map is filled").1 = v,
+                    None => {
+                        slots.insert(new.clone(), out.len());
+                        out.push(Some((new, v)));
+                    }
+                }
             }
-            None => m.retain(|(k, _)| *k != key),
+            None => drop(slots.remove(&key)),
         }
     }
-    m
+    out.into_iter().flatten().collect()
 }
 
 /// utils.translateModulesToDb: `.`/`/`/`\` escaped, names starting with `$` (after escaping) dropped, a falsy
 /// `main` becomes `''`.
 pub(crate) fn modules_to_db(modules: Json) -> Json {
-    let mut m = rename_keys(modules, |k| {
-        let n = k.replace('.', "$DOT$").replace('/', "$SLASH$").replace('\\', "$BACKSLASH$");
-        (!n.starts_with('$')).then_some(n)
-    });
-    let main_falsy = m.iter().find(|(k, _)| k == "main").is_none_or(|(_, v)| !truthy(Some(&Val::from_json(v))));
+    let mut m = rename_keys(modules, stored_name);
+    let main_falsy = m.iter().find(|(k, _)| k == "main").is_none_or(|(_, v)| !json_truthy(v));
     if main_falsy {
         js_set(&mut m, "main".into(), Json::Str(String::new()));
     }
     Json::Obj(m)
+}
+
+/// A module's name as it is stored, or None for a name that is dropped (utils.translateModulesToDb).
+fn stored_name(k: &str) -> Option<String> {
+    let n = k.replace('.', "$DOT$").replace('/', "$SLASH$").replace('\\', "$BACKSLASH$");
+    (!n.starts_with('$')).then_some(n)
+}
+
+/// Text, or `{binary: text}` and nothing else. The original stores any value, but stored keys are names the server keeps
+/// until it restarts, so keys inside a module would let a request of any size spend all it will take (`engine::doc`).
+fn is_module(m: &Json) -> bool {
+    match m {
+        Json::Str(_) => true,
+        Json::Obj(o) => matches!(o.as_slice(), [(k, Json::Str(_))] if k == "binary"),
+        _ => false,
+    }
+}
+
+/// Why these modules cannot be stored, or None. The rule for their number, names and shape, for anything that takes code
+/// from a player. Not their size: each route has its own. Modules that are not an object hold no names and store as empty.
+pub fn module_problem(modules: &Json) -> Option<String> {
+    let modules = modules.as_object()?;
+    if modules.len() > MAX_MODULES {
+        return Some("too many modules".into());
+    }
+    if modules.iter().any(|(k, _)| stored_name(k).is_some_and(|n| n.len() > OUTSIDE_NAME_BYTES)) {
+        return Some("module name is too long".into());
+    }
+    if !modules.iter().all(|(_, m)| is_module(m)) {
+        return Some("a module is text, or an object holding only text in binary".into());
+    }
+    None
+}
+
+/// Modules from a request, as stored, or the error for the reply. Every route that stores them comes through here.
+pub(crate) fn checked_modules(modules: Json) -> Result<Val, String> {
+    if modules.stringify().encode_utf16().count() > MAX_CODE_UNITS.load(Ordering::Relaxed) {
+        return Err("code length exceeds 5 MB limit".into());
+    }
+    if let Some(problem) = module_problem(&modules) {
+        return Err(problem);
+    }
+    let db = modules_to_db(modules);
+    let names = db.as_object().map_or(&[][..], Vec::as_slice);
+    // `Val::from_json` leaves a name out once the server has taken all it will: this is the one place that must not lose
+    // one. `binary` is the one name inside a module.
+    Atom::intern("binary");
+    let stored = Val::from_json(&db);
+    match &stored {
+        Val::Obj(o) if o.len() == names.len() => Ok(stored),
+        _ => Err("this server cannot take more new module names until it restarts".into()),
+    }
 }
 
 /// utils.translateModulesFromDb.
@@ -103,10 +172,11 @@ pub(crate) fn modules_from_db(modules: Json) -> Json {
 
 // ---- users.code helpers ----
 
-/// The `users.code` query of code GET/POST: `$X` → `{user, X: true}`, else `{user, branch}`.
+/// The `users.code` query of code GET/POST: `$X` → `{user, X: true}`, else `{user, branch}`. `X` is the request's, so it
+/// is compared and not looked up by `field`, which would keep it as a name for good.
 fn code_matches(doc: &Obj, branch: &str) -> bool {
     match branch.strip_prefix('$') {
-        Some(active) => matches!(field(doc, active), Some(Val::Bool(true))),
+        Some(active) => doc.iter().any(|(k, v)| k.as_str() == active && *v == Val::Bool(true)),
         None => str_field(doc, "branch") == Some(branch),
     }
 }
@@ -195,7 +265,7 @@ pub fn branches(req: &Request, ctx: &ApiCtx) -> Response {
                 let mut c = Obj::new();
                 obj_set(&mut c, "user", s(id.as_str()));
                 obj_set(&mut c, "branch", s("default"));
-                obj_set(&mut c, "modules", Val::from_json(&Json::parse(r#"{"main":""}"#).unwrap()));
+                obj_set(&mut c, "modules", Val::from_trusted_json(&Json::parse(r#"{"main":""}"#).unwrap()));
                 obj_set(&mut c, "timestamp", s(&iso_date(vnow(w))));
                 let cid = w.ids.next();
                 obj_set(&mut c, "_id", s(cid.as_str()));
@@ -242,13 +312,13 @@ pub fn code_post(req: &Request, ctx: &ApiCtx) -> Response {
     let Some(modules) = b.get("modules").cloned() else {
         return Response::error("TypeError: Cannot read properties of undefined (reading 'length')");
     };
-    if modules.stringify().encode_utf16().count() > MAX_CODE_UNITS.load(Ordering::Relaxed) {
-        return Response::error("code length exceeds 5 MB limit");
-    }
-    let modules = Val::from_json(&modules_to_db(modules));
+    let modules = match checked_modules(modules) {
+        Ok(m) => m,
+        Err(e) => return Response::error(&e),
+    };
     // `branch || '$activeWorld'`; a truthy non-string is queried as `{branch: value}` and matches no stored name
     let branch: Option<String> = match b.get("branch") {
-        v if !truthy(v.map(Val::from_json).as_ref()) => Some("$activeWorld".to_string()),
+        v if !v.is_some_and(json_truthy) => Some("$activeWorld".to_string()),
         Some(Json::Str(x)) => Some(x.clone()),
         _ => None,
     };
@@ -313,11 +383,22 @@ fn to_string(v: Option<&Json>) -> String {
     crate::socket::user::js_to_string(v)
 }
 
-/// `/^#[a-f0-9]{6}/i.test(v)`
+/// `/^#[a-f0-9]{6}$/i.test(v)`, on a string. The original has no `$`, and `badge-svg` writes the colour into the SVG, so
+/// anything after the six digits was stored script.
 fn color_ok(v: Option<&Json>) -> bool {
-    let s = to_string(v);
-    let b = s.as_bytes();
-    b.len() >= 7 && b[0] == b'#' && b[1..7].iter().all(u8::is_ascii_hexdigit)
+    v.and_then(Json::as_str).is_some_and(|s| s.len() == 7 && crate::api::badge::safe_color(s))
+}
+
+/// `_.isEqual` of two JSON values. Not through `Val`: one side is a request's, and that would keep its keys as names, so
+/// one refused request could spend all the server will take. `y` is a stored badge, so the scan is short.
+fn same_json(a: Option<&Json>, b: Option<&Json>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(Json::Arr(x)), Some(Json::Arr(y))) => x.len() == y.len() && x.iter().zip(y).all(|(p, q)| same_json(Some(p), Some(q))),
+        (Some(Json::Obj(x)), Some(Json::Obj(y))) => x.len() == y.len() && x.iter().all(|(k, v)| same_json(Some(v), y.iter().find(|(q, _)| q == k).map(|(_, w)| w))),
+        (Some(x), Some(y)) => x == y,
+        _ => false,
+    }
 }
 
 /// POST /api/user/badge
@@ -329,30 +410,30 @@ pub fn badge(req: &Request, ctx: &ApiCtx) -> Response {
     if param.is_nan() || param < -100.0 || param > 100.0 || !color_ok(badge.get("color1")) || !color_ok(badge.get("color2")) || !color_ok(badge.get("color3")) {
         return Response::error("invalid params");
     }
-    let ty = badge.get("type").cloned();
-    if let Some(Json::Num(t)) = ty {
+    let ty = badge.get("type");
+    if let Some(&Json::Num(t)) = ty {
         if t < 1.0 || t > 24.0 {
             return Response::error("invalid params");
         }
     } else {
         let custom = field(&ctx.published.get().users[u as usize].doc, "customBadge").map(Val::to_json);
-        let eq = crate::socket::rooms::is_equal(ty.as_ref().map(Val::from_json).as_ref(), custom.as_ref().map(Val::from_json).as_ref());
-        if !eq {
+        if !same_json(ty, custom.as_ref()) {
             return Response::error("invalid params");
         }
     }
+    // From here `type` is a number or the user's own custom badge, and a colour is a string, so nothing new is named.
     let mut stored = Obj::new();
     let mut put = |k: &str, v: Option<&Json>| {
         if let Some(v) = v {
             obj_set(&mut stored, k, Val::from_json(v));
         }
     };
-    put("type", ty.as_ref());
+    put("type", ty);
     put("color1", badge.get("color1"));
     put("color2", badge.get("color2"));
     put("color3", badge.get("color3"));
     obj_set(&mut stored, "param", Val::Num(if param == 0.0 { 0.0 } else { param }));
-    obj_set(&mut stored, "flip", Val::Bool(truthy(badge.get("flip").map(Val::from_json).as_ref())));
+    obj_set(&mut stored, "flip", Val::Bool(badge.get("flip").is_some_and(json_truthy)));
     reply(
         write(ctx, move |w| {
             edit_user(w, u, |st| {
@@ -549,15 +630,21 @@ fn tutorial_branch(name: &str) -> bool {
 pub fn clone_branch(req: &Request, ctx: &ApiCtx) -> Response {
     let u = auth!(ctx);
     let b = req.body();
-    let source = b.get("branch").filter(|v| truthy(Some(&Val::from_json(v)))).cloned();
+    let source = b.get("branch").filter(|v| json_truthy(v)).cloned();
     if let Some(src) = &source {
         match src.as_str() {
             Some(x) if x.encode_utf16().count() <= 30 => {}
             _ => return Response::error("invalid branch name"),
         }
     }
-    let defaults = b.get("defaultModules").filter(|v| truthy(Some(&Val::from_json(v)))).map(|m| Val::from_json(&modules_to_db(m.clone())));
+    let defaults = match b.get("defaultModules").filter(|v| json_truthy(v)).map(|m| checked_modules(m.clone())).transpose() {
+        Ok(m) => m,
+        Err(e) => return Response::error(&e),
+    };
     let new_name = b.get("newName").cloned();
+    if matches!(new_name, Some(Json::Obj(_) | Json::Arr(_))) {
+        return Response::error("invalid branch name");
+    }
     let r = write(ctx, move |w| {
         let id = w.users[u as usize].id;
         let now = vnow(w);
@@ -569,7 +656,7 @@ pub fn clone_branch(req: &Request, ctx: &ApiCtx) -> Response {
                 return Err("too many branches".to_string());
             }
             let src_modules = source.as_ref().and_then(|s| docs.iter().find(|d| str_field(d, "branch") == s.as_str())).and_then(|d| field(d, "modules").cloned());
-            let modules = src_modules.or(defaults).unwrap_or_else(|| Val::from_json(&Json::parse(r#"{"main":""}"#).unwrap()));
+            let modules = src_modules.or(defaults).unwrap_or_else(|| Val::from_trusted_json(&Json::parse(r#"{"main":""}"#).unwrap()));
             let stamp = s(&iso_date(now));
             // update(..., {upsert: true}): every match (all branches when newName is undefined), else insert
             let mut first = None;
@@ -661,6 +748,12 @@ fn insert_console(ctx: &ApiCtx, u: UserIdx, expression: Val, hidden: bool) -> Re
         if hidden {
             obj_set(&mut d, "hidden", Val::Bool(true));
         }
+        // A command that is not a string is at most 1024 long (`console`).
+        let size = |d: &Obj| str_field(d, "expression").map_or(1024, str::len);
+        let queue = &w.users[u as usize].console_queue;
+        if queue.len() >= MAX_CONSOLE_COMMANDS || queue.iter().map(|c| size(c)).sum::<usize>() + size(&d) > MAX_CONSOLE_BYTES {
+            return Err("console queue is full".to_string());
+        }
         let id = w.ids.next();
         obj_set(&mut d, "_id", s(id.as_str()));
         let out = d.to_json_obj();
@@ -684,7 +777,7 @@ pub fn memory_post(req: &Request, ctx: &ApiCtx) -> Response {
     }
     let path = match b.get("path") {
         Some(Json::Str(p)) if !p.is_empty() => Some(p.as_str()),
-        Some(v) if truthy(Some(&Val::from_json(v))) => return Response::error("TypeError: request.body.path.split is not a function"),
+        Some(v) if json_truthy(v) => return Response::error("TypeError: request.body.path.split is not a function"),
         _ => None,
     };
     insert_console(ctx, u, s(&memory_expression(path, value)), true)
@@ -755,6 +848,9 @@ pub fn console(req: &Request, ctx: &ApiCtx) -> Response {
     let Some(expr) = b.get("expression") else { return Response::error("TypeError: Cannot read properties of undefined (reading 'length')") };
     if expr.stringify().encode_utf16().count() > 1024 {
         return Response::error("expression size is too large");
+    }
+    if matches!(expr, Json::Obj(_) | Json::Arr(_)) {
+        return Response::error("invalid params");
     }
     insert_console(ctx, u, Val::from_json(expr), false)
 }
@@ -832,7 +928,7 @@ pub fn notify_prefs(req: &Request, ctx: &ApiCtx) -> Response {
     };
     for k in ["disabled", "disabledOnMessages", "sendOnline"] {
         if let Some(v) = b.get(k) {
-            obj_set(&mut prefs, k, Val::Bool(truthy(Some(&Val::from_json(v)))));
+            obj_set(&mut prefs, k, Val::Bool(json_truthy(v)));
         }
     }
     let interval = to_number(b.get("interval"));
@@ -912,6 +1008,15 @@ pub fn money_history(req: &Request, ctx: &ApiCtx) -> Response {
     Response::ok(obj(vec![("page", Json::Num(page as f64)), ("list", Json::Arr(rest.into_iter().take(20).collect())), ("hasMore", Json::Bool(has_more))]))
 }
 
+/// Opened as a page, an SVG runs what is in it, on this server's origin. The client and the pages load it as an image,
+/// which runs nothing and is not touched by these.
+fn svg_reply(svg: &str) -> Response {
+    let mut reply = Response::text(200, "image/svg+xml; charset=utf-8", svg);
+    reply.headers.push(("Content-Security-Policy".into(), "sandbox".into()));
+    reply.headers.push(("X-Content-Type-Options".into(), "nosniff".into()));
+    reply
+}
+
 /// GET /api/user/badge-svg (not cached: the original's 1 h process cache only delays badge changes)
 pub fn badge_svg(req: &Request, ctx: &ApiCtx) -> Response {
     let Some(name) = req.param("username") else {
@@ -925,7 +1030,7 @@ pub fn badge_svg(req: &Request, ctx: &ApiCtx) -> Response {
         _ => Some("<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>".into()),
     });
     match svg {
-        Some(svg) => Response::text(200, "image/svg+xml; charset=utf-8", &svg),
+        Some(svg) => svg_reply(&svg),
         None => Response::text(404, "text/plain; charset=utf-8", "Not Found"),
     }
 }
@@ -933,7 +1038,7 @@ pub fn badge_svg(req: &Request, ctx: &ApiCtx) -> Response {
 /// POST /api/user/set-steam-visible
 pub fn set_steam_visible(req: &Request, ctx: &ApiCtx) -> Response {
     let u = auth!(ctx);
-    let hidden = if truthy(req.body().get("visible").map(Val::from_json).as_ref()) { 0.0 } else { 1.0 };
+    let hidden = if req.body().get("visible").is_some_and(json_truthy) { 0.0 } else { 1.0 };
     reply(
         write(ctx, move |w| {
             edit_user(w, u, |st| {
@@ -1041,6 +1146,121 @@ mod tests {
     }
 
     #[test]
+    fn module_uploads_have_limits() {
+        let (ctx, _h) = fake::ctx(Some(fake::ALICE));
+        let names = |n: usize| (0..n).map(|i| format!(r#""lim{i}":"""#)).collect::<Vec<_>>().join(",");
+        let upload = |modules: String| fake::run(code_post, &ctx, "POST", "/x", &format!(r#"{{"branch":"default","modules":{{{modules}}}}}"#)).1;
+        assert_eq!(err(&upload(names(MAX_MODULES + 1))), Some("too many modules"));
+        assert_eq!(err(&upload(names(MAX_MODULES - 1))), None);
+        assert_eq!(err(&upload(format!(r#""{}":"""#, "n".repeat(OUTSIDE_NAME_BYTES + 1)))), Some("module name is too long"));
+        assert_eq!(err(&upload(format!(r#""{}":"""#, "n".repeat(OUTSIDE_NAME_BYTES)))), None);
+
+        // defaultModules skipped these, so a branch could hold any amount of code.
+        let clone = |modules: String| fake::run(clone_branch, &ctx, "POST", "/x", &format!(r#"{{"newName":"lim","defaultModules":{{{modules}}}}}"#)).1;
+        let too_long = format!(r#""main":"{}""#, "x".repeat(5 * 1024 * 1024));
+        assert_eq!(err(&clone(too_long)), Some("code length exceeds 5 MB limit"));
+        assert_eq!(err(&clone(names(MAX_MODULES + 1))), Some("too many modules"));
+        assert_eq!(err(&clone(r#""main":"x""#.into())), None);
+    }
+
+    /// The rule mods use for code that comes to them, and what the routes refuse.
+    #[test]
+    fn a_module_is_text_or_binary() {
+        let problem = |modules: &str| module_problem(&Json::parse(modules).unwrap());
+        for fine in [r#"{"main":"x"}"#, r#"{"main":"x","w":{"binary":"AAAA"}}"#, r#"{"main":""}"#, "{}", "5", "null", "[1]"] {
+            assert_eq!(problem(fine), None, "{fine}");
+        }
+        let shape = Some("a module is text, or an object holding only text in binary".to_string());
+        for bad in [r#"{"a":{}}"#, r#"{"a":{"k":"x"}}"#, r#"{"a":{"binary":"x","k":"y"}}"#, r#"{"a":{"binary":1}}"#, r#"{"a":{"binary":{"k":1}}}"#, r#"{"a":[{"k":1}]}"#, r#"{"a":[]}"#, r#"{"a":1}"#, r#"{"a":true}"#, r#"{"main":null}"#] {
+            assert_eq!(problem(bad), shape, "{bad}");
+        }
+        // the length of the stored name, in which a dot is five bytes
+        let dots = |n: usize| format!(r#"{{"{}":""}}"#, ".".repeat(n));
+        assert_eq!(problem(&format!(r#"{{"a{}":""}}"#, ".".repeat(51))), None);
+        assert_eq!(problem(&format!(r#"{{"a{}":""}}"#, ".".repeat(52))), Some("module name is too long".into()));
+        assert_eq!(problem(&dots(300)), None, "a name starting with $ once stored is dropped");
+
+        let (ctx, _h) = fake::ctx(Some(fake::ALICE));
+        let upload = |modules: &str| fake::run(code_post, &ctx, "POST", "/x", &format!(r#"{{"branch":"default","modules":{modules}}}"#)).1;
+        assert_eq!(err(&upload(r#"{"main":"x","w":{"binary":"AAAA"}}"#)), None);
+        assert_eq!(err(&upload(r#"{"main":"x","w":{"nested":"AAAA"}}"#)), shape.as_deref());
+    }
+
+    /// Each of these kept every key it was sent as a name for good, so one request could spend all the server will take
+    /// from outside, and after that no player could upload a module with a new name.
+    #[test]
+    fn refused_requests_leave_no_names() {
+        let (ctx, _h) = fake::ctx(Some(fake::ALICE));
+        let n = 60_000;
+        let keys = |tag: &str| (0..n).map(|i| format!(r#""{tag}{i}":1"#)).collect::<Vec<_>>().join(",");
+        let spent = |what: &str, handler: fn(&Request, &ApiCtx) -> Response, body: String| {
+            let before = engine::doc::outside_names_added();
+            let (_, reply) = fake::run(handler, &ctx, "POST", "/x", &body);
+            assert!(err(&reply).is_some(), "{what}: {reply}");
+            // Other tests add names at the same time, but far fewer than this.
+            assert!(engine::doc::outside_names_added() - before < n / 2, "{what}");
+        };
+        spent("badge", badge, format!(r##"{{"badge":{{"type":{{{}}},"param":0,"color1":"#000000","color2":"#000000","color3":"#000000"}}}}"##, keys("bk")));
+        spent("module", code_post, format!(r#"{{"modules":{{"main":"","w":{{"binary":"","x":{{{}}}}}}}}}"#, keys("mk")));
+        spent("module in an array", code_post, format!(r#"{{"modules":{{"main":"","w":[{{{}}}]}}}}"#, keys("ak")));
+        spent("branch name", clone_branch, format!(r#"{{"newName":{{{}}}}}"#, keys("nk")));
+        spent("console", console, r#"{"expression":{"ck1":1,"ck2":2}}"#.to_string());
+    }
+
+    #[test]
+    fn a_custom_badge_still_matches() {
+        let (ctx, _h) = fake::ctx(Some(fake::ALICE));
+        let post = |ty: &str| fake::run(badge, &ctx, "POST", "/x", &format!(r##"{{"badge":{{"type":{ty},"param":0,"color1":"#000000","color2":"#000000","color3":"#000000"}}}}"##)).1;
+        assert_eq!(err(&post(r#"{"path1":"M0","path2":"M1"}"#)), Some("invalid params"), "no custom badge yet");
+        crate::write(&ctx, |w| {
+            edit_user(w, fake::ALICE, |st| {
+                let mut d = (*st.doc).clone();
+                obj_set(&mut d, "customBadge", Val::from_trusted_json(&Json::parse(r#"{"path1":"M0","path2":"M1"}"#).unwrap()));
+                st.doc = Arc::new(d);
+            });
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(err(&post(r#"{"path1":"M0","path2":"M1"}"#)), None);
+        assert_eq!(err(&post(r#"{"path2":"M1","path1":"M0"}"#)), None, "_.isEqual ignores the order of keys");
+        assert_eq!(err(&post(r#"{"path1":"other","path2":"M1"}"#)), Some("invalid params"));
+        assert_eq!(err(&post(r#"{"path1":"M0"}"#)), Some("invalid params"));
+        assert_eq!(err(&post("null")), Some("invalid params"));
+        assert_eq!(err(&post("[1]")), Some("invalid params"));
+    }
+
+    #[test]
+    fn the_console_queue_stops_growing() {
+        let (ctx, _h) = fake::ctx(Some(fake::ALICE));
+        for _ in 0..MAX_CONSOLE_COMMANDS {
+            assert_eq!(err(&fake::run(console, &ctx, "POST", "/x", r#"{"expression":"1"}"#).1), None);
+        }
+        assert_eq!(err(&fake::run(console, &ctx, "POST", "/x", r#"{"expression":"1"}"#).1), Some("console queue is full"));
+
+        let ctx = crate::ApiCtx { published: ctx.published.clone(), commands: ctx.commands.clone(), user: Some(fake::BOB) };
+        let value = format!(r#"{{"value":"{}"}}"#, "x".repeat(1024 * 1024 - 2));
+        for _ in 0..MAX_CONSOLE_BYTES / (1024 * 1024) - 1 {
+            assert_eq!(err(&fake::run(memory_post, &ctx, "POST", "/x", &value).1), None);
+        }
+        assert_eq!(err(&fake::run(memory_post, &ctx, "POST", "/x", &value).1), Some("console queue is full"));
+        assert_eq!(err(&fake::run(console, &ctx, "POST", "/x", r#"{"expression":"1"}"#).1), None, "a short one still fits");
+    }
+
+    #[test]
+    fn a_badge_colour_is_a_whole_colour() {
+        let (ctx, _h) = fake::ctx(Some(fake::ALICE));
+        let post = |c: &str| fake::run(badge, &ctx, "POST", "/x", &format!(r##"{{"badge":{{"type":1,"color1":{c},"color2":"#000000","color3":"#ABCDEF","param":0}}}}"##)).1;
+        assert_eq!(err(&post(r##""#00ff00""##)), None);
+        for bad in [r##""#000000\"/><script>alert(1)</script>""##, r##""#0000000""##, r##""#00000""##, r##"["#000000"]"##, "5"] {
+            assert_eq!(err(&post(bad)), Some("invalid params"), "{bad}");
+        }
+        let reply = svg_reply("<svg/>");
+        assert_eq!(reply.header("content-security-policy"), Some("sandbox"));
+        assert_eq!(reply.header("x-content-type-options"), Some("nosniff"));
+        assert_eq!(reply.header("content-type"), Some("image/svg+xml; charset=utf-8"));
+    }
+
+    #[test]
     fn code_flow() {
         let (ctx, h) = fake::ctx(Some(fake::ALICE));
         let (_, b) = fake::run(branches, &ctx, "GET", "/x", "");
@@ -1089,13 +1309,13 @@ mod tests {
         for b in bad {
             assert_eq!(err(&fake::run(badge, &ctx, "POST", "/x", b).1), Some("invalid params"), "{b}");
         }
-        let ok = r##"{"badge":{"type":3,"param":"-5","color1":"#AbCdEf12","color2":["#ff0000"],"color3":"#000000","flip":1}}"##;
+        let ok = r##"{"badge":{"type":3,"param":"-5","color1":"#AbCdEf","color2":"#ff0000","color3":"#000000","flip":1}}"##;
         assert_eq!(fake::run(badge, &ctx, "POST", "/x", ok).1.stringify(), r#"{"ok":1,"modified":1}"#);
         drop(ctx);
         let w = h.join().unwrap();
         let mut stored = String::new();
         field(&w.users[fake::BOB as usize].doc, "badge").unwrap().write_json(&mut stored);
-        assert_eq!(stored, r##"{"type":3,"color1":"#AbCdEf12","color2":["#ff0000"],"color3":"#000000","param":-5,"flip":true}"##);
+        assert_eq!(stored, r##"{"type":3,"color1":"#AbCdEf","color2":"#ff0000","color3":"#000000","param":-5,"flip":true}"##);
     }
 
     #[test]

@@ -44,13 +44,25 @@ impl std::error::Error for ParseError {}
 
 impl Json {
     pub fn parse(text: &str) -> Result<Json, ParseError> {
-        let mut p = Parser { s: text, b: text.as_bytes(), pos: 0, depth: 0, items: Vec::new(), members: Vec::new() };
+        let mut p = Parser { s: text, b: text.as_bytes(), pos: 0, depth: 0, items: Vec::new(), members: Vec::new(), check_only: false };
         let v = p.value()?;
         p.skip_ws();
         if p.pos != p.b.len() {
             return Err(p.err("unexpected data after JSON value"));
         }
         Ok(v)
+    }
+
+    /// Whether `Json::parse(text)` would give an object or an array. It builds nothing, so checking a large body costs
+    /// next to no memory, and what handles the body parses it once.
+    pub fn is_container(text: &str) -> bool {
+        let mut p = Parser { s: text, b: text.as_bytes(), pos: 0, depth: 0, items: Vec::new(), members: Vec::new(), check_only: true };
+        p.skip_ws();
+        if !matches!(p.peek(), Some(b'{' | b'[')) || p.value().is_err() {
+            return false;
+        }
+        p.skip_ws();
+        p.pos == p.b.len()
     }
 
     /// `JSON.stringify(value)`.
@@ -147,6 +159,8 @@ struct Parser<'a> {
     /// Vec when their container closes, instead of regrowing a Vec per container.
     items: Vec<Json>,
     members: Vec<(String, Json)>,
+    /// `is_container`: the text is walked the same way, but nothing is kept.
+    check_only: bool,
 }
 
 impl Parser<'_> {
@@ -206,7 +220,9 @@ impl Parser<'_> {
         } else {
             loop {
                 let v = self.value()?;
-                self.items.push(v);
+                if !self.check_only {
+                    self.items.push(v);
+                }
                 self.skip_ws();
                 match self.peek() {
                     Some(b',') => self.pos += 1,
@@ -241,7 +257,9 @@ impl Parser<'_> {
                 }
                 self.pos += 1;
                 let v = self.value()?;
-                self.members.push((key, v));
+                if !self.check_only {
+                    self.members.push((key, v));
+                }
                 self.skip_ws();
                 match self.peek() {
                     Some(b',') => self.pos += 1,
@@ -327,7 +345,7 @@ impl Parser<'_> {
         match b.get(i) {
             Some(b'"') => {
                 self.pos += 1;
-                return Ok(self.s[start..i].to_owned());
+                return Ok(if self.check_only { String::new() } else { self.s[start..i].to_owned() });
             }
             Some(b'\\') => {}
             Some(_) => return Err(self.err("control character in string")),
@@ -594,6 +612,36 @@ mod tests {
         let ok = "[".repeat(MAX_DEPTH) + &"]".repeat(MAX_DEPTH);
         assert_eq!(Json::parse(&ok).unwrap().stringify(), ok);
         assert_eq!(Json::parse("[1,x]").unwrap_err().offset, 3);
+    }
+
+    #[test]
+    fn is_container_agrees_with_parse() {
+        for bad in ["", " ", "01", "[1,]", "{,}", "{\"a\"}", "{\"a\":}", "[1] 2", "[\"\t\"]", "[\"\\x\"]", "[", "{\"a\":1", "[\"abc"] {
+            assert!(Json::parse(bad).is_err() && !Json::is_container(bad), "{bad:?}");
+        }
+        for scalar in ["1", "\"x\"", "true", "null"] {
+            assert!(Json::parse(scalar).is_ok() && !Json::is_container(scalar), "{scalar:?}");
+        }
+        for good in ["{}", "[]", " [1, {\"a\":\"x\\ny\", \"b\":[null]}] ", r#"{"a":{"b":[1,"s",true]}}"#] {
+            assert!(Json::parse(good).is_ok() && Json::is_container(good), "{good:?}");
+        }
+        let at = "[".repeat(MAX_DEPTH) + &"]".repeat(MAX_DEPTH);
+        assert!(Json::is_container(&at));
+        assert!(!Json::is_container(&format!("[{at}]")), "past the depth limit");
+    }
+
+    /// The http threads of crates/backend have this stack, and handlers run on top of what this uses. A dev build needs
+    /// about 768 KB here, so `cargo test -p util` in either profile fails if the margin goes.
+    #[test]
+    fn the_depth_limit_fits_an_http_thread() {
+        let run = || {
+            let text = "[".repeat(MAX_DEPTH) + &"]".repeat(MAX_DEPTH);
+            assert!(Json::is_container(&text));
+            let v = Json::parse(&text).unwrap();
+            assert_eq!(v.stringify(), text);
+            drop(v); // dropping recurses as well
+        };
+        std::thread::Builder::new().stack_size(1 << 20).spawn(run).unwrap().join().unwrap();
     }
 
     #[test]

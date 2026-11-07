@@ -163,6 +163,10 @@ mod e2e {
     }
 
     fn boot(password: Option<&str>) -> (Backend, Arc<Published>) {
+        boot_with(password, 64, 120)
+    }
+
+    fn boot_with(password: Option<&str>, max_connections: usize, request_timeout_s: u64) -> (Backend, Arc<Published>) {
         let p = Arc::new(Published::new(fake::view(&fake::world())));
         let (tx, _h) = fake::tick_thread(p.clone());
         let config = BackendConfig {
@@ -170,8 +174,8 @@ mod e2e {
             port: 0,
             cli_host: "127.0.0.1".into(),
             cli_port: 0,
-            max_connections: 64,
-            request_timeout_s: 120,
+            max_connections,
+            request_timeout_s,
             server_password: password.map(Into::into),
             steam: "single-user:alice".into(),
         };
@@ -181,7 +185,7 @@ mod e2e {
 
     /// One request on an open connection: (status, headers, body).
     fn request(s: &mut BufReader<TcpStream>, method: &str, path: &str, headers: &[(&str, &str)], body: &str) -> (u16, Vec<(String, String)>, String) {
-        let mut head = format!("{method} {path} HTTP/1.1\r\nHost: x\r\nContent-Length: {}\r\n", body.len());
+        let mut head = format!("{method} {path} HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: {}\r\n", body.len());
         for (k, v) in headers {
             head.push_str(&format!("{k}: {v}\r\n"));
         }
@@ -220,12 +224,19 @@ mod e2e {
 
     impl Ws {
         fn open(b: &Backend, path: &str) -> Ws {
+            Ws::open_with(b, path, "").unwrap()
+        }
+        /// `Err` holds the status line of a request that was not upgraded.
+        fn open_with(b: &Backend, path: &str, headers: &str) -> Result<Ws, String> {
             let mut s = connect(b);
-            let req = format!("GET {path} HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n");
+            let host = if headers.contains("Host:") { String::new() } else { "Host: 127.0.0.1\r\n".into() };
+            let req = format!("GET {path} HTTP/1.1\r\n{host}{headers}Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n");
             s.get_mut().write_all(req.as_bytes()).unwrap();
             let mut line = String::new();
             s.read_line(&mut line).unwrap();
-            assert!(line.starts_with("HTTP/1.1 101"), "{line}");
+            if !line.starts_with("HTTP/1.1 101") {
+                return Err(line);
+            }
             loop {
                 line.clear();
                 s.read_line(&mut line).unwrap();
@@ -238,7 +249,20 @@ mod e2e {
             if framed {
                 assert_eq!(ws.frame(), "o");
             }
-            ws
+            Ok(ws)
+        }
+        fn ping(&mut self) -> std::io::Result<()> {
+            self.s.get_mut().write_all(&client_frame(true, crate::ws::OP_PING, b""))
+        }
+        /// The next frame, with its opcode, answering pings on the way as a browser does.
+        fn answering(&mut self) -> std::io::Result<(u8, Vec<u8>)> {
+            loop {
+                let (_, op, p) = server_frame(&mut self.s)?;
+                if op != crate::ws::OP_PING {
+                    return Ok((op, p));
+                }
+                self.s.get_mut().write_all(&client_frame(true, crate::ws::OP_PONG, &p))?;
+            }
         }
         fn frame(&mut self) -> String {
             loop {
@@ -301,7 +325,7 @@ mod e2e {
         let (st, _, body) = request(&mut c, "GET", "/api/user/world-status", &[pw], "");
         assert_eq!((st, body.as_str()), (401, r#"{"error":"unauthorized"}"#));
         // chunked upload
-        let chunked = "POST /api/user/console HTTP/1.1\r\nHost: x\r\nX-Server-Password: pw\r\nX-Token: TOKEN\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n6\r\n{\"expr\r\n14\r\nession\":\"Game.time\"}\r\n0\r\n\r\n".replace("TOKEN", &token);
+        let chunked = "POST /api/user/console HTTP/1.1\r\nHost: 127.0.0.1\r\nX-Server-Password: pw\r\nX-Token: TOKEN\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n6\r\n{\"expr\r\n14\r\nession\":\"Game.time\"}\r\n0\r\n\r\n".replace("TOKEN", &token);
         c.get_mut().write_all(chunked.as_bytes()).unwrap();
         let mut status = String::new();
         c.read_line(&mut status).unwrap();
@@ -313,7 +337,7 @@ mod e2e {
         }
         // curl's `Expect: 100-continue`: the interim response comes before the body is sent
         let mut c3 = connect(&b);
-        let head = format!("POST /api/user/console HTTP/1.1\r\nHost: x\r\nX-Server-Password: pw\r\nX-Token: {token}\r\nContent-Type: application/json\r\nExpect: 100-continue\r\nContent-Length: 26\r\n\r\n");
+        let head = format!("POST /api/user/console HTTP/1.1\r\nHost: 127.0.0.1\r\nX-Server-Password: pw\r\nX-Token: {token}\r\nContent-Type: application/json\r\nExpect: 100-continue\r\nContent-Length: 26\r\n\r\n");
         c3.get_mut().write_all(head.as_bytes()).unwrap();
         let mut line = String::new();
         c3.read_line(&mut line).unwrap();
@@ -328,6 +352,231 @@ mod e2e {
         let (st, _, body) = request(&mut c2, "GET", "/socket/info", &[], "");
         assert_eq!(st, 200);
         assert!(body.contains(r#""websocket":true"#));
+    }
+
+    #[test]
+    fn megabytes_need_a_token() {
+        let (b, _p) = boot(None);
+        let json = ("Content-Type", "application/json");
+        let big = format!(r#"{{"expression":"{}"}}"#, "x".repeat(http::ANON_BODY));
+        let (st, _, _) = request(&mut connect(&b), "POST", "/api/user/console", &[json], &big);
+        assert_eq!(st, 413, "nobody has said who they are");
+        let (st, _, _) = request(&mut connect(&b), "POST", "/api/user/console", &[json, ("X-Token", "bogus")], &big);
+        assert_eq!(st, 413, "nor does a token that does not check out");
+        let token = authlib::gen_token("a11ce0000000001");
+        let (st, _, body) = request(&mut connect(&b), "POST", "/api/user/console", &[json, ("X-Token", &token)], &big);
+        assert_eq!(st, 200, "{body}");
+        let small = r#"{"ticket":"ab","useNativeAuth":false}"#;
+        let (st, _, body) = request(&mut connect(&b), "POST", "/api/auth/steam-ticket", &[json], small);
+        assert!(st == 200 && body.contains("token"), "signing in needs no token: {body}");
+    }
+
+    #[test]
+    fn a_page_from_elsewhere_cannot_open_a_socket() {
+        let (b, _p) = boot(None);
+        for path in ["/socket/websocket", "/socket/123/abcdefgh/websocket"] {
+            for origin in ["https://evil.example", "null"] {
+                let refused = Ws::open_with(&b, path, &format!("Origin: {origin}\r\n")).err();
+                assert!(refused.is_some_and(|line| line.starts_with("HTTP/1.1 403")), "{path} from {origin}");
+            }
+            let rebound = Ws::open_with(&b, path, "Host: evil.example:21025\r\nOrigin: http://evil.example:21025\r\n").err();
+            assert!(rebound.is_some_and(|line| line.starts_with("HTTP/1.1 403")), "{path} through a rebound name");
+            for origin in ["chrome-extension://abcdefghijklmnop", "http://127.0.0.1"] {
+                assert!(Ws::open_with(&b, path, &format!("Origin: {origin}\r\n")).is_ok(), "{path} from {origin}");
+            }
+        }
+    }
+
+    /// Eight of these held every slot of a test server, with one empty ping a second each.
+    #[test]
+    fn a_socket_that_never_signs_in_is_closed_however_busy() {
+        let (b, _p) = boot_with(None, 64, 2);
+        for path in ["/socket/websocket", "/socket/123/abcdefgh/websocket"] {
+            let mut ws = Ws::open(&b, path);
+            let started = std::time::Instant::now();
+            loop {
+                assert!(started.elapsed() < Duration::from_secs(20), "still open on {path}");
+                let _ = ws.ping();
+                // a ping that lands after the close comes back as a reset, which can take the close frame with it
+                let Ok((_, op, p)) = server_frame(&mut ws.s) else { break };
+                if op == crate::ws::OP_CLOSE {
+                    assert_eq!(u16::from_be_bytes([p[0], p[1]]), 1008, "{path}");
+                    break;
+                }
+                std::thread::sleep(Duration::from_millis(100));
+            }
+            assert!(started.elapsed() >= Duration::from_secs(1), "closed too early on {path}");
+        }
+        // one that signed in stays
+        let mut ws = signed_in(&b, "/socket/websocket");
+        for _ in 0..20 {
+            ws.ping().unwrap();
+            let (op, _) = ws.answering().unwrap();
+            assert_eq!(op, crate::ws::OP_PONG, "past the deadline a stranger gets");
+            std::thread::sleep(Duration::from_millis(150));
+        }
+    }
+
+    fn signed_in(b: &Backend, path: &str) -> Ws {
+        let mut ws = Ws::open(b, path);
+        ws.send(&format!("auth {}", authlib::gen_token("a11ce0000000001")));
+        ws.until("auth ok");
+        ws
+    }
+
+    /// On Windows only the read timeout frees a reader, and a socket with traffic never got a ping, so a client that only
+    /// receives had nothing to send and was dropped at every timeout.
+    #[test]
+    fn a_socket_that_only_receives_outlives_the_read_timeout() {
+        let (b, p) = boot_with(None, 64, 4);
+        let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let readers: Vec<_> = ["/socket/websocket", "/socket/123/abcdefgh/websocket"]
+            .map(|path| {
+                let mut ws = signed_in(&b, path);
+                ws.send("subscribe server-message");
+                std::thread::spawn(move || {
+                    let started = std::time::Instant::now();
+                    while started.elapsed() < Duration::from_secs(9) {
+                        let (op, _) = ws.answering().unwrap_or_else(|e| panic!("{path} dropped after {:?}: {e}", started.elapsed()));
+                        assert_ne!(op, crate::ws::OP_CLOSE, "{path} closed after {:?}", started.elapsed());
+                    }
+                })
+            })
+            .into_iter()
+            .collect();
+        let pusher = {
+            let (p, stop) = (p.clone(), stop.clone());
+            std::thread::spawn(move || {
+                while !stop.load(std::sync::atomic::Ordering::Relaxed) {
+                    crate::socket::system::send_server_message(&p, "tick");
+                    std::thread::sleep(Duration::from_millis(50));
+                }
+            })
+        };
+        let outcome: Vec<_> = readers.into_iter().map(|r| r.join()).collect();
+        stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        pusher.join().unwrap();
+        assert!(outcome.iter().all(Result::is_ok));
+    }
+
+    #[test]
+    fn a_client_that_stops_answering_goes_and_frees_its_slot() {
+        for path in ["/socket/websocket", "/socket/123/abcdefgh/websocket"] {
+            let (b, _p) = boot_with(None, 1, 3);
+            let mut ws = signed_in(&b, path);
+            // it reads, and answers nothing: not the pings either
+            let started = std::time::Instant::now();
+            let mut pings = 0;
+            loop {
+                let Ok((_, op, _)) = server_frame(&mut ws.s) else { break };
+                pings += (op == crate::ws::OP_PING) as u32;
+                if op == crate::ws::OP_CLOSE {
+                    break;
+                }
+                assert!(started.elapsed() < Duration::from_secs(30), "{path} is still open");
+            }
+            assert!(pings >= 1, "{path}");
+            wait_for_the_slot(&b, path);
+        }
+    }
+
+    fn connection_header(headers: &[(String, String)]) -> &str {
+        &headers.iter().find(|(k, _)| k == "connection").unwrap().1
+    }
+
+    /// Eight connections with one small request every 1.5 s left a new client on 503 for as long as they went on.
+    #[test]
+    fn keep_alive_gives_way_when_slots_run_short() {
+        let (b, _p) = boot_with(None, 8, 120);
+        let mut six: Vec<_> = (0..6).map(|_| connect(&b)).collect();
+        for c in &mut six {
+            let (st, hs, _) = request(c, "GET", "/api/version", &[], "");
+            assert_eq!((st, connection_header(&hs)), (200, "keep-alive"), "three quarters is not crowded yet");
+        }
+        // the attack on a new server: eight that all ask, none of which means to leave
+        let (b, _p) = boot_with(None, 8, 120);
+        let eight: Vec<_> = (0..8).map(|_| connect(&b)).collect();
+        let mut kept = Vec::new();
+        for mut c in eight {
+            let (st, hs, _) = request(&mut c, "GET", "/api/version", &[], "");
+            assert_eq!(st, 200);
+            if connection_header(&hs) == "keep-alive" {
+                kept.push(c);
+            } else {
+                let mut rest = Vec::new();
+                c.read_to_end(&mut rest).unwrap();
+                assert!(rest.is_empty(), "the server ended it, and that is the end of what it sends");
+            }
+        }
+        assert!(kept.len() <= 6, "{} of eight stayed open", kept.len());
+        // threads that have ended their connections let go of the slots just after, so this may take a few tries
+        wait_for_the_slot(&b, "keep-alive connections");
+    }
+
+    #[test]
+    fn a_large_body_on_its_way_holds_up_nobody() {
+        let (b, _p) = boot(None);
+        let token = authlib::gen_token("a11ce0000000001");
+        let body = format!(r#"{{"expression":"{}"}}"#, "x".repeat(http::ANON_BODY));
+        let head = format!("POST /api/user/console HTTP/1.1\r\nHost: 127.0.0.1\r\nX-Token: {token}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n", body.len());
+        let mut slow = connect(&b);
+        slow.get_mut().write_all(head.as_bytes()).unwrap();
+        slow.get_mut().write_all(&body.as_bytes()[..body.len() - 1]).unwrap();
+        // it has all but one byte in, for as long as it likes, and the next one goes past it
+        let (st, _, reply) = request(&mut connect(&b), "POST", "/api/user/console", &[("Content-Type", "application/json"), ("X-Token", &token)], &body);
+        assert_eq!(st, 200, "{reply}");
+        slow.get_mut().write_all(b"}").unwrap();
+        let mut status = String::new();
+        slow.read_line(&mut status).unwrap();
+        assert!(status.starts_with("HTTP/1.1 200"), "{status}");
+    }
+
+    /// What a new client gets, on a connection of its own.
+    fn version_status(b: &Backend) -> String {
+        let mut c = connect(b);
+        let _ = c.get_mut().write_all(b"GET /api/version HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n");
+        let mut reply = String::new();
+        let _ = c.read_to_string(&mut reply);
+        reply
+    }
+
+    /// Asks until the one slot of `b` comes free.
+    fn wait_for_the_slot(b: &Backend, what: &str) {
+        let started = std::time::Instant::now();
+        loop {
+            let reply = version_status(b);
+            if reply.starts_with("HTTP/1.1 200") {
+                return;
+            }
+            assert!(started.elapsed() < Duration::from_secs(30), "{what}: the slot stayed taken: {reply}");
+            std::thread::sleep(Duration::from_millis(50));
+        }
+    }
+
+    /// A writer blocked on a client that stopped reading used to stay for good, with its slot given back all the same.
+    /// The timeout also limits how long the steps before it may take, so it leaves room for a busy PC: at 1 s a stall on the
+    /// way to `auth` failed this test, and one after it passed with no writer stuck.
+    #[test]
+    fn a_client_that_stops_reading_is_let_go() {
+        let (b, p) = boot_with(None, 1, 5);
+        let ws = signed_in(&b, "/socket/websocket");
+        let conn = p.hub().lock().conns.values().next().unwrap().clone();
+        // `ws` stays open and unread. A queue only fills once the socket's buffers have and the writer is stuck.
+        let big = "x".repeat(1 << 20);
+        let started = std::time::Instant::now();
+        while conn.out.push_text(big.clone()) {
+            assert!(started.elapsed() < Duration::from_secs(30), "the writer went on with nobody reading");
+        }
+        assert!(!conn.out.is_closed(), "the socket went before its writer was stuck");
+        // the slot is the writer's as well, so it can only come free once the writer has given up
+        assert!(!version_status(&b).starts_with("HTTP/1.1 200"));
+        wait_for_the_slot(&b, "a writer with nobody reading");
+        let gone = std::time::Instant::now();
+        while Arc::strong_count(&conn) > 1 {
+            assert!(gone.elapsed() < Duration::from_secs(30), "the slot came free with its threads still there");
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        drop(ws);
     }
 
     #[test]

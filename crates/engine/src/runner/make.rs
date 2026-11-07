@@ -115,7 +115,10 @@ fn save_one(w: &mut World, o: RunOutput, s: &mut Saved, now: f64) {
     match o.status {
         RunStatus::Deactivated => {
             // vanilla: data.js:107 users.update({_id}, {$set: {active: 0}}); reject(false): nothing else is saved
-            Arc::make_mut(&mut user_mut(w, u).doc).set(atom!("active"), Val::Num(0.0));
+            let user = user_mut(w, u);
+            Arc::make_mut(&mut user.doc).set(atom!("active"), Val::Num(0.0));
+            // Unlike vanilla: this user is not selected again, so what is queued would never be read and never freed.
+            user.console_queue = Arc::from(Vec::new());
             return;
         }
         RunStatus::Skipped => {
@@ -912,7 +915,8 @@ mod tests {
                 );
                 assert_eq!(Some(&ours), d.get("users"), "{name}: rooms.intents {room}");
             }
-            let left = expect.get("consoleLeft").and_then(Json::as_f64).unwrap() as usize;
+            // Vanilla leaves them for a run that may never come; here a deactivated user's queue goes.
+            let left = if outcome == "deactivated" { 0 } else { expect.get("consoleLeft").and_then(Json::as_f64).unwrap() as usize };
             assert_eq!(w.users[u as usize].console_queue.len(), left, "{name}: console commands");
             let globals: Vec<Json> = w.global_intents.iter().map(|g| Json::Obj(vec![("user".into(), Json::Str(w.users[g.user as usize].id.as_str().into())), ("intents".into(), Val::Obj(g.intents.clone()).to_json())])).collect();
             assert_eq!(&Json::Arr(globals), expect.get("usersIntents").unwrap(), "{name}: users.intents");

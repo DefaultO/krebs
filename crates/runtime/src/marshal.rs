@@ -268,6 +268,54 @@ pub(crate) fn serialize_for_tests(scope: &mut v8::PinScope, value: v8::Local<v8:
     ser.release()
 }
 
+fn segment_id(v: &Json) -> bool {
+    v.as_f64().is_some_and(|n| n.fract() == 0.0 && (0.0..=99.0).contains(&n))
+}
+
+/// What a run may leave of a segment setting, null included; None leaves the setting as it is. runtime.js checks ids
+/// with the bot's own `parseInt` and `_`, and `setActiveForeignSegment` not the name at all, and this goes into the user
+/// doc after the CPU meter has stopped, so any other shape is a size or a set of keys the bot picked.
+fn segment_setting(key: &str, v: &Json) -> Option<Val> {
+    const MAX_USERNAME: usize = 256; // above valid_username's: a world may hold older names
+    const MAX_PUBLIC: usize = 1024; // 100 ids of two digits and a comma, listed a few times over
+    if matches!(v, Json::Null) {
+        return Some(Val::Null);
+    }
+    match key {
+        "activeSegments" => v.as_array().filter(|a| a.len() <= 10 && a.iter().all(segment_id)).map(|_| Val::from_json(v)),
+        "defaultPublicSegment" => segment_id(v).then(|| Val::from_json(v)),
+        "publicSegments" => v.as_str().filter(|s| s.len() <= MAX_PUBLIC && s.bytes().all(|c| c.is_ascii_digit() || c == b',')).map(|_| Val::from_json(v)),
+        "activeForeignSegment" => {
+            let username = v.get("username");
+            let id = v.get("id");
+            let good = v.as_object().is_some()
+                && username.is_none_or(|u| u.as_str().is_some_and(|u| u.len() <= MAX_USERNAME))
+                && id.is_none_or(segment_id);
+            if !good {
+                return Some(Val::Null);
+            }
+            let mut o = Obj::default();
+            for (k, v) in [("username", username), ("id", id)] {
+                if let Some(v) = v {
+                    o.set(engine::doc::Atom::intern(k), Val::from_json(v));
+                }
+            }
+            Some(Val::Obj(o))
+        }
+        _ => None,
+    }
+}
+
+fn segment_settings(j: &Json) -> Obj {
+    let mut settings = Obj::default();
+    for k in ["activeSegments", "activeForeignSegment", "defaultPublicSegment", "publicSegments"] {
+        if let Some(v) = j.get(k).and_then(|v| segment_setting(k, v)) {
+            settings.set(engine::doc::Atom::intern(k), v);
+        }
+    }
+    settings
+}
+
 /// §4.2 steps 5-6: the `__store` JSON plus the strings read directly → RunOutput.
 pub(crate) fn output(
     world: &dyn crate::WorldAccess,
@@ -298,12 +346,7 @@ pub(crate) fn output(
         used_time = (ms_per_tick + 0.2 * intents.count as f64).ceil() as u32;
         used_dirty_ms = ms_per_tick.ceil() as u32;
     }
-    let mut settings = Obj::default();
-    for k in ["activeSegments", "activeForeignSegment", "defaultPublicSegment", "publicSegments"] {
-        if let Some(v) = j.get(k) {
-            settings.set(engine::doc::Atom::intern(k), Val::from_json(v));
-        }
-    }
+    let settings = segment_settings(&j);
     let visuals = j
         .get("visual")
         .and_then(Json::as_object)
@@ -330,6 +373,48 @@ pub(crate) fn output(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn settings(json: &str) -> String {
+        Val::Obj(segment_settings(&Json::parse(json).unwrap())).to_json().stringify()
+    }
+
+    /// What a legal bot sends passes as it was, null and missing keys included.
+    #[test]
+    fn legal_segment_settings_pass() {
+        for s in [
+            r#"{"activeSegments":[1,2,99,0],"activeForeignSegment":{"username":"Other","id":3},"defaultPublicSegment":5,"publicSegments":"1,2"}"#,
+            r#"{"activeSegments":[],"activeForeignSegment":null,"defaultPublicSegment":null,"publicSegments":""}"#,
+            r#"{"activeForeignSegment":{"username":"Other"}}"#,
+            r#"{"activeForeignSegment":{"id":4}}"#,
+            r#"{"activeForeignSegment":{}}"#,
+            r#"{"activeSegments":null}"#,
+        ] {
+            assert_eq!(settings(s), s);
+        }
+    }
+
+    /// `setActiveForeignSegment(obj)` put any object in the user doc, and runtime.js checks the rest with functions
+    /// the bot can replace.
+    #[test]
+    fn other_segment_settings_do_not_pass() {
+        let junk = |k: &str, v: &str| settings(&format!(r#"{{"{k}":{v}}}"#));
+        for v in [r#"{"username":{"a":1,"b":2}}"#, r#"{"username":5}"#, r#"{"username":"x","id":100}"#, r#"{"username":"x","id":-1}"#, r#"{"username":"x","id":1.5}"#, r#"{"username":"x","id":"3"}"#, "[1]", r#""x""#] {
+            assert_eq!(junk("activeForeignSegment", v), r#"{"activeForeignSegment":null}"#, "{v}");
+        }
+        let long = format!(r#"{{"username":"{}"}}"#, "n".repeat(257));
+        assert_eq!(junk("activeForeignSegment", &long), r#"{"activeForeignSegment":null}"#);
+        assert_eq!(junk("activeForeignSegment", r#"{"username":"x","id":3,"more":{"k":1}}"#), r#"{"activeForeignSegment":{"username":"x","id":3}}"#);
+        for v in ["5", "{}", r#"[1,null]"#, r#"[100]"#, r#"[[1]]"#, r#"[1,2,3,4,5,6,7,8,9,10,11]"#] {
+            assert_eq!(junk("activeSegments", v), "{}", "{v}");
+        }
+        for v in ["100", "-1", "1.5", r#""1""#, "{}"] {
+            assert_eq!(junk("defaultPublicSegment", v), "{}", "{v}");
+        }
+        for v in ["5", "{}", r#""1,x""#] {
+            assert_eq!(junk("publicSegments", v), "{}", "{v}");
+        }
+        assert_eq!(junk("publicSegments", &format!(r#""{}""#, "1,".repeat(600))), "{}");
+    }
 
     /// Two isolates read the very bytes of one Arc (no copy), and disposal gives the counts back.
     #[test]

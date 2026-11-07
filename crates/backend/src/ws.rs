@@ -8,8 +8,9 @@ use crate::http::{Request, Response};
 use std::io::{self, Read, Write};
 
 const GUID: &str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-/// Largest message accepted from a client (the protocol's client messages are short command lines).
-pub const MAX_MESSAGE: usize = 4 << 20;
+/// Largest message accepted from a client. The protocol's client messages are short command lines: `auth <token>` and
+/// `subscribe <channel>`, of which the stock client's longest is a memory path someone typed.
+pub const MAX_MESSAGE: usize = 64 << 10;
 
 pub const OP_CONT: u8 = 0;
 pub const OP_TEXT: u8 = 1;
@@ -185,7 +186,7 @@ pub fn write_frame(w: &mut impl Write, op: u8, payload: &[u8]) -> io::Result<()>
         }
     }
     w.write_all(&head)?;
-    w.write_all(payload)
+    crate::http::write_pieces(w, payload)
 }
 
 pub fn write_close(w: &mut impl Write, code: u16, reason: &str) -> io::Result<()> {
@@ -252,12 +253,12 @@ pub(crate) mod tests {
         let mut raw = client_frame(false, OP_TEXT, b"hel");
         raw.extend(client_frame(true, OP_PING, b"p"));
         raw.extend(client_frame(true, OP_CONT, b"lo"));
-        raw.extend(client_frame(true, OP_TEXT, &vec![b'x'; 70_000]));
+        raw.extend(client_frame(true, OP_TEXT, &vec![b'x'; MAX_MESSAGE]));
         raw.extend(client_frame(true, OP_CLOSE, &[0x03, 0xe8, b'b', b'y']));
         let mut r = Reader::new(Cursor::new(raw));
         assert_eq!(r.next().ok(), Some(Message::Ping(b"p".to_vec())));
         assert_eq!(r.next().ok(), Some(Message::Text("hello".into())));
-        assert!(matches!(r.next(), Ok(Message::Text(s)) if s.len() == 70_000));
+        assert!(matches!(r.next(), Ok(Message::Text(s)) if s.len() == MAX_MESSAGE));
         assert_eq!(r.next().ok(), Some(Message::Close(Some((1000, "by".into())))));
 
         let unmasked = vec![0x81, 0x01, b'a'];
@@ -272,9 +273,32 @@ pub(crate) mod tests {
 
     #[test]
     fn a_frame_that_stops_short_is_an_error() {
-        let mut raw = client_frame(true, OP_TEXT, &vec![b'x'; 70_000]);
+        let mut raw = client_frame(true, OP_TEXT, &vec![b'x'; MAX_MESSAGE]);
         raw.truncate(1000);
         assert!(matches!(Reader::new(Cursor::new(raw)).next(), Err(ReadError::Io(e)) if e.kind() == io::ErrorKind::UnexpectedEof));
+    }
+
+    #[test]
+    fn a_message_over_the_limit_is_refused_before_it_is_read() {
+        let big = client_frame(true, OP_TEXT, &vec![b'x'; MAX_MESSAGE + 1]);
+        assert!(matches!(Reader::new(Cursor::new(big)).next(), Err(ReadError::Violation(Violation::TooBig))));
+        // a head alone: what it announces is never waited for
+        let announced = [&[0x81, 0x80 | 127][..], &(1u64 << 40).to_be_bytes()].concat();
+        assert!(matches!(Reader::new(Cursor::new(announced)).next(), Err(ReadError::Violation(Violation::TooBig))));
+        let mut pieces = client_frame(false, OP_TEXT, &vec![b'x'; MAX_MESSAGE]);
+        pieces.extend(client_frame(true, OP_CONT, b"x"));
+        assert!(matches!(Reader::new(Cursor::new(pieces)).next(), Err(ReadError::Violation(Violation::TooBig))));
+    }
+
+    #[test]
+    fn the_longest_stock_client_commands_fit() {
+        let token = format!("{}.{:x}.{}", "a".repeat(24), i64::MAX, "f".repeat(40));
+        let channel = format!("user:{}/memory/{}", "a".repeat(24), "p".repeat(crate::socket::user::MAX_WATCH_PATH));
+        for command in [format!("auth {token}"), format!("subscribe {channel}"), format!("unsubscribe {channel}")] {
+            // SockJS wraps each one as a JSON array of one string
+            let framed = util::json::Json::Arr(vec![util::json::Json::Str(command)]).stringify();
+            assert!(framed.len() < MAX_MESSAGE / 16, "{}", framed.len());
+        }
     }
 
     #[test]

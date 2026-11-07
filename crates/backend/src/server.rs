@@ -1,6 +1,6 @@
 //! mirror: reference/backend/lib/game/server.js
-//! parity: DIVERGENT(HTTP-SERVER-PASSWORD): `/api/version` is exempt from the password gate (spec 10 Q5); CORS is
-//! permissive (HTTP-CORS); `X-Token` alone authenticates and `?_token=`/HTTP Basic are accepted (AUTH-TOKEN-MW,
+//! parity: DIVERGENT(HTTP-SERVER-PASSWORD): `/api/version` is exempt from the password gate (spec 10 Q5); CORS is open
+//! to the stock client and the server's own pages, and any other page is refused (HTTP-CORS); `X-Token` alone authenticates and `?_token=`/HTTP Basic are accepted (AUTH-TOKEN-MW,
 //! AUTHMOD-BASIC); `serverData` carries the client's default `features` plus `shards: []` (API-SERVERDATA)
 //!
 //! `/api/version`, `/api/servers/list` stub and the router assembly (§8.3). Owner: WP04.
@@ -241,13 +241,19 @@ fn route_matches(r: &Route, req: &Request) -> bool {
     r.method == req.method && r.path.strip_suffix('*').map_or(r.path.eq_ignore_ascii_case(path), |p| req.path.get(..p.len()).is_some_and(|head| head.eq_ignore_ascii_case(p)))
 }
 
-/// The token a request carries (AUTH-TOKEN-MW): `X-Token`, then `?token=` / `?_token=`, then `body.token`.
+/// The token in a request's head: `X-Token`, then `?token=` / `?_token=`.
+fn head_token(req: &Request) -> Option<&str> {
+    req.header("x-token").filter(|t| !t.is_empty()).or_else(|| req.param("token").or_else(|| req.param("_token")).filter(|t| !t.is_empty()))
+}
+
+/// The token a request carries (AUTH-TOKEN-MW): the head's, then `body.token`. A large body got in on what its head said, so
+/// it is not parsed for this: its handler's parse is the only one it costs.
 fn token(req: &Request) -> Option<String> {
-    if let Some(t) = req.header("x-token").filter(|t| !t.is_empty()) {
+    if let Some(t) = head_token(req) {
         return Some(t.to_string());
     }
-    if let Some(t) = req.param("token").or_else(|| req.param("_token")).filter(|t| !t.is_empty()) {
-        return Some(t.to_string());
+    if req.body.len() > http::ANON_BODY {
+        return None;
     }
     match req.body().get("token") {
         Some(Json::Str(t)) if !t.is_empty() => Some(t.clone()),
@@ -262,9 +268,44 @@ fn resolve_user(req: &Request, view: &WorldView) -> Option<UserIdx> {
     }
 }
 
+/// Whether the password gate stops this request.
+fn locked_out(sh: &Shared, req: &Request) -> bool {
+    let gated = !req.path.starts_with("/assets/") && req.path != "/api/version";
+    gated && sh.config.server_password.as_ref().is_some_and(|pw| req.header("x-server-password") != Some(pw.as_str()))
+}
+
+/// How much body a request may send, from its head alone, so a stranger's body is neither held nor parsed. Megabytes are
+/// for someone signed in, on a route that exists. `body.token` cannot ask for them, and needs none.
+pub(crate) fn body_limit(sh: &Shared, req: &Request) -> usize {
+    let view = sh.published.get();
+    let signed_in = match head_token(req) {
+        Some(t) => authlib::check_token(t, &view).is_some(),
+        None => req.header("authorization").and_then(|h| api::authmod::basic_user(&view, h)).is_some(),
+    };
+    let builtin = routes();
+    if signed_in && !locked_out(sh, req) && sh.routes.iter().chain(builtin.iter()).any(|r| route_matches(r, req)) {
+        http::MAX_BODY
+    } else {
+        http::ANON_BODY
+    }
+}
+
+/// What a web page must not do through the browser of someone who can reach this port. Leaving CORS headers off stops it
+/// from reading a reply, but a simple POST or a websocket still runs, so those are refused. A page that repoints its own
+/// DNS name at 127.0.0.1 is same-origin there and only its `Host` gives it away, which is why a server on this PC alone
+/// checks that. `None` for anything else, including every request with no `Origin` (curl, bots, the game's own tools).
+pub(crate) fn refused(sh: &Shared, req: &Request) -> Option<Response> {
+    let reads = matches!(req.method.as_str(), "GET" | "HEAD" | "OPTIONS") && req.header("upgrade").is_none();
+    let rebound = http::names_this_pc(&sh.config.host) && req.header("host").is_some_and(|h| !http::names_this_pc(h));
+    (rebound || (!reads && !http::origin_allowed(req))).then(|| Response::text(403, "text/plain; charset=utf-8", http::reason(403)))
+}
+
 /// The middleware chain of server.js for one request (HTTP-MIDDLEWARE-ORDER): sockjs, `/` banner, password gate,
 /// body parsing, auth, routes (mods first), `/room-history`, 404. CORS headers on everything but sockjs.
 pub(crate) fn handle(sh: &Shared, req: &Request) -> Response {
+    if let Some(no) = refused(sh, req) {
+        return no;
+    }
     if sockjs::is_socket_path(&req.path) {
         return sockjs::http(req);
     }
@@ -281,12 +322,12 @@ fn chain(sh: &Shared, req: &Request) -> Response {
         let host = format!("{}:{}", sh.config.host, sh.config.port);
         return Response::text(200, "text/html; charset=utf-8", &format!("<html><body>\n                            Screeps server  is running on {host}.\n                            Use your <a href=\"http://store.steampowered.com/app/464350\">Steam game client</a> to connect.\n                            </body></html>"));
     }
-    let gated = !req.path.starts_with("/assets/") && req.path != "/api/version";
-    if let (Some(pw), true) = (&sh.config.server_password, gated) {
-        if req.header("x-server-password") != Some(pw.as_str()) {
-            return Response::error("incorrect server password");
-        }
+    if locked_out(sh, req) {
+        return Response::error("incorrect server password");
     }
+    // A parsed body takes about 40 times its text, so a large one waits for its turn here, once it has all arrived: a slow
+    // sender holds nothing, and however many a player sends, they cost one tree. A panic must not end the turns.
+    let _turn = (req.body.len() > http::ANON_BODY).then(|| sh.large_body.lock().unwrap_or_else(|e| e.into_inner()));
     if let Some(bad) = req.body_error() {
         return bad;
     }
@@ -317,7 +358,8 @@ fn chain(sh: &Shared, req: &Request) -> Response {
 mod tests {
     use super::*;
     use crate::fake;
-    use std::sync::atomic::AtomicUsize;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
 
     fn shared(password: Option<&str>) -> Shared {
         let (ctx, _h) = fake::ctx(None);
@@ -336,6 +378,8 @@ mod tests {
             },
             routes: vec![],
             conns: AtomicUsize::new(0),
+            callers: Default::default(),
+            large_body: Default::default(),
         }
     }
 
@@ -410,6 +454,171 @@ mod tests {
         let mut bad = req("POST", "/api/user/console", &[("content-type", "application/json")]);
         bad.body = b"{oops".to_vec();
         assert_eq!(handle(&sh, &bad).status, 400);
+    }
+
+    #[test]
+    fn a_page_from_elsewhere_gets_no_cors_and_cannot_post() {
+        let sh = shared(None);
+        let evil = ("origin", "https://evil.example");
+        let host = ("host", "127.0.0.1:21025");
+        // a simple POST needs no preflight, so the missing headers alone would let it run
+        for path in ["/api/auth/steam-ticket", "/api/user/code", "/api/register/submit", "/socket/info"] {
+            let r = handle(&sh, &req("POST", path, &[evil, host]));
+            assert_eq!(r.status, 403, "{path}");
+            assert!(r.header("access-control-allow-origin").is_none(), "{path}");
+        }
+        assert_eq!(handle(&sh, &req("POST", "/api/auth/steam-ticket", &[("origin", "null"), host])).status, 403, "a sandboxed frame");
+        let read = handle(&sh, &req("GET", "/api/game/time", &[evil, host]));
+        assert_eq!(read.status, 200, "it may go, but the browser hides the reply");
+        assert!(read.header("access-control-allow-origin").is_none() && read.header("access-control-allow-credentials").is_none());
+        let preflight = handle(&sh, &req("OPTIONS", "/api/user/code", &[evil, host, ("access-control-request-headers", "x-token")]));
+        assert!(preflight.header("access-control-allow-origin").is_none() && preflight.header("access-control-allow-headers").is_none());
+        let info = handle(&sh, &req("GET", "/socket/info", &[evil, host]));
+        assert!(info.header("access-control-allow-origin").is_none(), "sockjs's own route too");
+    }
+
+    #[test]
+    fn the_client_and_the_servers_own_pages_keep_working() {
+        let sh = shared(None);
+        let host = ("host", "127.0.0.1:21025");
+        let client = ("origin", "chrome-extension://abcdefghijklmnop");
+        let page = ("origin", "http://127.0.0.1:21025");
+        for origin in [client, page] {
+            let mut signin = req("POST", "/api/auth/steam-ticket", &[origin, host, ("content-type", "application/json")]);
+            signin.body = br#"{"ticket":"ab"}"#.to_vec();
+            let r = handle(&sh, &signin);
+            assert_eq!((r.status, r.header("access-control-allow-origin")), (200, Some(origin.1)));
+            assert!(body(&r).get("token").is_some(), "{}", origin.1);
+            let preflight = handle(&sh, &req("OPTIONS", "/api/user/code", &[origin, host, ("access-control-request-headers", "x-token")]));
+            assert_eq!((preflight.status, preflight.header("access-control-allow-headers")), (204, Some("x-token")));
+            assert_eq!(handle(&sh, &req("GET", "/socket/info", &[origin, host])).header("access-control-allow-origin"), Some(origin.1));
+        }
+        let curl = handle(&sh, &req("POST", "/api/auth/steam-ticket", &[("user-agent", "curl/8")]));
+        assert!(curl.status == 200 && body(&curl).get("token").is_some(), "no Origin, as from curl");
+    }
+
+    #[test]
+    fn a_server_on_this_pc_only_answers_to_its_own_names() {
+        let sh = shared(None);
+        for host in ["127.0.0.1", "127.0.0.1:21025", "localhost:21025", "[::1]:21025"] {
+            assert_eq!(handle(&sh, &req("GET", "/api/game/time", &[("host", host)])).status, 200, "{host}");
+        }
+        // DNS rebinding: same origin as far as the browser knows, and only Host shows it
+        let rebound = [("host", "evil.example:21025"), ("origin", "http://evil.example:21025")];
+        assert_eq!(handle(&sh, &req("GET", "/api/game/time", &rebound[..1])).status, 403);
+        assert_eq!(handle(&sh, &req("POST", "/api/auth/steam-ticket", &rebound)).status, 403);
+        assert_eq!(handle(&sh, &req("GET", "/socket/info", &rebound[..1])).status, 403);
+        let mut open = shared(None);
+        open.config.host = "0.0.0.0".into();
+        assert_eq!(handle(&open, &req("GET", "/api/game/time", &[("host", "game.example:21025")])).status, 200, "a public server has names it cannot know");
+    }
+
+    #[test]
+    fn a_nested_form_cannot_end_the_server() {
+        let sh = Arc::new(shared(None));
+        for depth in [1000, 100_000] {
+            let sh = sh.clone();
+            let run = move || {
+                let mut form = req("POST", "/api/version", &[("content-type", "application/x-www-form-urlencoded")]);
+                form.body = format!("a{}=1", "[b]".repeat(depth)).into_bytes();
+                // the path a crash took: chain, resolve_user, token, the body
+                assert_eq!(handle(&sh, &form).status, 404, "POST /api/version is no route");
+            };
+            std::thread::Builder::new().stack_size(256 << 10).spawn(run).unwrap().join().unwrap();
+        }
+    }
+
+    #[test]
+    fn megabytes_are_for_someone_signed_in_on_a_real_route() {
+        let sh = shared(Some("pw"));
+        let token = authlib::gen_token("a11ce0000000001");
+        let pw = ("x-server-password", "pw");
+        let limit = |r: &Request| body_limit(&sh, r);
+        assert_eq!(limit(&req("POST", "/api/user/code", &[pw])), http::ANON_BODY, "no token");
+        assert_eq!(limit(&req("POST", "/api/user/code", &[pw, ("x-token", "bogus")])), http::ANON_BODY, "a bad token");
+        assert_eq!(limit(&req("POST", "/api/user/code", &[pw, ("x-token", &token)])), http::MAX_BODY);
+        assert_eq!(limit(&req("POST", "/nope", &[pw, ("x-token", &token)])), http::ANON_BODY, "no such route");
+        assert_eq!(limit(&req("POST", "/api/user/code", &[("x-token", &token)])), http::ANON_BODY, "the password gate comes first");
+        let mut q = req("POST", "/api/user/code", &[pw]);
+        q.query = vec![("_token".into(), token)];
+        assert_eq!(limit(&q), http::MAX_BODY, "?_token= is a token as well");
+    }
+
+    fn large(path: &str) -> Request {
+        let mut r = req("POST", path, &[]);
+        r.body = vec![b' '; http::ANON_BODY + 1];
+        r
+    }
+
+    /// Eight held 10 MiB bodies from one player came to 3475 MB, as each cost about 425 MB of tree at once.
+    #[test]
+    fn large_bodies_take_turns() {
+        static RUNNING: AtomicUsize = AtomicUsize::new(0);
+        static MOST: AtomicUsize = AtomicUsize::new(0);
+        fn parse(_: &Request, _: &ApiCtx) -> Response {
+            MOST.fetch_max(RUNNING.fetch_add(1, Ordering::SeqCst) + 1, Ordering::SeqCst);
+            std::thread::sleep(std::time::Duration::from_millis(20));
+            RUNNING.fetch_sub(1, Ordering::SeqCst);
+            Response::ok(Json::Null)
+        }
+        let mut sh = shared(None);
+        sh.routes = vec![Route { method: "POST", path: "/parse", handler: parse }];
+        let sh = Arc::new(sh);
+        let senders: Vec<_> = (0..8)
+            .map(|_| {
+                let sh = sh.clone();
+                std::thread::spawn(move || handle(&sh, &large("/parse")).status)
+            })
+            .collect();
+        assert!(senders.into_iter().all(|s| s.join().unwrap() == 200));
+        assert_eq!(MOST.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn only_a_large_body_waits_for_a_turn() {
+        let sh = shared(None);
+        let _taken = sh.large_body.lock().unwrap();
+        let mut at_the_limit = req("POST", "/nope", &[]);
+        at_the_limit.body = vec![b' '; http::ANON_BODY];
+        assert_eq!(handle(&sh, &at_the_limit).status, 404);
+        assert_eq!(handle(&sh, &req("GET", "/api/version", &[])).status, 200);
+        let mut stranger = large("/nope");
+        stranger.headers.push(("host".into(), "evil.example".into()));
+        assert_eq!(handle(&sh, &stranger).status, 403, "refused before it comes to a turn");
+    }
+
+    #[test]
+    fn a_panic_does_not_end_the_turns() {
+        let sh = Arc::new(shared(None));
+        let holder = sh.clone();
+        let _ = std::thread::spawn(move || {
+            let _turn = holder.large_body.lock().unwrap();
+            panic!("in a handler");
+        })
+        .join();
+        assert!(sh.large_body.is_poisoned());
+        assert_eq!(handle(&sh, &large("/nope")).status, 404);
+    }
+
+    #[test]
+    fn a_token_in_the_body_still_counts() {
+        let sh = shared(None);
+        let mut r = req("GET", "/api/auth/me", &[("content-type", "application/json")]);
+        r.body = format!(r#"{{"token":"{}"}}"#, authlib::gen_token("a11ce0000000001")).into_bytes();
+        assert_eq!(handle(&sh, &r).status, 200);
+        let mut r = req("GET", "/api/auth/me", &[("content-type", "application/x-www-form-urlencoded")]);
+        r.body = format!("token={}", authlib::gen_token("a11ce0000000001")).into_bytes();
+        assert_eq!(handle(&sh, &r).status, 200);
+    }
+
+    #[test]
+    fn a_large_body_is_not_parsed_for_a_token() {
+        let mut r = req("POST", "/api/user/code", &[("content-type", "application/json")]);
+        r.body = format!(r#"{{"token":"t","x":"{}"}}"#, "x".repeat(http::ANON_BODY)).into_bytes();
+        assert_eq!(token(&r), None);
+        r.body.truncate(http::ANON_BODY);
+        r.body.splice(r.body.len() - 2.., *b"\"}");
+        assert_eq!(token(&r).as_deref(), Some("t"), "one that small is");
     }
 
     #[test]

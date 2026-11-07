@@ -57,7 +57,7 @@ impl Db {
             let name = c.get("name").and_then(Json::as_str).ok_or("db.json: a collection without a name")?;
             let mut docs = Vec::new();
             for d in c.get("data").and_then(Json::as_array).map_or(&[][..], |a| a.as_slice()) {
-                let Val::Obj(mut o) = Val::from_json(d) else { continue };
+                let Val::Obj(mut o) = Val::from_trusted_json(d) else { continue };
                 let loki = o.remove(key("$loki")).and_then(|v| v.as_f64()).unwrap_or(0.0);
                 o.remove(key("meta"));
                 docs.push((loki, o));
@@ -221,7 +221,7 @@ const INVADER_BADGE: &str = r##"{"type":{"path1":"m 60.493413,13.745781 -1.12253
 
 /// The Invader badge the v7 migration sets (db.js:186-204).
 pub fn invader_badge() -> Val {
-    Val::from_json(&Json::parse(INVADER_BADGE).expect("badge JSON"))
+    Val::from_trusted_json(&Json::parse(INVADER_BADGE).expect("badge JSON"))
 }
 
 /// `upgradeDb()` (db.js:32-254): the v4..v9 migrations by env `databaseVersion`. `now_ms` is `new Date()` of the
@@ -753,7 +753,7 @@ fn chitin_meta(v: &WorldView, profile: Profile) -> Json {
 /// The env keys `import` reads but the users' (native store): `env_data` without the derived keys.
 pub(crate) fn env_obj(v: &WorldView, profile: Profile) -> Obj {
     let mut env = env_head(v, false);
-    env.set(key("chitin"), Val::from_json(&chitin_meta(v, profile)));
+    env.set(key("chitin"), Val::from_trusted_json(&chitin_meta(v, profile)));
     env
 }
 

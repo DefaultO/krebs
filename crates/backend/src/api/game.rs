@@ -4,7 +4,8 @@
 //! `add-object-intent`/`add-global-intent` wait for the Rust `system.js` sanitizer (WP02) and answer
 //! 'not implemented'; `change-flag` does not exist in vanilla (Express 404); set-notify-when-attacked without
 //! `_id` fails (the original's `update({_id: undefined})` becomes `update({})` and flags every object); flags of a
-//! user across rooms are ordered by room, not by flag-doc creation (unobservable: names are unique per user).
+//! user across rooms are ordered by room, not by flag-doc creation (unobservable: names are unique per user);
+//! `create-invader` refuses an object or an array as `x` or `y`, whose keys would stay as names (`engine::doc`).
 //! Everything else is replayed against the official router in tests/fixtures/api (server.rs oracle).
 #![allow(unused_variables, clippy::manual_range_contains)] // JS range checks: NaN must pass them
 
@@ -12,7 +13,7 @@
 use crate::http::{obj, Request, Response};
 use crate::{activate, field, install_room, new_doc, obj_set, room_idx, room_idx_meta, s, str_field, truthy, user_brief, write, ApiCtx};
 use engine::constants::{self as C, StructureType};
-use engine::doc::{Doc, DocRef, Obj, Val};
+use engine::doc::{json_truthy, Doc, DocRef, Obj, Val};
 use engine::terrain::RoomTerrain;
 use engine::world::{Presence, RoomIdx, RoomSnapshot, RoomsMeta, UserIdx, UserState, World, WorldView};
 use std::collections::BTreeMap;
@@ -104,7 +105,7 @@ fn utf16_len(s: &str) -> usize {
 fn bad_name(name: Option<&Json>, max: usize) -> bool {
     match name {
         Some(Json::Str(n)) => utf16_len(n) > max,
-        Some(v) => truthy(Some(&Val::from_json(v))),
+        Some(v) => json_truthy(v),
         None => false,
     }
 }
@@ -717,7 +718,7 @@ pub fn check_unique_flag_name(req: &Request, ctx: &ApiCtx) -> Response {
 
 /// getFlags(user, room) → edit → setFlags, for change-flag-color / remove-flag.
 fn edit_room_flags(ctx: &ApiCtx, u: UserIdx, room: Option<Json>, f: impl FnOnce(&mut Vec<Flag>) + Send + 'static) -> Response {
-    let Some(name) = room.filter(|r| truthy(Some(&Val::from_json(r)))) else { return Response::ok(Json::Null) };
+    let Some(name) = room.filter(json_truthy) else { return Response::ok(Json::Null) };
     let name = js_str(Some(&name));
     reply(
         write(ctx, move |w| {
@@ -773,7 +774,7 @@ pub fn create_construction(req: &Request, ctx: &ApiCtx) -> Response {
     if x < 0.0 || x > 49.0 || y < 0.0 || y > 49.0 || cost.is_none() || bad_name(b.get("name"), 50) {
         return Response::error("invalid params");
     }
-    if ty_key == "spawn" && !truthy(b.get("name").map(Val::from_json).as_ref()) {
+    if ty_key == "spawn" && !b.get("name").is_some_and(json_truthy) {
         return Response::error("invalid params");
     }
     let terrain = room_terrain_of(&ctx.published.get(), b.get("room"));
@@ -868,7 +869,7 @@ pub fn set_notify_when_attacked(req: &Request, ctx: &ApiCtx) -> Response {
     let u = auth!(ctx);
     let b = req.body();
     let id = js_str(b.get("_id"));
-    let enabled = truthy(b.get("enabled").map(Val::from_json).as_ref());
+    let enabled = b.get("enabled").is_some_and(json_truthy);
     reply(
         write(ctx, move |w| {
             let (r, d) = object_by_id(&Wv::of_world(w), &id).ok_or("TypeError: Cannot read properties of null (reading 'user')")?;
@@ -919,7 +920,11 @@ pub fn create_invader(req: &Request, ctx: &ApiCtx) -> Response {
     let b = req.body();
     let room = js_str(b.get("room"));
     let kind = format!("{}{}", js_str(b.get("size")), js_str(b.get("type")));
-    let (x, y, boosted) = (b.get("x").cloned(), b.get("y").cloned(), truthy(b.get("boosted").map(Val::from_json).as_ref()));
+    let (x, y, boosted) = (b.get("x").cloned(), b.get("y").cloned(), b.get("boosted").is_some_and(json_truthy));
+    // These are stored as they came, so an object's keys would stay as names until the server restarts.
+    if matches!(x, Some(Json::Obj(_) | Json::Arr(_))) || matches!(y, Some(Json::Obj(_) | Json::Arr(_))) {
+        return Response::error("invalid params");
+    }
     let mut rnd = [0u8; 8];
     util::sys::os_random(&mut rnd);
     let suffix = (u64::from_le_bytes(rnd) % 1000).to_string(); // Math.floor(Math.random() * 1000)

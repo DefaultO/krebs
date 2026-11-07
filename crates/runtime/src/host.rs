@@ -7,7 +7,7 @@
 //! resets in the same tick with the §6.11 text instead of a disposed isolate failing the next create.
 //!
 //! Isolate lifecycle: creation from the startup snapshot, `_init(natives)`, global resets, system isolates
-//! per worker, snapshot build and cache (ARCHITECTURE.md §6.3, §6.5). Owner: WP08.
+//! per worker, snapshot build (ARCHITECTURE.md §6.3, §6.5). Owner: WP08.
 //!
 //! Bundle contract (§6.5, §7.1; the header of `js/host/prelude.js`). The player script `<runtime>` is the
 //! prelude's source followed by `__chitinDefine("<path>", function(module, exports, require) {\n<source>\n});`
@@ -28,7 +28,6 @@ use crate::watchdog;
 use util::json::Json;
 use crate::{Bundle, Runtime};
 use engine::runner::{ResetReason, RunInput, RunOutput, RunStatus};
-use std::path::Path;
 use std::sync::atomic::Ordering::Relaxed;
 use std::sync::{Arc, Mutex};
 use std::thread::ThreadId;
@@ -111,18 +110,18 @@ pub(crate) struct Snapshots {
 
 const SYSTEM_CONTEXT: usize = 0;
 
-pub(crate) fn snapshots(bundle: &Bundle, dir: &Path) -> Snapshots {
+pub(crate) fn snapshots(bundle: &Bundle) -> Snapshots {
     let mods: Vec<(&str, &str)> = bundle.mod_game_js.iter().map(|(n, s)| (&**n, &**s)).collect();
     let player = bundle_source(bundle.files, is_player_file, &mods);
     crate::jsprof::set_bundle(&player);
     let system = bundle_source(bundle.files, is_system_file, &[]);
-    Snapshots { blob: cached(dir, &player, &system) }
+    Snapshots { blob: cached(&player, &system) }
 }
 
-/// One blob per distinct bundle per process (also on disk as `<dir>/snapshot-<sha1(v8 version + all
-/// JS)>.bin`), built when missing or unusable. The lock also keeps SnapshotCreators from running
+/// One blob per distinct bundle per process, built here and never read from disk: a snapshot is code, V8 only checks
+/// its version, and the data folder can come from anyone. The lock also keeps SnapshotCreators from running
 /// concurrently, which V8 does not survive.
-fn cached(dir: &Path, player: &str, system: &str) -> &'static [u8] {
+fn cached(player: &str, system: &str) -> &'static [u8] {
     static BLOBS: Mutex<Vec<([u8; 20], &'static [u8])>> = Mutex::new(Vec::new());
     let mut key = Vec::with_capacity(player.len() + system.len() + 64);
     for part in [v8::V8::get_version(), player, system] {
@@ -134,20 +133,7 @@ fn cached(dir: &Path, player: &str, system: &str) -> &'static [u8] {
     if let Some((_, b)) = blobs.iter().find(|(h, _)| *h == hash) {
         return b;
     }
-    let hex: String = hash.iter().map(|b| format!("{b:02x}")).collect();
-    let path = (!dir.as_os_str().is_empty()).then(|| dir.join(format!("snapshot-{hex}.bin")));
-    let from_disk = path.as_ref().and_then(|p| std::fs::read(p).ok()).filter(|b| v8::StartupData::from(b.clone()).is_valid());
-    let blob = from_disk.unwrap_or_else(|| {
-        let blob = build_snapshot(player, system).unwrap_or_else(|e| panic!("runtime snapshot: {e}"));
-        if let Some(p) = &path {
-            let tmp = p.with_extension("tmp");
-            let written = std::fs::create_dir_all(dir).and_then(|_| std::fs::write(&tmp, &blob)).and_then(|_| std::fs::rename(&tmp, p));
-            if let Err(e) = written {
-                eprintln!("runtime: snapshot cache {} not written: {e}", p.display());
-            }
-        }
-        blob
-    });
+    let blob = build_snapshot(player, system).unwrap_or_else(|e| panic!("runtime snapshot: {e}"));
     let blob: &'static [u8] = Box::leak(blob.into_boxed_slice());
     blobs.push((hash, blob));
     blob
@@ -270,7 +256,8 @@ fn memory_limit_mb(heap_mb: usize, terrain_mb: f64) -> usize {
 /// against 15.25 ms a tick, 4 interleaved rounds on a busy machine, with far less spread, for about 40 MB per VM
 /// (`chitin bench`). On the stock build it was 8 to 10% faster alone and 2% slower on a busy machine.
 fn create_params(blob: &'static [u8], mb: usize, semi_mb: usize) -> v8::CreateParams {
-    let params = v8::CreateParams::default().snapshot_blob(v8::StartupData::from(blob)).set_max_old_generation_size_in_bytes(mb << 20);
+    // Atomics.wait sleeps, which no CPU meter sees, so a bot could sit out every tick until the hard timeout.
+    let params = v8::CreateParams::default().snapshot_blob(v8::StartupData::from(blob)).set_max_old_generation_size_in_bytes(mb << 20).allow_atomics_wait(false);
     if semi_mb == 0 {
         let young_kb = 2f64.powf((mb as f64 / 128.0).min(4.0) + 10.0) as usize;
         return params.set_max_young_generation_size_in_bytes(young_kb * 1024);
@@ -282,6 +269,39 @@ fn create_params(blob: &'static [u8], mb: usize, semi_mb: usize) -> v8::CreatePa
 
 /// V8's young generation in semi-spaces: `Heap::YoungGenerationSizeFromSemiSpaceSize`.
 const YOUNG_SEMI_SPACES: usize = 3;
+
+/// Runs in a player context before anything else does. The memory limit lives in the array buffer allocator
+/// (natives.rs), and V8 allocates a resizable buffer without it, so `new ArrayBuffer(n, {maxByteLength})` or `resize` would
+/// let a bot commit memory until the host runs out, and shrinking one unmaps memory the path finder may be reading. So
+/// `ArrayBuffer` here passes on the length alone, and a shared buffer has no use in a VM of one thread. `transfer` copies
+/// through the allocator, but it is one more way to change a buffer under a search. V8 has all of these, so a bot gets less
+/// here than on a modern Node: docs/spec/14 counts one mention of shared memory in 500 repos and no use of resizable buffers.
+///
+/// Strict, so `f.arguments` cannot read the real constructor out of the trap. V8 keeps it out of stack frames too (tests:
+/// a_bot_cannot_get_the_real_array_buffer_back). Shared memory from WebAssembly still has a shared buffer, whose prototype
+/// loses `constructor`, or that would be another way to the options.
+///
+/// The trap runs for the life of the VM, after the bot has changed whatever it likes, so nothing here may read through
+/// Object.prototype, Array.prototype or Function.prototype. The handler has no prototype: `Object.prototype.get` would be a
+/// trap, handed the real constructor. `args[0]` of an empty list would read `Array.prototype[0]`. An array literal defines
+/// its element rather than setting it, and `construct` is held here and called directly, never looked up or `.call`ed.
+const LOCK_BUFFERS: &str = r#"(function (G) {
+    'use strict';
+    var Shared = G.SharedArrayBuffer, proto = G.ArrayBuffer.prototype, construct = G.Reflect.construct;
+    G.ArrayBuffer = proto.constructor = new G.Proxy(G.ArrayBuffer, {
+        __proto__: null,
+        construct: function (target, args, newTarget) {
+            return construct(target, args.length > 0 ? [args[0]] : [], newTarget);
+        }
+    });
+    delete proto.resize;
+    delete proto.transfer;
+    delete proto.transferToFixedLength;
+    delete Shared.prototype.grow;
+    delete Shared.prototype.constructor;
+    delete G.SharedArrayBuffer;
+    delete G.Atomics.waitAsync;
+})(this)"#;
 
 /// VM-BOOT: isolate from the snapshot, `_init(natives)`, bootstrap globals deleted. Vanilla copies the
 /// whole terrain buffer into every VM (`_setStaticTerrainData`, user-vm.js:81-84) through the limited
@@ -318,6 +338,7 @@ fn create_vm(rt: &Runtime, terrain_mb: f64) -> Result<Vm, String> {
         let context = v8::Context::new(scope, Default::default());
         context.set_allow_generation_from_strings(false);
         let scope = &mut v8::ContextScope::new(scope, context);
+        evaluate(scope, LOCK_BUFFERS)?;
         v8::tc_scope!(let tc, scope);
         let global = context.global(tc);
         let init = get_fn(tc, global, "_init").ok_or("the runtime bundle defines no _init")?;

@@ -12,7 +12,7 @@ use std::sync::OnceLock;
 /// `containerAmounts`).
 pub fn data() -> &'static Val {
     static DATA: OnceLock<Val> = OnceLock::new();
-    DATA.get_or_init(|| Val::from_json(&util::json::Json::parse(include_str!("strongholds.json")).expect("strongholds.json")))
+    DATA.get_or_init(|| Val::from_trusted_json(&util::json::Json::parse(include_str!("strongholds.json")).expect("strongholds.json")))
 }
 
 #[cfg(test)]

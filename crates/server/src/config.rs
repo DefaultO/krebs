@@ -34,6 +34,8 @@ pub struct Config {
     pub server_password: Option<String>,
     pub cli_host: String,
     pub cli_port: u16,
+    /// No admin console and no port for one. A match's server has no use for one.
+    pub cli_off: bool,
     /// `single-user:<name>` | `trust` | `off`
     pub steam: String,
     pub data: PathBuf,
@@ -90,7 +92,7 @@ pub struct Args {
 impl Args {
     /// `--key value` and `--key=value` anywhere; `--force` style switches take "true".
     pub fn parse(argv: &[String]) -> Args {
-        const SWITCHES: &[&str] = &["force", "console", "friends"];
+        const SWITCHES: &[&str] = &["force", "console", "friends", "password-stdin", "announce-port"];
         let (mut words, mut flags) = (Vec::new(), Vec::new());
         let mut it = argv.iter();
         while let Some(a) = it.next() {
@@ -156,6 +158,7 @@ impl Config {
             server_password: at("http.serverPassword").and_then(Json::as_str).map(str::to_string),
             cli_host: str_("cli.host", "127.0.0.1"),
             cli_port: port("cli.port", 21026)?,
+            cli_off: bool_("cli.off", false),
             steam: str_("auth.steam", "single-user:player"),
             data: PathBuf::from(str_("data", "data")),
             world: WorldCfg {
@@ -198,7 +201,7 @@ impl Config {
         let int = |k: &str, v: &str| v.parse::<u64>().map_err(|_| format!("--{k}: not a number: {v:?}"));
         for (k, v) in &args.flags {
             match k.as_str() {
-                "config" | "profile" | "force" | "friends" | "password" | "email" | "server" | "bots" | "ticks" | "warmup" | "report-every" | "save-every" | "bot" | "max-memory-mb" | "scenario" | "tile" | "load" | "save" | "console" | "p3-repeat" => {}
+                "config" | "profile" | "force" | "friends" | "password-stdin" | "announce-port" | "password" | "email" | "server" | "bots" | "ticks" | "warmup" | "report-every" | "save-every" | "bot" | "max-memory-mb" | "scenario" | "tile" | "load" | "save" | "console" | "p3-repeat" => {}
                 "data" => c.data = PathBuf::from(v),
                 "mods" => c.mods = v.split(',').map(str::trim).filter(|m| !m.is_empty()).map(str::to_string).collect(),
                 "host" => c.http_host = v.clone(),
@@ -309,6 +312,14 @@ mod tests {
         let a = args("--friends --port 21555");
         assert!(a.words.is_empty());
         assert_eq!((a.flag("friends"), a.flag("port")), (Some("true"), Some("21555")));
+    }
+
+    #[test]
+    fn a_match_takes_what_it_is_told_through_flags_that_are_switches() {
+        let a = args("serve --password-stdin --announce-port --port 0");
+        assert_eq!(a.words, ["serve"]);
+        assert_eq!((a.flag("password-stdin"), a.flag("announce-port"), a.flag("port")), (Some("true"), Some("true"), Some("0")));
+        assert_eq!(Config::load(&a).unwrap().server_password, None, "the flag itself holds no password");
     }
 
     #[test]

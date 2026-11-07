@@ -166,8 +166,8 @@ Counts are lower bounds on "uses" and upper bounds on "needs". A feature found o
 | BI-URI | builtin | encodeURIComponent/decodeURIComponent/encodeURI/decodeURI | P1 | R=18/8; obfuscator decoder |
 | BI-ANNEXB-GLOBALS | builtin | escape/unescape | P2 | R=3/2 |
 | BI-WASM | builtin | WebAssembly sync API (Module/Instance/Memory/Table, errors, imports/exports) | P1 | R=11 + 4 repos ship .wasm; Rust/.NET bots need it |
-| BI-SHAREDMEM | builtin | SharedArrayBuffer/Atomics exist in V8 | P2 | R=1 |
-| BI-ES2024PLUS | builtin | groupBy, Set methods, iterator helpers, Promise.withResolvers, Array.fromAsync, resizable buffers | P2 | V8 12.x ships them; R≈0 |
+| BI-SHAREDMEM | builtin | Atomics exists in V8. **Krebs:** no SharedArrayBuffer global, no `Atomics.waitAsync`, and `Atomics.wait` throws (§5.15) | P2 | R=1 |
+| BI-ES2024PLUS | builtin | groupBy, Set methods, iterator helpers, Promise.withResolvers, Array.fromAsync. **Krebs:** no resizable buffers and no `transfer` (§5.15) | P2 | V8 12.x ships them; R≈0 |
 | **OBS — observable V8 behaviours** |||||
 | OBS-STACK-FORMAT | observable | `err.stack` = header + `\n    at …` frames; file = module name | P0 | `.stack` R=158; ErrorMapper regex R=80; source maps R=89 |
 | OBS-STACK-NAMES | observable | Frame naming: `Type.method [as x]`, `new X`, `get x`, `async f`, `eval at`, `<anonymous>` | P0 | [probe] §6.1 |
@@ -288,8 +288,8 @@ Counts are lower bounds on "uses" and upper bounds on "needs". A feature found o
 
 The player's global object contains:
 
-1. **Every V8 builtin of the target version, as a fresh context gets it.** This includes:
-   * `Object`…`Proxy`, `Reflect`, `Atomics`, `SharedArrayBuffer`;
+1. **Every V8 builtin of the target version, as a fresh context gets it, less what §5.15 takes out in Krebs.** This includes:
+   * `Object`…`Proxy`, `Reflect`, `Atomics`;
    * `WeakRef`, `FinalizationRegistry`, `AggregateError`, `Iterator`;
    * `WebAssembly`;
    * `Intl` (Node is built with full ICU);
@@ -809,7 +809,7 @@ The default is ECMA-262 semantics. Below are the items where bots depend on **im
 * **Usage**: Uint8Array 31, Int32Array 20, Uint16Array 15, Uint32Array 12, Int16Array 7, Float32Array 4, Float64Array 3, Int8Array 3, ArrayBuffer 14. Bots use `subarray`, `set`, `fill`, `slice`, `buffer`, `byteLength`.
 * **Detach**: an ArrayBuffer must be detachable. `WebAssembly.Memory.grow` detaches the old buffer and wasm-bindgen detects it with `cachedUint8Memory0.byteLength === 0` (`bots/full-bot/The-International-…/src/wasm/pkg/commiebot_wasm.js:29-34`).
 * **DataView** (P1): ScreepsDotNet writes with `setBigUint64(ptr, BigInt(..), true)` (`bots/discovered/thomasfn__ScreepsDotNet/Bootloader/src/bootloader.ts:283-300`). **BigInt** is P2: R=2, both wasm hosts.
-* `ArrayBuffer.isView` R=3. Resizable ArrayBuffer and `transfer` are P2.
+* `ArrayBuffer.isView` R=3. Resizable ArrayBuffer and `transfer` are P2, and Krebs leaves them out (§5.15).
 
 ### 5.12 BI-INTL (P1/P2)
 
@@ -860,8 +860,13 @@ The default is ECMA-262 semantics. Below are the items where bots depend on **im
 ### 5.15 Absent-by-design and P2 builtins
 
 * `escape`/`unescape` (P2, Annex B) exist in V8. Keep them.
-* `SharedArrayBuffer`/`Atomics` exist (P2). The driver itself prefers SharedArrayBuffer for terrain (`make.js:34`), but that buffer is host-side.
-* ES2024+ library additions that V8 12.4 ships: `Object.groupBy`/`Map.groupBy`, `Promise.withResolvers`, `Array.fromAsync`, Set methods, iterator helpers, `String.prototype.isWellFormed`/`toWellFormed`, resizable ArrayBuffer/`transfer`, `Atomics.waitAsync`, and RegExp `v` flag. P2 (R≈0), but cheap.
+* `Atomics` exists (P2). The driver itself prefers SharedArrayBuffer for terrain (`make.js:34`), but that buffer is host-side.
+* **What Krebs takes out of a bot's context**, ahead of everything else (`LOCK_BUFFERS` in `crates/runtime/src/host.rs`). The memory limit on a VM lives in the array buffer allocator, and V8 allocates resizable buffers without it, so one bot could commit memory until the host ran out; shrinking one also unmapped memory the path finder was reading. The official Node has these, so a bot written for it would notice:
+  * the `SharedArrayBuffer` global, and `grow` and `constructor` on its prototype (a shared buffer from `WebAssembly.Memory` still exists);
+  * `ArrayBuffer.prototype.resize`, `transfer` and `transferToFixedLength`;
+  * `Atomics.waitAsync`; `Atomics.wait` throws a TypeError, because a sleeping thread uses no CPU and would sit out the limit;
+  * `new ArrayBuffer(n, {maxByteLength})` makes a fixed buffer of `n` bytes: `ArrayBuffer` is a Proxy that passes on the length alone.
+* ES2024+ library additions that V8 12.4 ships: `Object.groupBy`/`Map.groupBy`, `Promise.withResolvers`, `Array.fromAsync`, Set methods, iterator helpers, `String.prototype.isWellFormed`/`toWellFormed`, and RegExp `v` flag. P2 (R≈0), but cheap.
 
 ---
 
@@ -1317,8 +1322,8 @@ Hot paths in every bot:
 * `with`: R=1, TS only.
 * RegExp `d`/`v` flags.
 * WeakRef/FinalizationRegistry: R=0.
-* SharedArrayBuffer/Atomics.
-* ES2024+ library additions: groupBy, Set methods, iterator helpers, `Promise.withResolvers`, `Array.fromAsync`, resizable buffers.
+* Atomics (SharedArrayBuffer is left out, §5.15).
+* ES2024+ library additions: groupBy, Set methods, iterator helpers, `Promise.withResolvers`, `Array.fromAsync` (resizable buffers are left out, §5.15).
 * `escape`/`unescape`.
 * Full ICU/CLDR + IANA time zones.
 * `WebAssembly.instantiate` (async) and wasm SIMD/EH/GC.

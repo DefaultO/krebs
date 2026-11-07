@@ -40,7 +40,7 @@ fn control(req: &Request, ctx: &ApiCtx) -> Response {
                 t.fetch_add(k, Ordering::Relaxed);
             }
         };
-        let set = |w: &mut engine::world::World, key: &str, v: Json| engine::coll::env_set(w, key, &Val::from_json(&v)).map(|_| ());
+        let set = |w: &mut engine::world::World, key: &str, v: Json| engine::coll::env_set(w, key, &Val::from_trusted_json(&v)).map(|_| ());
         match action.as_str() {
             "pause" => set(w, "mainLoopPaused", Json::Str("1".into()))?,
             "resume" => set(w, "mainLoopPaused", Json::Str("0".into()))?,

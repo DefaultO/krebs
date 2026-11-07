@@ -187,7 +187,6 @@ fn runtime_config(cfg: &Config, profile: engine::policy::Profile) -> runtime::Ru
         hard_timeout_ms: cfg.runner.hard_timeout_ms.max(cfg.engine.main_loop_reset_interval_ms as u64),
         idle_evict_s: cfg.runner.idle_evict_s,
         watchdog_poll_us: cfg.runner.watchdog_poll_us,
-        snapshot_dir: cfg.data.clone(),
         profile,
         shard_name: cfg.shard_name.clone().into(),
     }
@@ -199,8 +198,20 @@ fn logical_cores() -> usize {
 
 // ---- serve ----
 
-fn serve(cfg: Config, args: &Args) {
+fn serve(mut cfg: Config, args: &Args) {
+    // before anything else, so that without a password there is no server at all, and whoever started this can set things up
+    // around it first, as nothing has run yet
+    if args.flag("password-stdin").is_some() {
+        cfg.server_password = Some(start::password_from(&mut std::io::stdin().lock()).unwrap_or_else(|| fail("--password-stdin: no password came on stdin")));
+    }
+    if let Some(problem) = start::cli_problem(&cfg) {
+        fail(&problem);
+    }
+    // a key saved by an older Krebs, or put there by hand, takes the folder's permissions, needed or not
+    start::tighten_key(&cfg.data);
     let steam_key = start::steam_key(&cfg).unwrap_or_else(|e| fail(&e));
+    // first of all, as loading the mods can clear what the last server here left, and that could be a running one's
+    start::lock_data(&cfg.data).unwrap_or_else(|e| fail(&e));
     // §2.1: TZ=UTC and V8 before any other thread (the pool, backend and watchdog threads lock isolates)
     runtime::init_v8();
     // world.json is what `new` decided; an imported world has only its checkpoint
@@ -214,7 +225,7 @@ fn serve(cfg: Config, args: &Args) {
     // the newest checkpoint, else the world `new` described (data directories from before checkpoints)
     let mut w = match engine::persist::load(&cfg.data, &import_opts(&cfg, &spec)) {
         Some(Ok((mut w, report))) => {
-            println!("loaded {} at tick {} ({} rooms, {} users)", engine::persist::path(&cfg.data).display(), w.time, w.rooms.len(), w.users.len());
+            say(&format!("loaded {} at tick {} ({} rooms, {} users)", engine::persist::path(&cfg.data).display(), w.time, w.rooms.len(), w.users.len()));
             report_import(&report);
             apply_config(&mut w, &cfg);
             if args.flag("tick-rate").is_some() {
@@ -258,12 +269,13 @@ fn serve(cfg: Config, args: &Args) {
     let backend = backend::start(BackendDeps {
         published: published.clone(),
         commands: tx,
-        cli: Arc::new(cli::Cli(rt.clone())),
+        cli: if cfg.cli_off { Arc::new(cli::Closed) } else { Arc::new(cli::Cli(rt.clone())) },
         config: BackendConfig {
             host: cfg.http_host.clone(),
             port: cfg.http_port,
             cli_host: cfg.cli_host.clone(),
-            cli_port: cfg.cli_port,
+            // port 0 is no console at all
+            cli_port: if cfg.cli_off { 0 } else { cfg.cli_port },
             max_connections: cfg.max_connections,
             request_timeout_s: cfg.request_timeout_s,
             server_password: cfg.server_password.clone(),
@@ -273,9 +285,13 @@ fn serve(cfg: Config, args: &Args) {
         socket_channels: registry.socket_channels,
         server_data: registry.server_data,
     });
-    println!("krebs {} serving {} rooms on http://{}:{} (tick rate {} ms)", env!("CARGO_PKG_VERSION"), w.rooms.len(), cfg.http_host, cfg.http_port, cfg.tick_rate_ms);
+    let port = backend.local_addr().port();
+    if args.flag("announce-port").is_some() {
+        say(&start::port_line(port));
+    }
+    say(&format!("krebs {} serving {} rooms on http://{}:{port} (tick rate {} ms)", env!("CARGO_PKG_VERSION"), w.rooms.len(), cfg.http_host, cfg.tick_rate_ms));
     if start::active() {
-        println!("{}", start::welcome(&cfg));
+        say(&start::welcome(&cfg));
     }
 
     let mut lp = tick::TickLoop::new(tick::Live { runtime: rt, pool, published, backend }, hooks, rx);
@@ -301,7 +317,13 @@ fn serve(cfg: Config, args: &Args) {
         }
         exit(1);
     }
-    println!("krebs stopped at tick {} (saved {})", w.time, engine::persist::path(&cfg.data).display());
+    say(&format!("krebs stopped at tick {} (saved {})", w.time, engine::persist::path(&cfg.data).display()));
+}
+
+/// A line for the window, if there still is one: println panics without, and a server has no need for anyone to read it.
+fn say(line: &str) {
+    use std::io::Write;
+    let _ = writeln!(std::io::stdout(), "{line}");
 }
 
 /// This server's config over a loaded world. A checkpoint keeps the profile (world state) but no `engine.*`, and `new`

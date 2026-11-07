@@ -21,7 +21,7 @@ and changed only through an interface PR (§14.1). Hardware: target 16C/32T, 64 
 3. **One `util::pool::Pool` (logical cores) runs both parallel phases; the runner phase uses `runner.threads` loops, default = physical cores.** Phases never overlap; physical-core default keeps thread-CPU billing free of SMT inflation.
 4. **One V8 isolate per player, `v8::SharedIsolate`, locked by whichever worker runs it.** v8 152.2 supports it (`locker.rs`); migration is not a global reset. M1: shared LPT queue; M5: home-worker affinity + steal-largest.
 5. **Pointer compression off by default; `tools/v8-ptrcomp.ps1` builds V8 from source with it (`runtime/ptrcomp`), a 4 GB cage per isolate.** The crate's ptrcomp puts all isolates in one 4 GB cage and has no IsolateGroup API, so `vendor/v8` gives every isolate a group of its own (`src/binding.cc`, `build.rs`); no prebuilt library exists. Its builtins are laid out by a profile of our own workload (builtins PGO), and its compilers keep optimized code off the global `Memory` cell that every tick replaces (§2.9).
-6. **Startup snapshot = lodash 3.10.1 + our game-API bundle + JS-mod game slots, built at boot, cached as `<data>/snapshot-<sha1>.bin`; natives are installed per isolate by `_init(natives)` and then deleted.** Isolate creation in ms; no external-reference table.
+6. **Startup snapshot = lodash 3.10.1 + our game-API bundle + JS-mod game slots, built at boot and kept in memory, never read from disk; natives are installed per isolate by `_init(natives)` and then deleted.** Isolate creation in ms; no external-reference table.
 7. **World data reaches isolates as one immutable ASCII JSON blob per room snapshot (`Arc<[u8]>` → `String::new_external_onebyte_raw`, zero copy, shared by every viewer) plus a small per-user meta JSON; JS parses with the captured `JSON.parse` and runs the mirrored `game.js` eagerly.** V8's parser is the fastest object builder; fresh raw objects every tick are vanilla-observable (02 §3.8).
 8. **Each document caches its ASCII JSON (`OnceLock`); a blob is the concatenation of cached docs plus element offsets (FROZEN).** Serialization follows changed objects, not viewers; the offsets make lazy per-object materialization (M5) an internal change.
 9. **Everything world-sized reaches JS through lazy natives:** terrain (per-room copy on demand), accessibility, room status, mapgrid exit data (built in Rust once per TICK-ACCESSIBLE snapshot), market orders/history (per-resource JSON, built once per tick). Vanilla's per-player copies of `accessibleRooms`, the world grid and all orders are O(players × world).
@@ -1271,7 +1271,7 @@ pub enum Meter { Thread, Wall, Fixed { ms_per_tick: f64 } }
 pub struct RuntimeConfig {
     pub runner_threads: usize, pub heap_mb: usize /*256*/, pub heap_budget_mb: usize, pub meter: Meter,
     pub hard_timeout_ms: u64, pub idle_evict_s: u64 /*180*/, pub watchdog_poll_us: u64,
-    pub snapshot_dir: std::path::PathBuf, pub profile: policy::Profile, pub shard_name: Box<str>,
+    pub profile: policy::Profile, pub shard_name: Box<str>,
 }
 pub struct Bundle { pub files: &'static [(&'static str, &'static str)], pub mod_game_js: Vec<(Box<str>, Box<str>)> }
 pub struct Runtime { /* vms, snapshot blobs, system isolates per worker, watchdog, scheduler */ }
@@ -1326,8 +1326,8 @@ after the player isolate is unlocked), a `PathFinder` stack.
   ENV-ENGINE-STRICTNESS) + `common/constants` from `engine::constants::constants_json()` (byte-identical to
   official) + JS-mod game slots in load order. Only top-level evaluation is snapshotted (ENV-SNAPSHOT).
 * **System snapshot**: lodash, `common/system.js`, `engine/utils.js`, `host/system.js`.
-* Built at boot on a dedicated thread, cached at `<data>/snapshot-<sha1(all JS + v8 version)>.bin`. A JS-mod change
-  changes the hash ⇒ every VM resets once (logged).
+* Built at boot and held in memory, one blob per process for each `sha1(all JS + v8 version)`. There is no cache on
+  disk: a snapshot is code, V8 checks only its version, and the data folder can come from anyone.
 
 ### 6.6 Per-tick data delivery (decision: shared per-room JSON in external strings)
 
@@ -1582,9 +1582,11 @@ code-version reset, lone-surrogate Memory/segment round trip.
 
 ### 8.1 Networking
 
-* `http.rs`: HTTP/1.1 keep-alive, `Content-Length` and chunked bodies (10 MiB cap; code upload 5 MiB), JSON and
-  urlencoded bodies, q-json envelope (`{ok:1,…}`; errors HTTP 200 `{error}`; only auth failure 401) (HTTP-ENVELOPE),
-  permissive CORS (HTTP-CORS), server-password gate exempting `/api/version` and socket routes
+* `http.rs`: HTTP/1.1 keep-alive, `Content-Length` and chunked bodies (10 MiB cap, 64 KiB until a request shows
+  a valid token; code upload 5 MiB), JSON and urlencoded bodies, q-json envelope (`{ok:1,…}`; errors HTTP 200 `{error}`; only auth failure 401) (HTTP-ENVELOPE),
+  CORS only for a `chrome-extension://` origin or the request's own host (HTTP-CORS is permissive in the original): any
+  other Origin gets no CORS headers, and a POST or a socket from it gets 403; a server bound to loopback refuses any
+  Host but localhost or a loopback address; server-password gate exempting `/api/version` and socket routes
   (HTTP-MIDDLEWARE-ORDER, 10 Q5).
 * `ws.rs` RFC 6455 (accept key via `util::sha1` + `util::base64`), ping/pong, fragmentation, close.
   `sockjs.rs`: SockJS 0.3.24 `/socket/info`, `/socket/<server>/<session>/websocket` (`o`/`a[…]`/`h`/`c`, extended

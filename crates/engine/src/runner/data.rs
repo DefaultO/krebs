@@ -310,26 +310,11 @@ fn code_bundle(code: &Arc<CodeState>) -> Arc<CodeBundle> {
 fn make_bundle(code: &CodeState) -> CodeBundle {
     // `result[1] && result[1].modules || {}`
     let branch = code.active_world.and_then(|i| code.branches.get(i));
-    let mut modules: Vec<(String, Val)> = match branch.and_then(|b| b.get(atom!("modules"))) {
+    let modules: Vec<(String, Val)> = match branch.and_then(|b| b.get(atom!("modules"))) {
         Some(Val::Obj(o)) => o.iter().map(|(k, v)| (k.as_str().to_string(), v.clone())).collect(),
         _ => Vec::new(),
     };
-    // `for (key in modules) { … modules[newKey] = modules[key]; delete modules[key]; }`: a renamed module moves
-    // to the end, or overwrites a module already named `newKey` in place.
-    let keys: Vec<String> = modules.iter().map(|(k, _)| k.clone()).collect();
-    for key in keys {
-        let new_key = key.replace("$DOT$", ".").replace("$SLASH$", "/").replace("$BACKSLASH$", "\\");
-        if new_key != key {
-            let Some(i) = modules.iter().position(|(k, _)| *k == key) else { continue };
-            let value = modules[i].1.clone();
-            match modules.iter().position(|(k, _)| *k == new_key) {
-                Some(j) => modules[j].1 = value,
-                None => modules.push((new_key, value)),
-            }
-            modules.retain(|(k, _)| *k != key);
-        }
-    }
-    let modules = modules
+    let modules = rename_modules(modules)
         .into_iter()
         .map(|(name, v)| {
             let module = match &v {
@@ -343,6 +328,34 @@ fn make_bundle(code: &CodeState) -> CodeBundle {
         })
         .collect();
     CodeBundle { version: code.version, modules }
+}
+
+/// `for (key in modules) { … modules[newKey] = modules[key]; delete modules[key]; }`: a renamed module moves to the end,
+/// or overwrites a module already named `newKey` in place. One pass: the tick waits for this, and a small upload can hold
+/// hundreds of thousands of dotted names.
+fn rename_modules(modules: Vec<(String, Val)>) -> Vec<(String, Val)> {
+    if !modules.iter().any(|(k, _)| k.contains('$')) {
+        return modules;
+    }
+    let mut slots: HashMap<String, usize> = modules.iter().enumerate().map(|(i, (k, _))| (k.clone(), i)).collect();
+    let mut out: Vec<Option<(String, Val)>> = modules.into_iter().map(Some).collect();
+    for i in 0..out.len() {
+        let Some((key, value)) = out[i].take() else { continue };
+        let new_key = key.replace("$DOT$", ".").replace("$SLASH$", "/").replace("$BACKSLASH$", "\\");
+        if new_key == key {
+            out[i] = Some((key, value));
+            continue;
+        }
+        slots.remove(&key);
+        match slots.get(&new_key) {
+            Some(&j) => out[j].as_mut().expect("a slot in the map is filled").1 = value,
+            None => {
+                slots.insert(new_key.clone(), out.len());
+                out.push(Some((new_key, value)));
+            }
+        }
+    }
+    out.into_iter().flatten().collect()
 }
 
 /// `Buffer.from(value, 'base64')` with the runtime bundle's Buffer, buffer@4.9 (ENV-BINARY-BUFFER, runtime-driver.js:13):
@@ -673,5 +686,31 @@ mod tests {
         assert_eq!(buffer_from(&v(r#"[1, 256, -1, "7", 2.9, null, [5], {}]"#)), [1, 0, 255, 7, 2, 0, 5, 0]);
         assert_eq!(buffer_from(&v(r#"{"type": "Buffer", "data": [104, 105]}"#)), b"hi");
         assert_eq!(buffer_from(&v(r#"{"type": "Buffer", "data": [104], "_isBuffer": 1}"#)), b"");
+    }
+
+    #[test]
+    fn module_names_rename_like_the_for_in_loop() {
+        let renamed = |names: &[(&str, f64)]| {
+            let list = names.iter().map(|(k, n)| (k.to_string(), Val::Num(*n))).collect();
+            rename_modules(list).into_iter().map(|(k, v)| (k, v.as_f64().unwrap())).collect::<Vec<_>>()
+        };
+        let want = |names: &[(&str, f64)]| names.iter().map(|(k, n)| (k.to_string(), *n)).collect::<Vec<_>>();
+        assert_eq!(renamed(&[("main", 1.0), ("lib", 2.0)]), want(&[("main", 1.0), ("lib", 2.0)]));
+        // A renamed module moves to the end, in the order the names are visited.
+        assert_eq!(renamed(&[("a$DOT$b", 1.0), ("main", 2.0), ("c$SLASH$d", 3.0)]), want(&[("main", 2.0), ("a.b", 1.0), ("c/d", 3.0)]));
+        assert_eq!(renamed(&[("a$BACKSLASH$b", 1.0)]), want(&[("a\\b", 1.0)]));
+        // A name that is taken keeps its place and takes the value.
+        assert_eq!(renamed(&[("a.b", 1.0), ("a$DOT$b", 2.0), ("main", 3.0)]), want(&[("a.b", 2.0), ("main", 3.0)]));
+        assert_eq!(renamed(&[("a$DOT$b", 1.0), ("a.b", 2.0), ("main", 3.0)]), want(&[("a.b", 1.0), ("main", 3.0)]));
+    }
+
+    /// 100 000 dotted names stalled ticks for 53 s through the scans this replaced.
+    #[test]
+    fn many_dotted_module_names_take_linear_time() {
+        let list: Vec<(String, Val)> = (0..300_000).map(|i| (format!("m{i}$DOT$js"), Val::Null)).collect();
+        let start = std::time::Instant::now();
+        let out = rename_modules(list);
+        assert!(start.elapsed().as_secs() < 5, "{:?}", start.elapsed());
+        assert_eq!((out.len(), out[299_999].0.as_str()), (300_000, "m299999.js"));
     }
 }

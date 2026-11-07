@@ -40,7 +40,8 @@ pub use engine::world::{Command, CommandFn};
 use engine::doc::{Id, Obj, Val};
 use engine::world::{CodeState, Inbox, RoomIdx, UserIdx, UserState, World, WorldView};
 use http::{Request, Response};
-use std::net::{SocketAddr, TcpListener};
+use std::collections::HashMap;
+use std::net::{IpAddr, Ipv6Addr, SocketAddr, TcpListener};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Condvar, Mutex};
@@ -182,7 +183,9 @@ pub struct BackendConfig {
     pub cli_port: u16,
     /// 2048
     pub max_connections: usize,
-    /// How long a connection may send nothing while a request is due, or is on its way. 120 s.
+    /// How long a connection may send nothing while a request is due, or is on its way. Also how long one request has to
+    /// arrive, plus what a large body allows for, and how long a websocket has to sign in. Websockets get a ping at half of
+    /// this, so that one that only receives has something to answer. 120 s.
     pub request_timeout_s: u64,
     /// Server-password gate (HTTP-MIDDLEWARE-ORDER); None = open.
     pub server_password: Option<String>,
@@ -209,6 +212,14 @@ pub struct Backend {
     published: Arc<Published>,
 }
 
+/// An http thread's stack. It is only reserved, so it costs address space until used. JSON nests to `MAX_DEPTH` on it, which
+/// takes up to about 768 KB in a dev build and 192 KB in release, and the handlers run on top of that.
+pub(crate) const HTTP_STACK: usize = 1 << 20;
+
+/// One caller's share of `max_connections`. A browser opens up to six connections to a server and the client one socket,
+/// so eight players behind one router fit, and one address cannot take every slot.
+const MAX_PER_ADDRESS: usize = 64;
+
 /// What every connection thread shares.
 pub(crate) struct Shared {
     pub published: Arc<Published>,
@@ -217,17 +228,83 @@ pub(crate) struct Shared {
     /// Extra routes (mods) matched before the built-ins, so they shadow them (HTTP-MOD-ROUTER GOTCHA).
     pub routes: Vec<Route>,
     pub conns: AtomicUsize,
+    /// Open connections by `caller`.
+    pub callers: Mutex<HashMap<IpAddr, usize>>,
+    /// Held while a body over `http::ANON_BODY` is handled (`server::chain`).
+    pub large_body: Mutex<()>,
+}
+
+impl Shared {
+    /// Whether more than three quarters of `max_connections` are in use. Keep-alive connections then end with their response,
+    /// or whole small requests now and then would hold every slot for good. A client just opens a new connection.
+    fn crowded(&self) -> bool {
+        self.conns.load(Ordering::Relaxed).saturating_mul(4) > self.config.max_connections.saturating_mul(3)
+    }
+}
+
+/// A connection's place in `max_connections` and in its caller's share. The connection thread and its websocket writer each
+/// hold it, so a writer stuck on a client that stopped reading counts until it gives up.
+pub(crate) struct Slot {
+    shared: Arc<Shared>,
+    caller: Option<IpAddr>,
+}
+
+impl Drop for Slot {
+    fn drop(&mut self) {
+        self.shared.conns.fetch_sub(1, Ordering::Relaxed);
+        if let Some(ip) = self.caller {
+            let mut callers = self.shared.callers.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(n) = callers.get_mut(&ip) {
+                *n -= 1;
+                if *n == 0 {
+                    callers.remove(&ip);
+                }
+            }
+        }
+    }
+}
+
+/// Who a connection counts against: its address, or the /64 as one IPv6 home gets that many. Loopback counts against no one,
+/// as it is a program on this PC, which can be a proxy for a server that also listens beyond loopback. A server bound to
+/// loopback alone needs no Steam key, so `server::refused` answers 403 to any `Host` that does not name this PC, and a tunnel
+/// reaches it only by rewriting `Host`. That is meant: such a server must not quietly become reachable from outside.
+fn caller(ip: IpAddr) -> Option<IpAddr> {
+    match ip.to_canonical() {
+        ip if ip.is_loopback() => None,
+        IpAddr::V6(ip) => Some(IpAddr::V6(Ipv6Addr::from(ip.to_bits() & (!0u128 << 64)))),
+        ip => Some(ip),
+    }
+}
+
+/// A place for a connection from `peer`, if there is one. Only the accept thread takes them.
+fn take_slot(shared: &Arc<Shared>, peer: Option<IpAddr>) -> Option<Slot> {
+    if shared.conns.load(Ordering::Relaxed) >= shared.config.max_connections {
+        return None;
+    }
+    let caller = peer.and_then(caller);
+    if let Some(ip) = caller {
+        let mut callers = shared.callers.lock().unwrap_or_else(|e| e.into_inner());
+        let n = callers.entry(ip).or_insert(0);
+        if *n >= MAX_PER_ADDRESS {
+            return None;
+        }
+        *n += 1;
+    }
+    shared.conns.fetch_add(1, Ordering::Relaxed);
+    Some(Slot { shared: shared.clone(), caller })
 }
 
 /// Binds the HTTP port and starts the accept loop and the broadcaster. Panics if the port cannot be bound.
 pub fn start(deps: BackendDeps) -> Backend {
-    cli::start(&deps.config.cli_host, deps.config.cli_port, deps.cli.clone());
+    if deps.config.cli_port != 0 {
+        cli::start(&deps.config.cli_host, deps.config.cli_port, deps.cli.clone());
+    }
     let listener = TcpListener::bind((deps.config.host.as_str(), deps.config.port))
         .unwrap_or_else(|e| panic!("cannot listen on {}:{}: {e}", deps.config.host, deps.config.port));
     let addr = listener.local_addr().expect("bound socket has an address");
     let _ = deps.published.steam.set(deps.config.steam.clone());
     let _ = deps.published.mods.set(server::ModBackend::new(&deps.server_data, deps.socket_channels));
-    let shared = Arc::new(Shared { published: deps.published, commands: deps.commands, config: deps.config, routes: deps.routes, conns: AtomicUsize::new(0) });
+    let shared = Arc::new(Shared { published: deps.published, commands: deps.commands, config: deps.config, routes: deps.routes, conns: AtomicUsize::new(0), callers: Mutex::default(), large_body: Mutex::default() });
     let ticks = Arc::new(broadcast::TickSlot::default());
     let published = shared.published.clone();
     {
@@ -238,30 +315,28 @@ pub fn start(deps: BackendDeps) -> Backend {
         .name("http-accept".into())
         .spawn(move || {
             for stream in listener.incoming().flatten() {
-                if shared.conns.load(Ordering::Relaxed) >= shared.config.max_connections {
+                let Some(slot) = take_slot(&shared, stream.peer_addr().ok().map(|a| a.ip())) else {
                     let mut s = stream;
                     let _ = http::write_response(&mut s, &Response::text(503, "text/plain; charset=utf-8", "Service Unavailable"), false);
                     continue;
-                }
-                shared.conns.fetch_add(1, Ordering::Relaxed);
+                };
                 let s = shared.clone();
                 // ponytail: thread per connection (§8.1); IOCP/epoll only if the sockets bench demands it
-                let spawned = std::thread::Builder::new().name("http".into()).stack_size(256 << 10).spawn(move || {
+                // the slot goes with the closure, so a failed spawn or a panic cannot leak it
+                let _ = std::thread::Builder::new().name("http".into()).stack_size(HTTP_STACK).spawn(move || {
+                    let slot = Arc::new(slot);
+                    let timeout = Duration::from_secs(s.config.request_timeout_s.max(1));
+                    let body_limit = |req: &Request| server::body_limit(&s, req);
                     let handle = |req: &Request| server::handle(&s, req);
-                    let upgrade = |req: &Request, w: std::net::TcpStream, r: std::io::BufReader<std::net::TcpStream>| {
-                        if !sockjs::is_socket_path(&req.path) {
+                    let upgrade = |req: &Request, w: http::Socket, r: std::io::BufReader<http::Socket>| {
+                        // handed back, `handle` answers it
+                        if !sockjs::is_socket_path(&req.path) || server::refused(&s, req).is_some() {
                             return Some(w);
                         }
-                        sockjs::upgrade(&s.published, req, w, r).err()
+                        sockjs::upgrade(&s.published, req, w, r, slot.clone(), timeout).err()
                     };
-                    // a panic must not leak the connection slot (max_connections would fill up for good)
-                    let timeout = std::time::Duration::from_secs(s.config.request_timeout_s.max(1));
-                    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| http::serve_connection(stream, timeout, &handle, &upgrade)));
-                    s.conns.fetch_sub(1, Ordering::Relaxed);
+                    http::serve_connection(stream, timeout, &body_limit, &handle, &upgrade, &|| s.crowded());
                 });
-                if spawned.is_err() {
-                    shared.conns.fetch_sub(1, Ordering::Relaxed);
-                }
             }
         })
         .expect("spawn http-accept");
@@ -798,6 +873,75 @@ pub(crate) mod fake {
 mod tests {
     use super::*;
 
+    fn shared(max_connections: usize) -> Arc<Shared> {
+        let (ctx, _tick) = fake::ctx(None);
+        let config = BackendConfig { host: "0.0.0.0".into(), port: 0, cli_host: "127.0.0.1".into(), cli_port: 0, max_connections, request_timeout_s: 120, server_password: None, steam: "off".into() };
+        Arc::new(Shared { published: ctx.published, commands: ctx.commands, config, routes: vec![], conns: AtomicUsize::new(0), callers: Mutex::default(), large_body: Mutex::default() })
+    }
+
+    fn ip(s: &str) -> Option<IpAddr> {
+        Some(s.parse().unwrap())
+    }
+
+    #[test]
+    fn one_address_cannot_take_every_slot() {
+        let sh = shared(MAX_PER_ADDRESS * 2);
+        let held: Vec<Slot> = (0..MAX_PER_ADDRESS).map(|_| take_slot(&sh, ip("203.0.113.5")).unwrap()).collect();
+        assert!(take_slot(&sh, ip("203.0.113.5")).is_none());
+        assert!(take_slot(&sh, ip("::ffff:203.0.113.5")).is_none(), "the same address over IPv6");
+        let other = take_slot(&sh, ip("203.0.113.6")).expect("someone else still gets in");
+        drop(other);
+        drop(held);
+        assert_eq!(sh.conns.load(Ordering::Relaxed), 0);
+        assert!(sh.callers.lock().unwrap().is_empty(), "nothing stays behind for an address that left");
+        assert!(take_slot(&sh, ip("203.0.113.5")).is_some());
+    }
+
+    #[test]
+    fn an_ipv6_home_counts_as_one_caller() {
+        let sh = shared(MAX_PER_ADDRESS * 2);
+        let held: Vec<Slot> = (0..MAX_PER_ADDRESS as u16).map(|i| take_slot(&sh, ip(&format!("2001:db8:1:2::{:x}", i + 1))).unwrap()).collect();
+        assert!(take_slot(&sh, ip("2001:db8:1:2:ffff::1")).is_none());
+        assert!(take_slot(&sh, ip("2001:db8:1:3::1")).is_some());
+        drop(held);
+    }
+
+    #[test]
+    fn loopback_has_no_share_of_its_own() {
+        let sh = shared(MAX_PER_ADDRESS + 2);
+        // a proxy on this PC brings every player in from here
+        let held: Vec<Slot> = (0..MAX_PER_ADDRESS + 2).map(|_| take_slot(&sh, ip("127.0.0.1")).unwrap()).collect();
+        assert!(take_slot(&sh, ip("::1")).is_none(), "max_connections still counts it");
+        drop(held);
+    }
+
+    #[test]
+    fn a_slot_lasts_until_its_last_holder_ends() {
+        let sh = shared(1);
+        let reader = Arc::new(take_slot(&sh, ip("203.0.113.5")).unwrap());
+        let writer = reader.clone();
+        assert!(take_slot(&sh, ip("203.0.113.6")).is_none());
+        drop(reader);
+        assert!(take_slot(&sh, ip("203.0.113.6")).is_none(), "the websocket writer has not given up yet");
+        drop(writer);
+        assert!(take_slot(&sh, ip("203.0.113.6")).is_some());
+    }
+
+    #[test]
+    fn crowded_means_past_three_quarters() {
+        let sh = shared(8);
+        let mut held: Vec<Slot> = (0..6).map(|_| take_slot(&sh, ip("127.0.0.1")).unwrap()).collect();
+        assert!(!sh.crowded(), "six of eight is three quarters");
+        held.push(take_slot(&sh, ip("127.0.0.1")).unwrap());
+        assert!(sh.crowded());
+        let sh = shared(1);
+        assert!(!sh.crowded());
+        let _one = take_slot(&sh, ip("127.0.0.1")).unwrap();
+        assert!(sh.crowded(), "a single slot has to turn over too");
+        let sh = shared(usize::MAX);
+        let _one = take_slot(&sh, ip("127.0.0.1")).unwrap();
+        assert!(!sh.crowded());
+    }
 
     #[test]
     fn published_wait() {

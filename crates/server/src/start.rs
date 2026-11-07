@@ -6,7 +6,9 @@
 //! Mods come from `mods` in krebs.json, as for `serve`. Where nothing names any, a build that has `PLAYERS_MOD` uses it, as
 //! a lost krebs.json must not turn the game into the plain Screeps client. A build without it stays the plain server.
 //! `--friends` listens on all interfaces. The CLI has no authentication, so it stays on this PC, and match servers never
-//! see the flag: `mods/bare` starts them on their own defaults, which are 127.0.0.1.
+//! see the flag: `mods/bare` starts them on 127.0.0.1, with no CLI at all.
+//!
+//! One server has one data folder (`krebs.lock`), as a second would clear the first one's matches and save over its world.
 //!
 //! A server other people can reach needs a Steam Web API key, so that Steam confirms each sign-in (`backend::steam_web`). A
 //! start with no command asks for one, and `serve` refuses to go on without. Alone on this PC nothing needs one.
@@ -15,8 +17,9 @@
 
 use crate::config::{Args, Config};
 use backend::steam_web::{self, Answer};
+use std::fs::{File, TryLockError};
 use std::io::{BufRead, Read, Write};
-use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -26,6 +29,8 @@ const ALL_INTERFACES: &str = "0.0.0.0";
 const LOCAL_HOSTS: [&str; 3] = ["127.0.0.1", "localhost", "::1"];
 const THIS_PC: &str = "127.0.0.1";
 const PLAYERS_MOD: &str = "bare";
+/// In the data folder. What holds it is the lock on it, which goes with the process however it ends.
+const LOCK_FILE: &str = "krebs.lock";
 /// With the port open to a network, the room one caller can take up. A browser opens a handful of connections, so this
 /// still fits a full lobby many times over.
 const FRIENDS_MAX_CONNECTIONS: usize = 256;
@@ -41,6 +46,8 @@ const ONE_ACCOUNT: &str = "Friends cannot join without the bare mod: everyone wh
 const NO_KEY: &str = "No key, so nobody else can join. Krebs.exe on its own still works for playing on this PC.";
 const IN_THE_ZIP: &str = "Krebs was started from inside the zip, so Windows gave it a throwaway folder and left the other files out.\n\
 Close this, right-click the zip and choose Extract All. Then start Krebs.exe from the new folder.";
+const OPEN_CONSOLE: &str = "host under cli in krebs.json can only be this PC, as the admin console has no password and anyone who reached it could change anything.\n\
+Set it to 127.0.0.1, or take that line out, and start Krebs again.";
 
 static ACTIVE: AtomicBool = AtomicBool::new(false);
 
@@ -81,7 +88,7 @@ fn start(args: &Args) {
     if args.flag("friends").is_some() {
         open_to_friends(&mut cfg);
     }
-    if let Some(problem) = folder_problem(&cfg.data) {
+    if let Some(problem) = cli_problem(&cfg).or_else(|| folder_problem(&cfg.data)) {
         give_up(&problem);
     }
     if needs_steam_key(&cfg) {
@@ -106,8 +113,13 @@ fn go_to_exe_folder() -> std::io::Result<PathBuf> {
 }
 
 /// The folder Explorer (`Temp1_name.zip`), WinRAR (`Rar$EXa1.2`) or 7-Zip (`7zO12345`) unpacks one file into, for a
-/// program started from inside an archive. It goes away, and the world would go with it.
+/// program started from inside an archive. It goes away, and the world would go with it. The zip has a top folder, so
+/// this can be the folder above the exe's too.
 fn unpacked_for_one_run(folder: &Path) -> bool {
+    folder.ancestors().take(2).any(is_throwaway)
+}
+
+fn is_throwaway(folder: &Path) -> bool {
     let name = folder.file_name().map_or(String::new(), |n| n.to_string_lossy().to_ascii_lowercase());
     let explorer = name.strip_prefix("temp").and_then(|rest| rest.split_once('_')).is_some_and(|(n, rest)| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()) && rest.ends_with(".zip"));
     let seven_zip = name.strip_prefix("7zo").is_some_and(|rest| !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_alphanumeric()));
@@ -125,6 +137,12 @@ fn open_to_friends(cfg: &mut Config) {
     cfg.cli_host = THIS_PC.into();
     cfg.max_connections = cfg.max_connections.min(FRIENDS_MAX_CONNECTIONS);
     cfg.request_timeout_s = cfg.request_timeout_s.min(FRIENDS_REQUEST_TIMEOUT_S);
+}
+
+/// Why the CLI cannot open where the config says, if so. It has no password, and only `--friends` ever moved it itself.
+pub fn cli_problem(cfg: &Config) -> Option<String> {
+    let this_pc = cfg.cli_host.parse::<IpAddr>().map_or(cfg.cli_host.eq_ignore_ascii_case("localhost"), |ip| ip.is_loopback());
+    (!this_pc).then(|| OPEN_CONSOLE.to_string())
 }
 
 fn others_can_reach(cfg: &Config) -> bool {
@@ -151,6 +169,57 @@ pub fn steam_key(cfg: &Config) -> Result<Option<String>, String> {
     })
 }
 
+/// Holds the data folder for this process until it ends, or says who has it. With no folder there is no lock to take, and
+/// the world's own check says what is missing. A file system with no locks is no reason to stop.
+fn take_lock(data: &Path) -> Result<Option<File>, String> {
+    let file = match File::options().create(true).truncate(false).write(true).open(data.join(LOCK_FILE)) {
+        Ok(file) => file,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(format!("Krebs could not use {}: {e}.", data.display())),
+    };
+    match file.try_lock() {
+        Err(TryLockError::WouldBlock) => Err(in_use(data)),
+        _ => Ok(Some(file)),
+    }
+}
+
+/// For as long as this process runs.
+pub fn lock_data(data: &Path) -> Result<(), String> {
+    take_lock(data).map(std::mem::forget)
+}
+
+/// The one line `--password-stdin` waits for, which keeps a password off the command line and out of every file. A line
+/// that never ended means whoever was sending it has gone.
+pub fn password_from(input: &mut impl BufRead) -> Option<String> {
+    let mut line = String::new();
+    input.read_line(&mut line).ok()?;
+    let password = line.strip_suffix('\n')?.trim_end_matches('\r');
+    (!password.is_empty()).then(|| password.to_string())
+}
+
+/// `--announce-port`: on a line of its own, for whoever started this with port 0 and holds the other end of its stdout.
+pub fn port_line(port: u16) -> String {
+    format!("krebs-port {port}")
+}
+
+/// Tightens a key file this folder may hold from an older Krebs, or from someone's hands, without reading it: only a plain
+/// file, as it is the file that is to be closed, and not whatever a link points at.
+pub fn tighten_key(data: &Path) {
+    let file = data.join(steam_web::KEY_FILE);
+    if std::fs::symlink_metadata(&file).is_ok_and(|found| found.is_file()) {
+        steam_web::make_private(&file);
+    }
+}
+
+fn in_use(data: &Path) -> String {
+    let place = std::path::absolute(data).unwrap_or_else(|_| data.to_path_buf());
+    format!(
+        "Another Krebs is already using {}, so this one has stopped before it could harm that one's matches.\n\
+         Look for its other window. To run a second one, copy the Krebs folder somewhere else.",
+        place.display()
+    )
+}
+
 /// A saved key Steam still takes, or a new one from the person at the window.
 fn make_sure_of_steam_key(data: &Path) {
     match steam_web::key_in(data).map(|key| steam_web::try_key(&key)) {
@@ -166,7 +235,7 @@ fn make_sure_of_steam_key(data: &Path) {
         give_up(&format!("Krebs could not save the key in {} ({e}).", data.display()));
     }
     // the key was on screen, and the next thing people do with this window is share what it says
-    let _ = std::process::Command::new("cmd").args(["/c", "cls"]).status();
+    let _ = std::process::Command::new(steam_web::system_program("cmd")).args(["/c", "cls"]).status();
     println!("  Thanks, Krebs saved that key.\n");
 }
 
@@ -300,14 +369,15 @@ const SAVING_AGAIN: &str = "\n  Krebs can save your world again.\n";
 /// What the window says after each save: the same words every time one fails, and one line when they work again.
 pub fn save_report(every_s: u64) -> impl FnMut(Result<(), &str>) + Send + 'static {
     let mut failing = false;
+    // not the print macros, which panic with nobody at the other end, and this thread is what keeps saving
     move |saved| match saved {
         Err(detail) => {
             failing = true;
-            eprintln!("{}", save_failed(detail, every_s));
+            let _ = writeln!(std::io::stderr(), "{}", save_failed(detail, every_s));
         }
         Ok(()) if failing => {
             failing = false;
-            println!("{SAVING_AGAIN}");
+            let _ = writeln!(std::io::stdout(), "{SAVING_AGAIN}");
         }
         Ok(()) => {}
     }
@@ -449,6 +519,62 @@ mod tests {
         for folder in ["C:/Users/Ann/Documents/Krebs-v0.1.0-windows-x64", "C:/Temp/krebs", "C:/Temp/Temp_x.zip", "C:/Temp/Temp1_notes", "C:/Temp/7zip-stuff", "C:/"] {
             assert!(!unpacked_for_one_run(Path::new(folder)), "{folder}");
         }
+        for folder in ["C:/Users/Ann/AppData/Local/Temp/Temp1_Krebs-v0.3.0-windows-x64.zip/Krebs", "C:/Temp/Rar$EXa1234.5678/Krebs"] {
+            assert!(unpacked_for_one_run(Path::new(folder)), "the zip's top folder comes along: {folder}");
+        }
+        assert!(!unpacked_for_one_run(Path::new("C:/Users/Ann/Downloads/Krebs-v0.3.0-windows-x64/Krebs")), "Extract All makes this");
+    }
+
+    #[test]
+    fn a_data_folder_has_one_server() {
+        let dir = std::env::temp_dir().join(format!("krebs-start-lock-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let held = take_lock(&dir).unwrap();
+        assert!(held.is_some());
+        let said = take_lock(&dir).unwrap_err();
+        assert!(said.contains("Another Krebs is already using") && said.contains("copy the Krebs folder"), "{said}");
+        drop(held);
+        assert!(take_lock(&dir).unwrap().is_some(), "gone with what held it, and a lock file left behind is nothing");
+        assert!(take_lock(&dir.join("none")).unwrap().is_none(), "no folder: the world's own check comes next");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_password_is_one_whole_line() {
+        let read = |text: &str| password_from(&mut text.as_bytes());
+        assert_eq!(read("s3cret\n").as_deref(), Some("s3cret"));
+        assert_eq!(read("s3cret\r\nmore\n").as_deref(), Some("s3cret"), "only the one line");
+        assert_eq!(read("s3cret"), None, "cut off, so whoever sent it has gone");
+        assert_eq!(read(""), None);
+        assert_eq!(read("\n"), None);
+    }
+
+    #[test]
+    fn a_key_file_is_tightened_whenever_it_is_there_and_never_read() {
+        let dir = std::env::temp_dir().join(format!("krebs-start-tighten-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        tighten_key(&dir);
+        assert!(!dir.join(steam_web::KEY_FILE).exists(), "nothing there, nothing made");
+        // a folder in its place: this would fail on reading it, and icacls would have nothing to refuse
+        std::fs::create_dir(dir.join(steam_web::KEY_FILE)).unwrap();
+        tighten_key(&dir);
+        assert!(dir.join(steam_web::KEY_FILE).is_dir());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_console_stays_on_this_pc() {
+        let mut cfg = config();
+        for host in ["127.0.0.1", "127.0.0.2", "localhost", "LOCALHOST", "::1"] {
+            cfg.cli_host = host.to_string();
+            assert_eq!(cli_problem(&cfg), None, "{host}");
+        }
+        for host in ["0.0.0.0", "::", "192.168.1.20", "203.0.113.7", "example.com", ""] {
+            cfg.cli_host = host.to_string();
+            assert_eq!(cli_problem(&cfg), Some(OPEN_CONSOLE.to_string()), "{host}");
+        }
+        open_to_friends(&mut cfg);
+        assert_eq!(cli_problem(&cfg), None, "--friends puts it back itself");
     }
 
     #[test]
@@ -633,7 +759,7 @@ mod tests {
     #[test]
     fn the_words_stay_plain() {
         let here = std::env::current_dir().unwrap().display().to_string();
-        for text in [welcome_text(THIS_PC, 21025, true, &[]), key_steps(Path::new("d")), NO_KEY.to_string(), CRASHED.to_string(), IN_THE_ZIP.to_string(), SAVING_AGAIN.to_string(), taken(&Holder::Krebs, 1, false), taken(&Holder::Krebs, 1, true), taken(&Holder::Other, 1, false), world_problem(Path::new("d"), "x"), mods_problem("x"), save_failed("x", 60), last_save_failed(Path::new("d"), "x")] {
+        for text in [welcome_text(THIS_PC, 21025, true, &[]), key_steps(Path::new("d")), NO_KEY.to_string(), CRASHED.to_string(), IN_THE_ZIP.to_string(), SAVING_AGAIN.to_string(), OPEN_CONSOLE.to_string(), in_use(Path::new("d")), taken(&Holder::Krebs, 1, false), taken(&Holder::Krebs, 1, true), taken(&Holder::Other, 1, false), world_problem(Path::new("d"), "x"), mods_problem("x"), save_failed("x", 60), last_save_failed(Path::new("d"), "x")] {
             // The folder in a message is the user's own, in whatever language it is.
             let text = text.replace(&here, "");
             assert!(text.is_ascii(), "a console may not show it: {text}");

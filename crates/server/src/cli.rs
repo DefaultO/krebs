@@ -101,7 +101,7 @@ impl Host {
     /// `env.set` of a key the world models (Some: applied), else None.
     fn world_set(&self, key: &str, value: Json) -> Result<bool, String> {
         let key = key.to_string();
-        self.run(move |w| engine::coll::env_set(w, &key, &Val::from_json(&value)))
+        self.run(move |w| engine::coll::env_set(w, &key, &Val::from_trusted_json(&value)))
     }
 
     fn get(&self, key: &str) -> Option<Json> {
@@ -158,7 +158,8 @@ impl CliHost for Host {
         let parsed = Json::parse(writes).map_err(|e| e.to_string())?;
         let mut list = Vec::new();
         for w in parsed.as_array().map_or(&[][..], |a| a.as_slice()) {
-            let doc = || match w.get("doc").map(Val::from_json) {
+            // The host's own input: a new field must not be lost because players spent the names `from_json` allows.
+            let doc = || match w.get("doc").map(Val::from_trusted_json) {
                 Some(Val::Obj(o)) => Ok(o),
                 _ => Err("Document needs to be an object".to_string()),
             };
@@ -423,6 +424,25 @@ impl CliEval for Cli {
             Ok(id) => Box::new(Session { rt: iso, id: Some(id), error: None }),
             Err(e) => Box::new(Session { rt: iso, id: None, error: Some(e) }),
         }
+    }
+}
+
+/// What stands behind the CLI port with `cli.off`. The console has no password and runs anything, so this runs nothing.
+pub struct Closed;
+
+impl CliEval for Closed {
+    fn open(&self) -> Box<dyn CliSession> {
+        Box::new(Closed)
+    }
+}
+
+impl CliSession for Closed {
+    fn greeting(&self) -> String {
+        "The admin console is off on this server.\n".to_string()
+    }
+
+    fn eval(&mut self, _line: &str) -> String {
+        String::new()
     }
 }
 

@@ -238,6 +238,8 @@ pub(crate) fn subscribe(p: &Published, conn: &Arc<Conn>, u: UserIdx, name: &str)
     let view = p.get();
     let Some(r) = room_idx(&view, name) else { return };
     let mut hub = p.hub().lock();
+    // a repeat starts over from a new snapshot; a second entry would only send every tick twice
+    hub.rooms.entry(name.to_string()).or_default().retain(|s| s.conn != conn.id);
     if hub_limit(&hub, u) > USER_LIMIT {
         let subs = hub.rooms.entry(name.to_string()).or_default();
         subs.push(RoomSub { conn: conn.id, user: u, objects: Arc::from(Vec::new()), users: BUILTIN.iter().map(|(i, _)| (*i).into()).collect() });

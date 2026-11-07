@@ -82,7 +82,7 @@ pub fn default_code(modules: Option<Val>) -> Obj {
 /// POST /api/auth/steam-ticket
 pub fn steam_ticket(req: &Request, ctx: &ApiCtx) -> Response {
     let body = req.body();
-    if body.get("useNativeAuth").is_some_and(|v| crate::truthy(Some(&Val::from_json(v)))) {
+    if body.get("useNativeAuth").and_then(Json::as_bool) == Some(true) {
         return Response::error("authentication method is not supported");
     }
     let mode = ctx.published.steam_mode().to_string();
@@ -155,6 +155,11 @@ mod tests {
         assert_eq!(authlib::check_token(j2.get("token").and_then(Json::as_str).unwrap(), &ctx.published.get()), Some(u));
         let (_, native) = fake::run(steam_ticket, &ctx, "POST", "/api/auth/steam-ticket", r#"{"ticket":"00","useNativeAuth":true}"#);
         assert_eq!(native.get("error").and_then(Json::as_str), Some("authentication method is not supported"));
+        // Only true counts. An object here was converted before any check, with no account: minutes for a million keys.
+        let keys: Vec<String> = (0..50_000).map(|i| format!(r#""nativeKey{i}":1"#)).collect();
+        let start = std::time::Instant::now();
+        let (_, object) = fake::run(steam_ticket, &ctx, "POST", "/api/auth/steam-ticket", &format!(r#"{{"useNativeAuth":{{{}}}}}"#, keys.join(",")));
+        assert!(object.get("token").is_some() && start.elapsed().as_secs() < 5, "{object} {:?}", start.elapsed());
         drop(ctx);
         let w = h.join().unwrap();
         let d = &w.users[u as usize].doc;

@@ -6,10 +6,15 @@
 //! `user:<id>/console|cpu|code|set-active-branch|newMessage|memory/<path>|resources|money`, authenticated
 //! subscriptions only (ARCHITECTURE.md §8.4). Owner: WP04.
 
-use crate::socket::server::{HubState, MemWatch};
+use crate::socket::server::{add_once, HubState, MemWatch};
 use engine::world::{UserIdx, WorldView};
 use std::borrow::Cow;
 use util::json::Json;
+
+/// Memory watches kept per user. user.js only ever serves the first 50, so keeping more buys nothing.
+pub(crate) const MAX_WATCHES: usize = 50;
+/// Longest memory path kept, in bytes: far past any path a person types, and all of them are sent back on every push.
+pub(crate) const MAX_WATCH_PATH: usize = 512;
 
 /// The message sent right after subscribing, if any: `user:<id>/cpu` gets `{cpu:0, memory:<length>}` when
 /// Memory is non-empty. (Acceptance — own user only — is decided by the socket server.)
@@ -71,13 +76,17 @@ pub(crate) fn memory_watch_value(memory: &Json, path: &str) -> String {
 }
 
 pub(crate) fn watch_memory(hub: &mut HubState, u: UserIdx, path: &str, conn: u64) {
+    if path.len() > MAX_WATCH_PATH {
+        return;
+    }
     let watches = hub.memory.entry(u).or_default();
-    match watches.iter_mut().find(|w| w.path == path) {
-        Some(w) => {
-            w.conns.push(conn);
-            w.sent = None; // the new watcher gets the current value on the next broadcast
+    match watches.iter().position(|w| w.path == path) {
+        Some(i) => {
+            add_once(&mut watches[i].conns, conn);
+            watches[i].sent = None; // the new watcher gets the current value on the next broadcast
         }
-        None => watches.push(MemWatch { path: path.to_string(), conns: vec![conn], sent: None }),
+        None if watches.len() < MAX_WATCHES => watches.push(MemWatch { path: path.to_string(), conns: vec![conn], sent: None }),
+        None => {}
     }
 }
 
@@ -95,12 +104,12 @@ pub(crate) fn broadcast(hub: &mut HubState, view: &WorldView) {
     for (&u, watches) in memory.iter_mut() {
         let Some(st) = view.users.get(u as usize) else { continue };
         let version = st.memory_version;
-        if st.memory.utf16_len() == 0 || watches.iter().take(50).all(|w| w.sent == Some(version)) {
+        if st.memory.utf16_len() == 0 || watches.iter().all(|w| w.sent == Some(version)) {
             continue;
         }
         let Ok(parsed) = Json::parse(&st.memory.to_string_lossy()) else { continue };
         let id = st.id.as_str();
-        for w in watches.iter_mut().take(50) {
+        for w in watches.iter_mut() {
             if w.sent == Some(version) {
                 continue;
             }

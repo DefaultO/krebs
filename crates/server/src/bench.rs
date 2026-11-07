@@ -533,9 +533,8 @@ pub fn run(cfg: Config, args: &Args) {
     }
     w.mods = mod_names.iter().map(|&n| n.into()).collect();
 
-    let mut rcfg = crate::runtime_config(&cfg, w.compat.profile);
+    let rcfg = crate::runtime_config(&cfg, w.compat.profile);
     println!("runner threads: {}", rcfg.runner_threads);
-    rcfg.snapshot_dir = data.clone();
     let rt = Arc::new(runtime::Runtime::new(rcfg, runtime::Bundle { files: runtime::bundle::FILES, mod_game_js: game_js }));
     let (tx, rx) = std::sync::mpsc::channel();
     let published = Arc::new(backend::Published::new(w.view()));

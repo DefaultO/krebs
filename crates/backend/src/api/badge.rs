@@ -337,12 +337,20 @@ pub fn palette() -> Vec<String> {
     colors
 }
 
-/// `getBadgeSvg(badgeInfo, border)`; None where the original throws (unknown type, bad palette index).
+/// A colour that can go in a `fill` attribute. `user/badge` takes six digits, but worlds hold what it let through before
+/// it checked the end of the string, such as `#AbCdEf12`, and the CLI's bots get fewer digits when their random number is
+/// small. Hex cannot write anything into the SVG, so up to eight digits still draw.
+pub(crate) fn safe_color(s: &str) -> bool {
+    s.len() <= 9 && s.strip_prefix('#').is_some_and(|hex| !hex.is_empty() && hex.bytes().all(|c| c.is_ascii_hexdigit()))
+}
+
+/// `getBadgeSvg(badgeInfo, border)`; None where the original throws (unknown type, bad palette index), or a colour
+/// is not one: the text goes into the SVG as it is.
 pub fn get_badge_svg(badge: &Json, border: bool) -> Option<String> {
     let pal = palette();
     let color = |k: &str| -> Option<String> {
         match badge.get(k) {
-            Some(Json::Str(s)) => Some(s.clone()),
+            Some(Json::Str(s)) => safe_color(s).then(|| s.clone()),
             v => {
                 // colors[v].rgb: property lookup by ToString(v)
                 let key = crate::socket::user::js_to_string(v);
@@ -359,12 +367,12 @@ pub fn get_badge_svg(badge: &Json, border: bool) -> Option<String> {
         Some(Json::Num(t)) => {
             let ty = (t.fract() == 0.0 && *t >= 1.0).then_some(*t as u32)?;
             let (p1, p2, flip) = paths(ty, param)?;
-            let flip_on = badge.get("flip").is_some_and(|f| crate::truthy(Some(&engine::doc::Val::from_json(f))));
+            let flip_on = badge.get("flip").is_some_and(engine::doc::json_truthy);
             (p1, p2, if flip_on { flip.unwrap_or(0.0) } else { 0.0 })
         }
         Some(t @ Json::Obj(_)) => {
             let s = |k: &str| t.get(k).map(|v| crate::socket::user::js_to_string(Some(v)));
-            let p2 = t.get("path2").filter(|v| crate::truthy(Some(&engine::doc::Val::from_json(v)))).map(|v| crate::socket::user::js_to_string(Some(v)));
+            let p2 = t.get("path2").filter(|v| engine::doc::json_truthy(v)).map(|v| crate::socket::user::js_to_string(Some(v)));
             (s("path1").unwrap_or_else(|| "undefined".into()), p2.unwrap_or_default(), 0.0)
         }
         _ => return None,
@@ -432,5 +440,18 @@ mod tests {
         }
         // the rest differ only in trig last digits (libm vs fdlibm)
         assert!(total >= 200 && exact * 10 >= total * 8, "{exact}/{total} byte-exact");
+    }
+
+    /// Stored badges are checked again: worlds hold what the old check let through.
+    #[test]
+    fn a_stored_colour_cannot_write_into_the_svg() {
+        let badge = |c: &str| Json::Obj(vec![("type".into(), Json::Num(1.0)), ("color1".into(), Json::Str(c.into())), ("color2".into(), Json::Str("#000000".into())), ("color3".into(), Json::Num(4.0)), ("param".into(), Json::Num(0.0))]);
+        assert!(get_badge_svg(&badge("#00ff00"), false).unwrap().contains("fill=\"#00ff00\""));
+        assert!(get_badge_svg(&badge("#AbCdEf"), false).is_some());
+        assert!(get_badge_svg(&badge("#a1b"), false).is_some(), "the CLI's bots");
+        assert!(get_badge_svg(&badge("#AbCdEf12"), false).unwrap().contains("fill=\"#AbCdEf12\""), "what the old check let through");
+        for bad in ["#000000\"/><script>alert(1)</script>", "#000000000", "#AbCdEf12\"", "000000", "#", "#00000g", "red"] {
+            assert_eq!(get_badge_svg(&badge(bad), false), None, "{bad}");
+        }
     }
 }

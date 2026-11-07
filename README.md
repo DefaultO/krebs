@@ -20,7 +20,8 @@ This is an early proof of concept. Matches run, but they have no final standings
    [Gitea](https://gitea.defaul.to/DefaultO/krebs/releases/latest), so use whichever opens.
 2. Unzip it. Right-click the zip and choose Extract All. Do not start Krebs from inside the zip, and do not put it in
    Program Files. Documents or the Desktop are good places.
-3. Double-click `Krebs.exe`. A black window opens and says how to connect. Keep it open while you play.
+3. Open the `Krebs` folder that comes out of the zip, and double-click `Krebs.exe`. A black window opens and says how to
+   connect. Keep it open while you play.
 4. Open Screeps in Steam. On the server list, switch from **Community servers** to **Private server**. The list opens on
    Community servers every time, so switch first.
 5. Enter Host `127.0.0.1` and Port `21025`, then press **Connect**.
@@ -40,6 +41,11 @@ zip on the window, up to 10 MB. No bot yet? Pick the `starter-bot` folder from t
 ready the match counts down, each player picks a room and places a spawn, and the bots play. Hold **Leave server** to go back
 to the server list. One Krebs runs up to 4 matches at a time, and a lobby past that is told to wait for one to end.
 
+You have 3 minutes to pick a room, and with none by then you get a free one. You then have 2 minutes to place a spawn, and
+without one by then you are out of the match. You can have a seat in one match at a time. A match you left keeps your seat, so
+you can go back to it, until you give the seat up, and it ends a minute after everyone has left it. The host can end any match:
+type `stop` and its number in the black window, which shows that number when the match starts. `matches` lists them.
+
 ### Playing with friends
 
 Double-click `Let friends join.bat` instead of `Krebs.exe`. The first time, it asks for a Steam Web API key and says where to
@@ -56,12 +62,17 @@ The limits, plainly:
 - Windows Firewall may ask about Krebs. Allow it, or nobody else can connect. If friends cannot connect, look in Windows
   Defender Firewall with Advanced Security, under Inbound Rules, for a Block rule for `krebs.exe`, even if nothing ever asked
   you. Delete it and start `Let friends join.bat` again.
+- Joining a server means trusting it with your PC, not only with your sign-in. The Screeps client runs code that a server
+  sends it, which is how Krebs shows its lobbies at all, and a dishonest host could use that to run programs on your PC. Only
+  join servers of people you trust. [docs/SECURITY.md](docs/SECURITY.md) says what you take on by hosting and by joining.
 - Steam confirms every sign-in, so nobody can make one up or reuse an old one. The host of a server you join does see your
-  sign-in, though, and a dishonest one could pass it on to another Krebs server. Nothing is encrypted, so only join and share
-  servers with people you trust, and do not run a public one.
-- Your key is in `data\steam-api-key.txt`. Keep that file to yourself. While Steam cannot be reached, nobody can sign in.
+  sign-in, though, and a dishonest one could pass it on to another Krebs server. Nothing is encrypted, so only share your
+  server with people you trust, and do not run a public one.
+- Your key is in `data\steam-api-key.txt`, which Krebs keeps to your Windows account. Keep that file to yourself. While Steam
+  cannot be reached, nobody can sign in.
 - For each player, your PC asks Steam for their public profile picture.
-- Every match runs on your PC, so more players means more work for it.
+- Every match runs on your PC, so more players means more work for it. A match can use 2 GB of memory plus 1 GB per seat. A bot
+  that asks for more ends that match, which then says so, and your server carries on.
 
 ### When something goes wrong
 
@@ -71,6 +82,7 @@ Krebs says what went wrong in its window and waits for Enter. These are the mess
 | --- | --- |
 | `Krebs was started from inside the zip` | Right-click the zip, choose Extract All, and start `Krebs.exe` from the new folder. |
 | `Krebs is already running on port 21025` | Look for its other window, or just connect. It may not let friends in: to do that, close it and start `Let friends join.bat`. |
+| `Another Krebs is already using ...` | Look for its other window. To run a second one, copy the Krebs folder somewhere else and change the port number in its `krebs.json`. |
 | `Port 21025 is already used by another program` | That may be another Screeps server. Close it and start Krebs again, or change the port number in `krebs.json`. |
 | `Windows does not let Krebs use port 21025` | Something has reserved the port. Change the port number in `krebs.json`. |
 | `Krebs could not open port 21025 on ...` | Check `host` and `port` under `http` in `krebs.json`, or delete that file and Krebs uses its normal settings. |
@@ -84,6 +96,7 @@ Krebs says what went wrong in its window and waits for Enter. These are the mess
 | `The admin console is off` | Nothing to fix. Another program, often a second Krebs, holds port 21026. The game runs normally. |
 | `Refused a sign-in: ...` | Someone could not get in, and the rest of the line says why. If everyone you invited got in, you can ignore it. |
 | `Other PCs can reach this server` | Start `Let friends join.bat`, which asks for the key. Or set `host` under `http` in `krebs.json` back to `127.0.0.1`. |
+| `host under cli in krebs.json can only be this PC` | The admin console has no password. Set `host` under `cli` in `krebs.json` to `127.0.0.1`, or take it out. |
 
 `krebs.json` from the zip has the port in it, so there is a number to change:
 
@@ -143,8 +156,13 @@ git pull
 ```
 
 ```
-tools\package.bat    the zip for players, in dist\, built in a clean copy
+tools\package.bat    the zip for players, in dist\, built in a clean copy, with everything in a Krebs folder
 ```
+
+A release is built from a fresh clone at its tag, so that it holds what that commit says and nothing else.
+`tools\package.bat` stops at anything a clone would not have: uncommitted changes, files `git status` has been told to skip
+(which is what `run.bat` does to `Cargo.lock` and the mod list), a submodule that differs from its link, or a mod folder that
+is not in the repository. Set `KREBS_ALLOW_DIRTY=1` for a trial build, which is not for publishing.
 
 ### The fast V8
 

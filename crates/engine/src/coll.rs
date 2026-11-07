@@ -363,7 +363,7 @@ pub fn env_del(w: &mut World, name: &str) -> Result<bool, String> {
 /// The users a vanilla world starts with (storage/db.original.json after `upgradeDb`): Invader `'2'` (its v7
 /// badge), Source Keeper `'3'` and the system user `Screeps` (USER-SPECIAL-IDS), whom respawns hand ruins to.
 pub fn add_default_users(w: &mut World) {
-    let doc = |text: &str| match Val::from_json(&util::json::Json::parse(text).expect("user JSON")) {
+    let doc = |text: &str| match Val::from_trusted_json(&util::json::Json::parse(text).expect("user JSON")) {
         Val::Obj(o) => o,
         _ => unreachable!(),
     };

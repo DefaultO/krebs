@@ -4,7 +4,7 @@
 //!
 //! `roomMap2:<room>` = the room snapshot's `map_view` (ARCHITECTURE.md §8.4). Owner: WP04.
 
-use crate::socket::server::{Conn, HubState};
+use crate::socket::server::{add_once, Conn, HubState};
 use crate::{room_idx, Published};
 use engine::world::{UserIdx, WorldView};
 use std::sync::Arc;
@@ -29,10 +29,13 @@ fn message(name: &str, map_view: &str) -> String {
     format!("[\"roomMap2:{name}\",{map_view}]")
 }
 
-/// `onSubscribe('roomMap2:<name>')`: registers and immediately writes the current map view (no existence check).
+/// `onSubscribe('roomMap2:<name>')`: registers and immediately writes the current map view. Any name gets its answer, as
+/// the client's map asks past the world's edge, but only a room that exists is kept: `broadcast` skips the rest anyway.
 pub(crate) fn subscribe(p: &Published, conn: &Arc<Conn>, name: &str) {
     let view = p.get();
-    p.hub().lock().maps.entry(name.to_string()).or_default().push(conn.id);
+    if room_idx(&view, name).is_some() {
+        add_once(p.hub().lock().maps.entry(name.to_string()).or_default(), conn.id);
+    }
     conn.write_event_raw(message(name, map_view_text(&view, name)));
 }
 

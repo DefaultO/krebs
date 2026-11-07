@@ -4,8 +4,12 @@
 //! Not a mirror: this replaces Express + body-parser + q-json-response (spec 10 HTTP-LISTEN, HTTP-BODY,
 //! HTTP-ENVELOPE, HTTP-ERRORS, HTTP-CORS). The middleware order lives in `server.rs`.
 
+use std::cell::Cell;
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::net::TcpStream;
+use std::ops::Deref;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use util::json::Json;
 
 /// One parsed request. Header names are lowercase.
@@ -26,9 +30,21 @@ pub struct Response {
 
 /// Request bodies above this are rejected with 413 (HTTP-BODY; code uploads are limited to 5 MiB later).
 pub const MAX_BODY: usize = 10 << 20;
-/// How much of a body over `MAX_BODY` is read and dropped before the 413. Past this, the client may not get to see it.
+/// The body a request may send before its head has shown who it is. Signing in and the routes that need no account fit
+/// well inside it, and a stranger cannot make the server hold or parse megabytes (`server::body_limit`).
+pub const ANON_BODY: usize = 64 << 10;
+/// How much of a body over the limit is read and dropped before the 413. Past this, the client may not get to see it.
 const MAX_DISCARD: usize = 64 << 20;
 const MAX_HEAD: usize = 64 << 10;
+/// The slowest upload a request's deadline allows for, in bytes a second: 10 MiB in about 11 minutes.
+const SLOWEST_UPLOAD: usize = 16 << 10;
+/// A stuck client holds a thread and a slot for at most this long per write (`write_pieces`).
+const WRITE_TIMEOUT: Duration = Duration::from_secs(30);
+const WRITE_PIECE: usize = 64 << 10;
+/// qs's `depth`: this many `[key]` levels nest, and the rest of the key stays one literal key.
+const QS_DEPTH: usize = 5;
+/// qs's `parameterLimit`: pairs past this are not looked at.
+const QS_PARAMS: usize = 1000;
 
 impl Request {
     /// First header with this (lowercase) name.
@@ -65,14 +81,14 @@ impl Request {
         Json::Obj(vec![])
     }
 
-    /// body-parser's 400 for a JSON body that does not parse (strict mode: only objects and arrays).
-    // ponytail: the handler parses the body again; cache the parsed value if 5 MiB uploads show up in profiles.
+    /// body-parser's 400 for a JSON body that does not parse (strict mode: only objects and arrays). It builds nothing,
+    /// so a handler's own parse, or none for one that reads the bytes, is the only one a large body costs.
     pub(crate) fn body_error(&self) -> Option<Response> {
         if self.body.is_empty() || !self.is_json() {
             return None;
         }
-        match std::str::from_utf8(&self.body).ok().and_then(|s| Json::parse(s).ok()) {
-            Some(Json::Obj(_) | Json::Arr(_)) => None,
+        match std::str::from_utf8(&self.body) {
+            Ok(text) if Json::is_container(text) => None,
             _ => Some(Response::text(400, "text/plain; charset=utf-8", "Bad Request")),
         }
     }
@@ -175,11 +191,13 @@ fn read_line(r: &mut impl BufRead, budget: &mut usize) -> Result<String, ReadErr
 /// Reads one request (head and body). `Closed` on a clean EOF before the request line.
 #[cfg(test)]
 pub(crate) fn read_request(r: &mut impl BufRead) -> Result<Request, ReadError> {
-    read_request_with(r, &mut || ())
+    read_request_with(r, &|_| MAX_BODY, &mut || ())
 }
 
-/// `read_request`, calling `on_continue` before reading a body announced with `Expect: 100-continue` (curl).
-pub(crate) fn read_request_with(r: &mut impl BufRead, on_continue: &mut dyn FnMut()) -> Result<Request, ReadError> {
+/// `read_request`, calling `on_continue` before reading a body announced with `Expect: 100-continue` (curl). `body_limit`
+/// gets the request with its head read, and says how much body it may send. Only a body past `ANON_BODY` asks it, as HTTP
+/// Basic costs a password hash.
+pub(crate) fn read_request_with(r: &mut impl BufRead, body_limit: &dyn Fn(&Request) -> usize, on_continue: &mut dyn FnMut()) -> Result<Request, ReadError> {
     let mut budget = MAX_HEAD;
     let mut line = read_line(r, &mut budget)?;
     while line.is_empty() {
@@ -206,7 +224,8 @@ pub(crate) fn read_request_with(r: &mut impl BufRead, on_continue: &mut dyn FnMu
     let chunked = req.header("transfer-encoding").is_some_and(|v| v.to_ascii_lowercase().contains("chunked"));
     let len = req.header("content-length").filter(|_| !chunked).map(str::parse::<usize>).transpose().map_err(|_| ReadError::Status(400))?;
     let expects = req.header("expect").is_some_and(|e| e.eq_ignore_ascii_case("100-continue"));
-    if let Some(len) = len.filter(|len| *len > MAX_BODY) {
+    let limit = if chunked || len.is_some_and(|len| len > ANON_BODY) { body_limit(&req) } else { ANON_BODY };
+    if let Some(len) = len.filter(|len| *len > limit) {
         // a client waiting for the 100 has sent nothing, so it can have its answer now
         if !expects {
             discard(r, len);
@@ -217,10 +236,12 @@ pub(crate) fn read_request_with(r: &mut impl BufRead, on_continue: &mut dyn FnMu
         on_continue();
     }
     if chunked {
-        req.body = read_chunked(r)?;
+        req.body = read_chunked(r, limit)?;
     } else if let Some(len) = len {
         read_body(r, &mut req.body, len)?;
     }
+    // it grew by doubling, and a large one may now wait a while for its turn (`server::chain`)
+    req.body.shrink_to_fit();
     Ok(req)
 }
 
@@ -239,7 +260,7 @@ fn discard(r: &mut impl BufRead, len: usize) {
     let _ = io::copy(&mut r.take(len.min(MAX_DISCARD) as u64), &mut io::sink());
 }
 
-fn read_chunked(r: &mut impl BufRead) -> Result<Vec<u8>, ReadError> {
+fn read_chunked(r: &mut impl BufRead, limit: usize) -> Result<Vec<u8>, ReadError> {
     let mut body = Vec::new();
     let mut sent = 0usize;
     loop {
@@ -250,13 +271,13 @@ fn read_chunked(r: &mut impl BufRead) -> Result<Vec<u8>, ReadError> {
             // trailers until the empty line
             let mut budget = MAX_HEAD;
             while !read_line(r, &mut budget)?.is_empty() {}
-            return if sent > MAX_BODY { Err(ReadError::Status(413)) } else { Ok(body) };
+            return if sent > limit { Err(ReadError::Status(413)) } else { Ok(body) };
         }
         sent = sent.saturating_add(size);
         if sent > MAX_DISCARD {
             return Err(ReadError::Status(413));
         }
-        if sent > MAX_BODY {
+        if sent > limit {
             body = Vec::new();
             discard(r, size);
         } else {
@@ -278,6 +299,7 @@ pub(crate) fn reason(status: u16) -> &'static str {
         204 => "No Content",
         400 => "Bad Request",
         401 => "Unauthorized",
+        403 => "Forbidden",
         404 => "Not Found",
         413 => "Payload Too Large",
         431 => "Request Header Fields Too Large",
@@ -302,19 +324,51 @@ fn write_head_and_body(w: &mut impl Write, res: &Response, keep_alive: bool, wit
     head.push_str(if keep_alive { "Connection: keep-alive\r\n\r\n" } else { "Connection: close\r\n\r\n" });
     w.write_all(head.as_bytes())?;
     if with_body {
-        w.write_all(&res.body)?;
+        write_pieces(w, &res.body)?;
     }
     w.flush()
 }
 
-/// Permissive CORS on every response (HTTP-CORS: the original has none; browser tools need it).
+/// `write_all` a piece at a time. A socket's write timeout covers one call, and on Windows one call can take a whole body,
+/// which a slow but live client could not finish in time.
+pub(crate) fn write_pieces(w: &mut impl Write, data: &[u8]) -> io::Result<()> {
+    data.chunks(WRITE_PIECE).try_for_each(|piece| w.write_all(piece))
+}
+
+/// Whether this request's `Origin` may use the API: none at all (curl, bots, the server's own page on a GET), the stock
+/// client (NW.js pages run at a chrome-extension:// origin), or a page this same server gave out. Everything else, `null`
+/// from a sandboxed frame included, is a page from somewhere else in the browser of someone who can reach this port.
+pub(crate) fn origin_allowed(req: &Request) -> bool {
+    let Some(origin) = req.header("origin") else { return true };
+    if origin.starts_with("chrome-extension://") {
+        return true;
+    }
+    let authority = origin.strip_prefix("http://").or_else(|| origin.strip_prefix("https://"));
+    authority.is_some_and(|a| req.header("host").is_some_and(|host| a.eq_ignore_ascii_case(host)))
+}
+
+/// Whether a `Host` value, or `http.host`, names this PC. A page cannot fake it: its own name is what the browser sends.
+pub(crate) fn names_this_pc(host: &str) -> bool {
+    let local = |name: &str| name.eq_ignore_ascii_case("localhost") || name.parse::<std::net::IpAddr>().is_ok_and(|ip| ip.is_loopback());
+    match host.strip_prefix('[').and_then(|h| h.split_once(']')) {
+        Some((v6, _)) => local(v6),
+        None => local(host) || host.rsplit_once(':').is_some_and(|(name, _)| local(name)),
+    }
+}
+
+/// CORS for the origins `origin_allowed` lets in, and no headers for any other (HTTP-CORS: the original has none; browser
+/// tools need it). The stock client sends every API call with `withCredentials`, so those keep Allow-Credentials. The
+/// server uses no cookies, which leaves that header with nothing to give away.
 pub(crate) fn add_cors(req: &Request, res: &mut Response) {
+    res.headers.push(("Vary".into(), "Origin".into()));
+    if !origin_allowed(req) {
+        return;
+    }
     let origin = req.header("origin").unwrap_or("*").to_string();
     if origin != "*" {
         res.headers.push(("Access-Control-Allow-Credentials".into(), "true".into()));
     }
     res.headers.push(("Access-Control-Allow-Origin".into(), origin));
-    res.headers.push(("Vary".into(), "Origin".into()));
     let allow = req.header("access-control-request-headers").unwrap_or("Content-Type, X-Token, X-Username, X-Server-Password, Authorization");
     res.headers.push(("Access-Control-Allow-Headers".into(), allow.to_string()));
     res.headers.push(("Access-Control-Allow-Methods".into(), "GET, POST, OPTIONS".into()));
@@ -326,22 +380,111 @@ pub(crate) fn keep_alive(req: &Request) -> bool {
     !req.header("connection").is_some_and(|c| c.to_ascii_lowercase().contains("close"))
 }
 
-/// One keep-alive connection: reads requests and answers each with `handle` until the peer closes. A request
-/// for which `upgrade` returns true hands the stream over (WebSocket) and ends the loop.
+/// A connection's one socket, held by what reads it and what writes it. `try_clone` would give each a handle of its own, but
+/// on Windows a clone can be inherited and `Command` hands what can be to every program it starts: a match server or a curl
+/// started at that moment held the connection open past its end here, then reset it as it exited. What accept returns cannot
+/// be inherited.
+#[derive(Clone)]
+pub(crate) struct Socket(Arc<TcpStream>);
+
+impl Socket {
+    pub(crate) fn new(stream: TcpStream) -> Socket {
+        Socket(Arc::new(stream))
+    }
+}
+
+impl Deref for Socket {
+    type Target = TcpStream;
+
+    fn deref(&self) -> &TcpStream {
+        &self.0
+    }
+}
+
+impl Read for Socket {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        (&*self.0).read(buf)
+    }
+}
+
+impl Write for Socket {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        (&*self.0).write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        (&*self.0).flush()
+    }
+}
+
+/// One request's reads. A read timeout starts over with every byte, so a request sent a byte at a time would never run out
+/// of it: each read also waits no longer than what is left of `deadline`.
+struct Timed<'a> {
+    r: &'a mut BufReader<Socket>,
+    idle: Duration,
+    deadline: &'a Cell<Instant>,
+}
+
+impl Timed<'_> {
+    fn arm(&self) -> io::Result<()> {
+        let left = self.deadline.get().saturating_duration_since(Instant::now());
+        if left.is_zero() {
+            return Err(io::ErrorKind::TimedOut.into());
+        }
+        if self.r.buffer().is_empty() {
+            self.r.get_ref().set_read_timeout(Some(left.min(self.idle)))?;
+        }
+        Ok(())
+    }
+}
+
+impl Read for Timed<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.arm()?;
+        self.r.read(buf)
+    }
+}
+
+impl BufRead for Timed<'_> {
+    fn fill_buf(&mut self) -> io::Result<&[u8]> {
+        self.arm()?;
+        self.r.fill_buf()
+    }
+
+    fn consume(&mut self, n: usize) {
+        self.r.consume(n);
+    }
+}
+
+/// One keep-alive connection: reads requests and answers each with `handle` until the peer closes, or until `crowded` says
+/// the server needs the slot back. A request for which `upgrade` returns true hands the stream over (WebSocket) and ends the
+/// loop.
 pub(crate) fn serve_connection(
     stream: TcpStream,
-    timeout: std::time::Duration,
+    timeout: Duration,
+    body_limit: &dyn Fn(&Request) -> usize,
     handle: &dyn Fn(&Request) -> Response,
-    upgrade: &dyn Fn(&Request, TcpStream, BufReader<TcpStream>) -> Option<TcpStream>,
+    upgrade: &dyn Fn(&Request, Socket, BufReader<Socket>) -> Option<Socket>,
+    crowded: &dyn Fn() -> bool,
 ) {
     let _ = stream.set_nodelay(true);
-    let _ = stream.set_read_timeout(Some(timeout));
-    let Ok(read_half) = stream.try_clone() else { return };
-    let mut reader = BufReader::new(read_half);
-    let mut writer = stream;
+    let _ = stream.set_write_timeout(Some(timeout.min(WRITE_TIMEOUT)));
+    let mut writer = Socket::new(stream);
+    let mut reader = BufReader::new(writer.clone());
     loop {
+        // waiting for a request costs a caller nothing either way, so the deadline starts with its first byte
+        let _ = reader.get_ref().set_read_timeout(Some(timeout));
+        if !reader.fill_buf().is_ok_and(|b| !b.is_empty()) {
+            return;
+        }
+        let deadline = Cell::new(Instant::now() + timeout);
+        let limit = |req: &Request| {
+            let limit = body_limit(req);
+            deadline.set(deadline.get() + Duration::from_secs((limit / SLOWEST_UPLOAD) as u64));
+            limit
+        };
         let w = &mut writer;
-        let req = match read_request_with(&mut reader, &mut || {
+        let req = match read_request_with(&mut Timed { r: &mut reader, idle: timeout, deadline: &deadline }, &limit, &mut || {
             let _ = w.write_all(b"HTTP/1.1 100 Continue\r\n\r\n");
         }) {
             Ok(r) => r,
@@ -352,6 +495,7 @@ pub(crate) fn serve_connection(
             }
         };
         if req.header("upgrade").is_some_and(|u| u.eq_ignore_ascii_case("websocket")) {
+            let _ = reader.get_ref().set_read_timeout(Some(timeout)); // the deadline may have left less
             match upgrade(&req, writer, reader) {
                 None => return,
                 Some(w) => {
@@ -369,7 +513,7 @@ pub(crate) fn serve_connection(
             req.method = "GET".into();
         }
         let res = handle(&req);
-        let ka = keep_alive(&req);
+        let ka = keep_alive(&req) && !crowded();
         if write_head_and_body(&mut writer, &res, ka, !head_only).is_err() || !ka {
             return;
         }
@@ -405,28 +549,44 @@ fn hex(c: u8) -> Option<u8> {
     (c as char).to_digit(16).map(|d| d as u8)
 }
 
-fn parse_query(qs: &str) -> Vec<(String, String)> {
+fn query_pairs(qs: &str) -> impl Iterator<Item = (String, String)> + '_ {
     qs.split('&').filter(|p| !p.is_empty()).map(|p| {
         let (k, v) = p.split_once('=').unwrap_or((p, ""));
         (url_decode(k), url_decode(v))
-    }).collect()
+    })
 }
 
-/// qs "extended" parsing of an urlencoded body: `a=1&b[c]=2&d[]=3` → `{a:"1", b:{c:"2"}, d:["3"]}`.
+fn parse_query(qs: &str) -> Vec<(String, String)> {
+    query_pairs(qs).collect()
+}
+
+/// qs "extended" parsing of an urlencoded body: `a=1&b[c]=2&d[]=3` → `{a:"1", b:{c:"2"}, d:["3"]}`. At most `QS_PARAMS`
+/// pairs, as each insert looks through the object, and at most `QS_DEPTH` levels, as the value recurses wherever it goes.
 // ponytail: covers `[key]` and `[]`; qs' numeric-index arrays (`a[0]=x`) become objects, add if a tool needs it.
 pub fn parse_qs(qs: &str) -> Json {
     let mut root = Json::Obj(vec![]);
-    for (k, v) in parse_query(qs) {
-        let (head, rest) = k.split_once('[').map_or((k.as_str(), ""), |(h, r)| (h, r));
-        let mut path = vec![head.to_string()];
-        for seg in rest.split('[') {
-            if let Some(s) = seg.strip_suffix(']') {
-                path.push(s.to_string());
-            }
-        }
-        insert_path(&mut root, &path, Json::Str(v));
+    for (k, v) in query_pairs(qs).take(QS_PARAMS) {
+        insert_path(&mut root, &key_path(&k), Json::Str(v));
     }
     root
+}
+
+/// `a[b][c]` as a, b, c. What is left past `QS_DEPTH` is one more key, brackets included: `[g][h]`.
+fn key_path(k: &str) -> Vec<String> {
+    let (head, rest) = k.split_once('[').map_or((k, ""), |(h, r)| (h, r));
+    let mut path = vec![head.to_string()];
+    let mut seen = 0;
+    for seg in rest.split('[') {
+        if path.len() > QS_DEPTH {
+            path.push(format!("[{}", &rest[seen..]));
+            break;
+        }
+        seen += seg.len() + 1;
+        if let Some(s) = seg.strip_suffix(']') {
+            path.push(s.to_string());
+        }
+    }
+    path
 }
 
 fn insert_path(cur: &mut Json, path: &[String], v: Json) {
@@ -504,7 +664,7 @@ mod tests {
         let addr = listener.local_addr().unwrap();
         let server = std::thread::spawn(move || {
             let (stream, _) = listener.accept().unwrap();
-            serve_connection(stream, std::time::Duration::from_secs(120), &|_| Response::ok(Json::Null), &|_, stream, _| Some(stream));
+            serve_connection(stream, Duration::from_secs(120), &|_| MAX_BODY, &|_| Response::ok(Json::Null), &|_, stream, _| Some(stream), &|| false);
         });
         let mut client = TcpStream::connect(addr).unwrap();
         client.write_all(&raw).unwrap();
@@ -527,6 +687,28 @@ mod tests {
     }
 
     #[test]
+    fn a_crowded_server_ends_keep_alive_with_the_response() {
+        let answer = |crowded: bool| {
+            let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+            let addr = listener.local_addr().unwrap();
+            let server = std::thread::spawn(move || {
+                let (stream, _) = listener.accept().unwrap();
+                serve_connection(stream, Duration::from_millis(200), &|_| MAX_BODY, &|_| Response::ok(Json::Null), &|_, stream, _| Some(stream), &|| crowded);
+            });
+            let mut client = TcpStream::connect(addr).unwrap();
+            client.write_all(b"GET / HTTP/1.1\r\n\r\n").unwrap();
+            client.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+            let mut reply = String::new();
+            client.read_to_string(&mut reply).unwrap(); // to the end of the connection, which the 200 ms ends at the latest
+            server.join().unwrap();
+            reply
+        };
+        assert!(answer(false).contains("Connection: keep-alive\r\n"));
+        let reply = answer(true);
+        assert!(reply.starts_with("HTTP/1.1 200 ") && reply.contains("Connection: close\r\n"), "{reply}");
+    }
+
+    #[test]
     fn a_body_that_stops_short_is_a_closed_connection() {
         for raw in ["POST / HTTP/1.1\r\nContent-Length: 10485760\r\n\r\nhi", "POST / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\na00000\r\nhi"] {
             assert_eq!(parse(raw).err(), Some(0), "{raw}");
@@ -541,7 +723,7 @@ mod tests {
         let addr = listener.local_addr().unwrap();
         let server = std::thread::spawn(move || {
             let (stream, _) = listener.accept().unwrap();
-            serve_connection(stream, std::time::Duration::from_millis(100), &|_| Response::ok(Json::Null), &|_, stream, _| Some(stream));
+            serve_connection(stream, Duration::from_millis(100), &|_| MAX_BODY, &|_| Response::ok(Json::Null), &|_, stream, _| Some(stream), &|| false);
         });
         let mut client = TcpStream::connect(addr).unwrap();
         client.write_all(b"POST / HTTP/1.1\r\nContent-Length: 10485760\r\n\r\n").unwrap();
@@ -552,11 +734,185 @@ mod tests {
     fn a_client_that_waits_is_told_before_it_sends() {
         let raw = format!("POST / HTTP/1.1\r\nExpect: 100-continue\r\nContent-Length: {}\r\n\r\n", MAX_BODY + 1);
         let mut continued = 0;
-        assert!(matches!(read_request_with(&mut Cursor::new(raw.into_bytes()), &mut || continued += 1), Err(ReadError::Status(413))));
+        assert!(matches!(read_request_with(&mut Cursor::new(raw.into_bytes()), &|_| MAX_BODY, &mut || continued += 1), Err(ReadError::Status(413))));
         assert_eq!(continued, 0, "no 100, so no body");
         let raw = "POST / HTTP/1.1\r\nExpect: 100-continue\r\nContent-Length: 2\r\n\r\nhi";
-        assert!(read_request_with(&mut Cursor::new(raw.as_bytes().to_vec()), &mut || continued += 1).is_ok());
+        assert!(read_request_with(&mut Cursor::new(raw.as_bytes().to_vec()), &|_| MAX_BODY, &mut || continued += 1).is_ok());
         assert_eq!(continued, 1);
+    }
+
+    /// A connection must end when this server ends it, whatever programs were started while it was open.
+    #[cfg(windows)]
+    #[test]
+    fn a_program_started_meanwhile_does_not_get_the_connection() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let handle = |_: &Request| {
+                // `ping` has no reason to stop soon, so it outlives the reply below if it got a handle to the socket
+                let pings = std::process::Command::new("ping").args(["-n", "4", "127.0.0.1"]).stdout(std::process::Stdio::null()).spawn();
+                drop(pings);
+                Response::ok(Json::Null)
+            };
+            serve_connection(stream, Duration::from_secs(10), &|_| MAX_BODY, &handle, &|_, stream, _| Some(stream), &|| false);
+        });
+        let mut client = TcpStream::connect(addr).unwrap();
+        client.write_all(b"GET / HTTP/1.1\r\nConnection: close\r\n\r\n").unwrap();
+        client.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+        let mut reply = String::new();
+        client.read_to_string(&mut reply).expect("the end of the reply comes now, not when that program exits");
+        assert!(reply.starts_with("HTTP/1.1 200 "), "{reply}");
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn a_request_sent_a_byte_at_a_time_ends_at_its_deadline() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            serve_connection(stream, Duration::from_millis(400), &|_| ANON_BODY, &|_| Response::ok(Json::Null), &|_, stream, _| Some(stream), &|| false);
+        });
+        let started = Instant::now();
+        let mut client = TcpStream::connect(addr).unwrap();
+        client.write_all(b"GET / HTTP/1.1\r\nX-Long: ").unwrap();
+        // each byte is well inside the read timeout, which would let this go on for good
+        while !server.is_finished() && started.elapsed() < Duration::from_secs(10) {
+            let _ = client.write_all(b"x");
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        assert!(started.elapsed() < Duration::from_secs(5), "still reading after {:?}", started.elapsed());
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn a_slow_upload_gets_time_for_what_it_may_send() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            serve_connection(stream, Duration::from_millis(300), &|_| MAX_BODY, &|_| Response::ok(Json::Null), &|_, stream, _| Some(stream), &|| false);
+        });
+        let mut client = TcpStream::connect(addr).unwrap();
+        let len = ANON_BODY + 8;
+        client.write_all(format!("POST / HTTP/1.1\r\nConnection: close\r\nContent-Length: {len}\r\n\r\n").as_bytes()).unwrap();
+        client.write_all(&vec![b'x'; ANON_BODY]).unwrap();
+        // the last bytes come after the 300 ms a request with a small body would get
+        for _ in 0..8 {
+            std::thread::sleep(Duration::from_millis(100));
+            client.write_all(b"x").unwrap();
+        }
+        let mut reply = String::new();
+        client.read_to_string(&mut reply).unwrap();
+        assert!(reply.starts_with("HTTP/1.1 200 "), "{reply}");
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn a_stranger_gets_the_small_limit() {
+        let limit = |req: &Request| if req.header("x-token").is_some() { MAX_BODY } else { ANON_BODY };
+        let status = |head: &str, body: &[u8]| {
+            let raw = [head.as_bytes(), body].concat();
+            read_request_with(&mut Cursor::new(raw), &limit, &mut || ()).err().map(|e| if let ReadError::Status(s) = e { s } else { 0 })
+        };
+        let at = vec![b'x'; ANON_BODY];
+        let over = vec![b'x'; ANON_BODY + 1];
+        assert_eq!(status(&format!("POST / HTTP/1.1\r\nContent-Length: {}\r\n\r\n", at.len()), &at), None);
+        assert_eq!(status(&format!("POST / HTTP/1.1\r\nContent-Length: {}\r\n\r\n", over.len()), &over), Some(413));
+        assert_eq!(status(&format!("POST / HTTP/1.1\r\nX-Token: t\r\nContent-Length: {}\r\n\r\n", over.len()), &over), None);
+        let chunked = |extra: &str| format!("POST / HTTP/1.1\r\n{extra}Transfer-Encoding: chunked\r\n\r\n{:x}\r\n{}\r\n0\r\n\r\n", over.len(), String::from_utf8_lossy(&over));
+        assert_eq!(status(&chunked(""), b""), Some(413));
+        assert_eq!(status(&chunked("X-Token: t\r\n"), b""), None);
+    }
+
+    #[test]
+    fn asking_who_it_is_waits_for_a_body_that_needs_it() {
+        let asked = Cell::new(0);
+        let limit = |_: &Request| {
+            asked.set(asked.get() + 1);
+            MAX_BODY
+        };
+        let read = |raw: String| assert!(read_request_with(&mut Cursor::new(raw.into_bytes()), &limit, &mut || ()).is_ok());
+        read("GET / HTTP/1.1\r\n\r\n".into());
+        read("POST / HTTP/1.1\r\nContent-Length: 2\r\n\r\nhi".into());
+        assert_eq!(asked.get(), 0, "HTTP Basic costs a password hash");
+        read(format!("POST / HTTP/1.1\r\nContent-Length: {}\r\n\r\n{}", ANON_BODY + 1, "x".repeat(ANON_BODY + 1)));
+        assert_eq!(asked.get(), 1);
+    }
+
+    #[test]
+    fn origins() {
+        let req = |origin: &str, host: &str| Request { method: "POST".into(), path: "/".into(), query: vec![], headers: vec![("origin".into(), origin.into()), ("host".into(), host.into())], body: vec![] };
+        for (origin, host) in [
+            ("chrome-extension://abcdefgh", "127.0.0.1:21025"),
+            ("http://127.0.0.1:21025", "127.0.0.1:21025"),
+            ("http://LOCALHOST:21025", "localhost:21025"),
+            ("https://game.example", "game.example"),
+            ("http://[::1]:21025", "[::1]:21025"),
+        ] {
+            assert!(origin_allowed(&req(origin, host)), "{origin} on {host}");
+        }
+        for (origin, host) in [
+            ("https://evil.example", "127.0.0.1:21025"),
+            ("http://127.0.0.1:21026", "127.0.0.1:21025"),
+            ("http://127.0.0.1.evil.example", "127.0.0.1"),
+            ("null", "127.0.0.1:21025"),
+            ("file://", "127.0.0.1:21025"),
+            ("127.0.0.1:21025", "127.0.0.1:21025"),
+        ] {
+            assert!(!origin_allowed(&req(origin, host)), "{origin} on {host}");
+        }
+        let mut none = req("x", "y");
+        none.headers.clear();
+        assert!(origin_allowed(&none), "curl sends no Origin");
+    }
+
+    #[test]
+    fn names_for_this_pc() {
+        for host in ["127.0.0.1", "127.0.0.1:21025", "127.0.0.2", "localhost", "LOCALHOST:21025", "::1", "[::1]", "[::1]:21025"] {
+            assert!(names_this_pc(host), "{host}");
+        }
+        for host in ["evil.example", "evil.example:21025", "0.0.0.0", "192.168.1.5:21025", "localhost.evil.example", "[2001:db8::1]:21025", "x"] {
+            assert!(!names_this_pc(host), "{host}");
+        }
+    }
+
+    #[test]
+    fn cors_only_for_allowed_origins() {
+        let req = |headers: &[(&str, &str)]| Request { method: "GET".into(), path: "/".into(), query: vec![], headers: headers.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(), body: vec![] };
+        let cors = |r: &Request| {
+            let mut res = Response::ok(Json::Null);
+            add_cors(r, &mut res);
+            res
+        };
+        let plain = cors(&req(&[]));
+        assert_eq!(plain.header("access-control-allow-origin"), Some("*"));
+        assert!(plain.header("access-control-allow-credentials").is_none());
+        let client = cors(&req(&[("origin", "chrome-extension://abc")]));
+        assert_eq!(client.header("access-control-allow-origin"), Some("chrome-extension://abc"));
+        assert_eq!(client.header("access-control-allow-credentials"), Some("true"), "its $http calls set withCredentials");
+        let page = cors(&req(&[("origin", "https://evil.example"), ("access-control-request-headers", "x-token")]));
+        for h in ["access-control-allow-origin", "access-control-allow-credentials", "access-control-allow-headers", "access-control-expose-headers"] {
+            assert!(page.header(h).is_none(), "{h}");
+        }
+    }
+
+    #[test]
+    fn a_long_body_goes_out_a_piece_at_a_time() {
+        struct Counting(Vec<usize>);
+        impl Write for Counting {
+            fn write(&mut self, b: &[u8]) -> io::Result<usize> {
+                self.0.push(b.len());
+                Ok(b.len())
+            }
+            fn flush(&mut self) -> io::Result<()> {
+                Ok(())
+            }
+        }
+        let mut w = Counting(vec![]);
+        write_pieces(&mut w, &vec![0; WRITE_PIECE * 2 + 1]).unwrap();
+        assert_eq!(w.0, [WRITE_PIECE, WRITE_PIECE, 1], "the write timeout counts per piece");
     }
 
     #[test]
@@ -580,6 +936,61 @@ mod tests {
         for (raw, want) in [("a+b%zz%41", "a b%zz%41"), ("%E2%82%AC+x", "\u{20ac} x"), ("%4", "%4"), ("%41%42+", "AB "), ("%ED%A0%80", "%ED%A0%80"), ("%41%ff", "%41%ff")] {
             assert_eq!(url_decode(raw), want, "{raw}");
         }
+    }
+
+    #[test]
+    fn urlencoded_keys_stop_where_qs_stops() {
+        assert_eq!(parse_qs("a[b][c][d][e][f]=x").stringify(), r#"{"a":{"b":{"c":{"d":{"e":{"f":"x"}}}}}}"#);
+        assert_eq!(parse_qs("a[b][c][d][e][f][g][h]=x").stringify(), r#"{"a":{"b":{"c":{"d":{"e":{"f":{"[g][h]":"x"}}}}}}}"#, "depth 5, then a literal key");
+        let many: String = (0..5000).map(|i| format!("k{i}=&")).collect();
+        let parsed = parse_qs(&many);
+        assert_eq!(parsed.as_object().unwrap().len(), QS_PARAMS);
+        assert_eq!(parsed.as_object().unwrap().last().unwrap().0, "k999");
+    }
+
+    /// 900 brackets used to end the whole process, and catch_unwind cannot stop a stack overflow.
+    #[test]
+    fn a_deep_key_cannot_reach_the_stack() {
+        for depth in [1000, 100_000] {
+            for bracket in ["[b]", "%5Bb%5D"] {
+                let body = format!("a{}=1", bracket.repeat(depth));
+                let run = move || {
+                    let parsed = parse_qs(&body);
+                    let mut levels = 0;
+                    let mut at = &parsed;
+                    while let Json::Obj(m) = at {
+                        levels += 1;
+                        at = &m[0].1;
+                    }
+                    assert_eq!(levels, QS_DEPTH + 2, "the root, a, and each level below it");
+                    assert_eq!(at.as_str(), Some("1"));
+                    assert!(parsed.stringify().ends_with(r#""1"}}}}}}}"#));
+                };
+                std::thread::Builder::new().stack_size(256 << 10).spawn(run).unwrap().join().unwrap();
+            }
+        }
+    }
+
+    /// 2 MB of distinct keys took 73 s when every key was looked up in all the others.
+    #[test]
+    fn distinct_keys_cost_no_more_than_the_limit() {
+        let many: String = (0..1_000_000).map(|i| format!("k{i:07}=&")).collect();
+        let started = Instant::now();
+        assert_eq!(parse_qs(&many).as_object().unwrap().len(), QS_PARAMS);
+        assert!(started.elapsed() < Duration::from_secs(1), "{:?}", started.elapsed());
+    }
+
+    /// A handler runs on top of this, so the depth limit has to leave it room on the thread that really runs it.
+    #[test]
+    fn the_depth_limit_fits_an_http_thread() {
+        let run = || {
+            let text = "[".repeat(util::json::MAX_DEPTH) + &"]".repeat(util::json::MAX_DEPTH);
+            let raw = format!("POST / HTTP/1.1\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{text}", text.len());
+            let r = parse(&raw).unwrap();
+            assert!(r.body_error().is_none());
+            assert_eq!(r.body().stringify(), text);
+        };
+        std::thread::Builder::new().stack_size(crate::HTTP_STACK).spawn(run).unwrap().join().unwrap();
     }
 
     #[test]

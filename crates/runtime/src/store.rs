@@ -10,6 +10,7 @@
 //! In the subset both paths give the same Json (tests::matches_the_system_isolate).
 
 use engine::system::{sanitize_intent, sanitize_user_intents, INTENT_TYPES};
+use std::collections::{HashMap, HashSet};
 use util::json::Json;
 
 /// A deserialized value of the subset.
@@ -49,6 +50,11 @@ const OBJECT_PROTOTYPE: &[&str] = &[
     "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString", "toString", "valueOf",
 ];
 
+/// Up to here a scan beats hashing, and nearly every object is this small. Past it nothing in this file may scan: it runs
+/// on every bot's output after the CPU meter has stopped and outside the hard timeout, so a bot that passed one object of
+/// 100000 keys held every tick for 26 s and paid 0.06 CPU for it.
+const SCAN: usize = 16;
+
 /// `__store(out, userId)` for a subset outMessage: the Json host/system.js returns (after JSON.parse), or `None`
 /// for the system isolate. `object_room` is the objectRoom native.
 pub(crate) fn store(bytes: &[u8], object_room: impl Fn(&str) -> Option<String>) -> Option<Json> {
@@ -84,30 +90,55 @@ enum Node {
     /// `intents.notify = undefined`: holds the key's place, left out of the JSON.
     Undef,
     Json(Json),
-    Map(Vec<(String, Node)>),
+    Map(Map),
     List(Vec<Json>),
 }
 
-/// `m[k] = m[k] || {}` for a key that never holds a falsy value (only maps are stored under these keys).
-fn map_at<'a>(m: &'a mut Vec<(String, Node)>, k: &str) -> Option<&'a mut Vec<(String, Node)>> {
-    let i = match m.iter().position(|(key, _)| key == k) {
-        Some(i) => i,
-        None => {
-            m.push((k.to_string(), Node::Map(Vec::new())));
-            m.len() - 1
+/// An object under construction, in insertion order. Its keys are the bot's to pick through `roomName`, so past `SCAN`
+/// they are found through an index.
+#[derive(Default)]
+struct Map {
+    items: Vec<(String, Node)>,
+    index: HashMap<String, usize>,
+}
+
+impl Map {
+    fn position(&mut self, k: &str) -> Option<usize> {
+        if self.items.len() <= SCAN {
+            return self.items.iter().position(|(key, _)| key == k);
         }
+        if self.index.is_empty() {
+            self.index = self.items.iter().enumerate().map(|(i, (key, _))| (key.clone(), i)).collect();
+        }
+        self.index.get(k).copied()
+    }
+
+    fn push(&mut self, k: &str, v: Node) -> usize {
+        if !self.index.is_empty() {
+            self.index.insert(k.to_string(), self.items.len());
+        }
+        self.items.push((k.to_string(), v));
+        self.items.len() - 1
+    }
+}
+
+/// `m[k] = m[k] || {}` for a key that never holds a falsy value (only maps are stored under these keys).
+fn map_at<'a>(m: &'a mut Map, k: &str) -> Option<&'a mut Map> {
+    let i = match m.position(k) {
+        Some(i) => i,
+        None => m.push(k, Node::Map(Map::default())),
     };
-    match &mut m[i].1 {
+    match &mut m.items[i].1 {
         Node::Map(inner) => Some(inner),
         _ => None,
     }
 }
 
 /// `m[k] = v`.
-fn assign(m: &mut Vec<(String, Node)>, k: &str, v: Node) {
-    match m.iter_mut().find(|(key, _)| key == k) {
-        Some(slot) => slot.1 = v,
-        None => m.push((k.to_string(), v)),
+fn assign(m: &mut Map, k: &str, v: Node) {
+    match m.position(k) {
+        Some(i) => m.items[i].1 = v,
+        None => drop(m.push(k, v)),
     }
 }
 
@@ -115,14 +146,14 @@ fn node_json(n: Node) -> Option<Json> {
     match n {
         Node::Undef => None,
         Node::Json(j) => Some(j),
-        Node::Map(m) => Some(Json::Obj(m.into_iter().filter_map(|(k, v)| Some((k, node_json(v)?))).collect())),
+        Node::Map(m) => Some(Json::Obj(m.items.into_iter().filter_map(|(k, v)| Some((k, node_json(v)?))).collect())),
         Node::List(l) => Some(Json::Arr(l)),
     }
 }
 
 // vanilla: utils.js:405 storeIntents (host/system.js)
 fn store_intents(user_intents: &Js, object_room: &impl Fn(&str) -> Option<String>) -> Option<Json> {
-    let mut intents: Vec<(String, Node)> = Vec::new();
+    let mut intents = Map::default();
 
     let entries = match user_intents {
         // for-in over undefined / null visits nothing
@@ -169,7 +200,7 @@ fn store_intents(user_intents: &Js, object_room: &impl Fn(&str) -> Option<String
 }
 
 // vanilla: system.js:116 sanitizeUserRoomIntents (built-in names; customIntentTypes is always `{}` here)
-fn sanitize_user_room_intents(input: &Js, result: &mut Vec<(String, Node)>) -> Option<()> {
+fn sanitize_user_room_intents(input: &Js, result: &mut Map) -> Option<()> {
     match input {
         // `input[name]` throws
         Js::Undef | Js::Null => return None,
@@ -201,14 +232,11 @@ fn sanitize_user_room_intents(input: &Js, result: &mut Vec<(String, Node)>) -> O
             }
             let room_name_result = map_at(result, &grouping_value)?;
             let room_result = map_at(room_name_result, "room")?;
-            let at = match room_result.iter().position(|(k, _)| k == name) {
+            let at = match room_result.position(name) {
                 Some(at) => at,
-                None => {
-                    room_result.push((name.to_string(), Node::List(Vec::new())));
-                    room_result.len() - 1
-                }
+                None => room_result.push(name, Node::List(Vec::new())),
             };
-            let Node::List(l) = &mut room_result[at].1 else { return None };
+            let Node::List(l) = &mut room_result.items[at].1 else { return None };
             l.push(engine::doc::Val::Obj(sanitized).to_json());
         }
     }
@@ -267,6 +295,14 @@ fn json(v: &Js) -> Option<Json> {
         Js::Arr(items) => Json::Arr(items.iter().map(|x| json(x).unwrap_or(Json::Null)).collect()),
         Js::Obj(props) => Json::Obj(props.iter().filter_map(|(k, v)| Some((k.clone(), json(v)?))).collect()),
     })
+}
+
+fn has_repeats(props: &[(String, Js)]) -> bool {
+    if props.len() <= SCAN {
+        return props.iter().enumerate().any(|(i, (k, _))| props[..i].iter().any(|(earlier, _)| earlier == k));
+    }
+    let mut seen = HashSet::with_capacity(props.len());
+    !props.iter().all(|(k, _)| seen.insert(k.as_str()))
 }
 
 /// ValueSerializer bytes (v8/src/objects/value-serializer.cc, format 13-16), the subset only.
@@ -354,14 +390,14 @@ impl<'a> Wire<'a> {
                 while self.peek_tag()? != b'{' {
                     // string keys only: number keys and array-index strings keep JS key order out of this path
                     let Js::Str(key) = self.value(depth + 1)? else { return None };
-                    if key == "__proto__" || engine::doc::array_index(&key).is_some() || props.iter().any(|(k, _)| *k == key) {
+                    if key == "__proto__" || engine::doc::array_index(&key).is_some() {
                         return None;
                     }
                     let v = self.value(depth + 1)?;
                     props.push((key, v));
                 }
                 self.tag()?;
-                if self.varint()? as usize != props.len() {
+                if self.varint()? as usize != props.len() || has_repeats(&props) {
                     return None;
                 }
                 Js::Obj(props)
@@ -516,7 +552,6 @@ mod tests {
             hard_timeout_ms: 5000,
             idle_evict_s: 180,
             watchdog_poll_us: 500,
-            snapshot_dir: std::env::temp_dir().join("chitin-store-tests"),
             profile: engine::policy::Profile::Private,
             shard_name: "shard0".into(),
         };
@@ -559,6 +594,53 @@ mod tests {
             "({intentsList: {}, visual: '\\ud800'})",
         ] {
             assert_eq!(native(src), None, "{src}");
+        }
+    }
+
+    /// Everything a bot picks the size of goes through here after its CPU has stopped. Each of these took minutes at this
+    /// size when the decoder or the room groups scanned.
+    #[test]
+    fn large_outputs_take_linear_time() {
+        let n = 200_000;
+        let object = format!("(() => {{ const o = {{}}; for (let i = 0; i < {n}; i++) o['k' + i] = 1; return {{intentsList: {{}}, activeForeignSegment: {{username: o}}}}; }})()");
+        let visuals = format!("(() => {{ const o = {{}}; for (let i = 0; i < {n}; i++) o['W' + i + 'N1'] = 'x'; return {{intentsList: {{}}, visual: o}}; }})()");
+        let groups = format!("({{intentsList: {{room: {{createFlag: Array.from({{length: {n}}}, (_, i) => ({{roomName: 'x' + i, x: 1, y: 1, name: 'f', color: 1, secondaryColor: 1}}))}}}}}})");
+        for src in [object, visuals, groups] {
+            let bytes = serialize(&src);
+            let t = std::time::Instant::now();
+            assert!(store(&bytes, room_of).is_some());
+            assert!(t.elapsed().as_secs_f64() < 5.0, "{:?}", t.elapsed());
+        }
+    }
+
+    /// Past `SCAN` the index must give what the scan gives, order and repeats included.
+    #[test]
+    fn large_maps_keep_their_order() {
+        let mut m = Map::default();
+        for i in 0..100 {
+            assign(&mut m, &format!("k{i}"), Node::Json(Json::Num(i as f64)));
+        }
+        assign(&mut m, "k3", Node::Json(Json::Num(-1.0)));
+        assign(map_at(&mut m, "inner").unwrap(), "a", Node::Json(Json::Bool(true)));
+        assert!(map_at(&mut m, "k4").is_none(), "not a map");
+        assign(map_at(&mut m, "inner").unwrap(), "b", Node::Json(Json::Bool(false)));
+        let j = node_json(Node::Map(m)).unwrap();
+        let o = j.as_object().unwrap();
+        assert_eq!(o.len(), 101);
+        assert_eq!(o[0].0, "k0");
+        assert_eq!(j.get("k3").and_then(Json::as_f64), Some(-1.0));
+        assert_eq!(o[100].0, "inner");
+        assert_eq!(o[100].1.stringify(), r#"{"a":true,"b":false}"#);
+    }
+
+    #[test]
+    fn repeated_keys_are_found_at_any_size() {
+        let keys = |n: usize| (0..n).map(|i| (format!("k{i}"), Js::Null)).collect::<Vec<_>>();
+        for n in [2, SCAN, SCAN + 1, 1000] {
+            assert!(!has_repeats(&keys(n)), "{n}");
+            let mut repeated = keys(n);
+            repeated.push(("k1".into(), Js::Null));
+            assert!(has_repeats(&repeated), "{n}");
         }
     }
 

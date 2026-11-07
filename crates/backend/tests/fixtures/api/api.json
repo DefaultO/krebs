@@ -1122,7 +1122,7 @@
     "newName": "fresh",
     "defaultModules": {
      "main": "m",
-     "x.y": 1
+     "x.y": "1"
     }
    },
    "status": 200,
@@ -1197,7 +1197,7 @@
       "branch": "fresh",
       "modules": {
        "main": "m",
-       "x$DOT$y": 1
+       "x$DOT$y": "1"
       },
       "timestamp": "2020-09-13T12:43:20.000Z",
       "_id": "385177dc240970a"
@@ -1292,7 +1292,7 @@
       "branch": "fresh",
       "modules": {
        "main": "m",
-       "x$DOT$y": 1
+       "x$DOT$y": "1"
       },
       "timestamp": "2020-09-13T12:43:20.000Z",
       "_id": "385177dc240970a"
@@ -1319,7 +1319,7 @@
    "as": "a11ce0000000001",
    "body": null,
    "status": 200,
-   "response": "{\"ok\":1,\"list\":[{\"_id\":\"code-a1\",\"user\":\"a11ce0000000001\",\"branch\":\"default\",\"modules\":{\"main\":\"\"},\"activeWorld\":false,\"activeSim\":true,\"timestamp\":1600001000000,\"meta\":{\"revision\":2,\"created\":1600001000000,\"version\":0,\"updated\":1600001000000},\"$loki\":1},{\"_id\":\"code-a2\",\"user\":\"a11ce0000000001\",\"branch\":\"dev\",\"modules\":{\"main\":\"x\",\"a.b\":\"y\",\"p/q\":\"w\"},\"timestamp\":1600001000000,\"meta\":{\"revision\":3,\"created\":1600001000000,\"version\":0,\"updated\":1600001000000},\"$loki\":2,\"activeWorld\":true},{\"user\":\"a11ce0000000001\",\"branch\":\"fresh\",\"modules\":{\"main\":\"m\",\"x.y\":1},\"timestamp\":\"2020-09-13T12:43:20.000Z\",\"_id\":\"385177dc240970a\",\"meta\":{\"revision\":0,\"created\":1600001000000,\"version\":0},\"$loki\":7}]}",
+   "response": "{\"ok\":1,\"list\":[{\"_id\":\"code-a1\",\"user\":\"a11ce0000000001\",\"branch\":\"default\",\"modules\":{\"main\":\"\"},\"activeWorld\":false,\"activeSim\":true,\"timestamp\":1600001000000,\"meta\":{\"revision\":2,\"created\":1600001000000,\"version\":0,\"updated\":1600001000000},\"$loki\":1},{\"_id\":\"code-a2\",\"user\":\"a11ce0000000001\",\"branch\":\"dev\",\"modules\":{\"main\":\"x\",\"a.b\":\"y\",\"p/q\":\"w\"},\"timestamp\":1600001000000,\"meta\":{\"revision\":3,\"created\":1600001000000,\"version\":0,\"updated\":1600001000000},\"$loki\":2,\"activeWorld\":true},{\"user\":\"a11ce0000000001\",\"branch\":\"fresh\",\"modules\":{\"main\":\"m\",\"x.y\":\"1\"},\"timestamp\":\"2020-09-13T12:43:20.000Z\",\"_id\":\"385177dc240970a\",\"meta\":{\"revision\":0,\"created\":1600001000000,\"version\":0},\"$loki\":7}]}",
    "db": {},
    "published": []
   },
@@ -1571,10 +1571,8 @@
     "badge": {
      "type": 3,
      "param": "-5",
-     "color1": "#AbCdEf12",
-     "color2": [
-      "#ff0000"
-     ],
+     "color1": "#AbCdEf",
+     "color2": "#ff0000",
      "color3": "#000000",
      "flip": 1
     }
@@ -1642,10 +1640,8 @@
       },
       "badge": {
        "type": 3,
-       "color1": "#AbCdEf12",
-       "color2": [
-        "#ff0000"
-       ],
+       "color1": "#AbCdEf",
+       "color2": "#ff0000",
        "color3": "#000000",
        "param": -5,
        "flip": true
@@ -1760,10 +1756,8 @@
       },
       "badge": {
        "type": 3,
-       "color1": "#AbCdEf12",
-       "color2": [
-        "#ff0000"
-       ],
+       "color1": "#AbCdEf",
+       "color2": "#ff0000",
        "color3": "#000000",
        "param": -5,
        "flip": true
@@ -1830,7 +1824,7 @@
    "as": null,
    "body": null,
    "status": 200,
-   "response": "{\"ok\":1,\"user\":{\"_id\":\"b0b000000000002\",\"username\":\"bob\",\"badge\":{\"type\":3,\"color1\":\"#AbCdEf12\",\"color2\":[\"#ff0000\"],\"color3\":\"#000000\",\"param\":-5,\"flip\":true}}}",
+   "response": "{\"ok\":1,\"user\":{\"_id\":\"b0b000000000002\",\"username\":\"bob\",\"badge\":{\"type\":3,\"color1\":\"#AbCdEf\",\"color2\":\"#ff0000\",\"color3\":\"#000000\",\"param\":-5,\"flip\":true}}}",
    "db": {},
    "published": []
   },
@@ -1972,10 +1966,8 @@
       },
       "badge": {
        "type": 3,
-       "color1": "#AbCdEf12",
-       "color2": [
-        "#ff0000"
-       ],
+       "color1": "#AbCdEf",
+       "color2": "#ff0000",
        "color3": "#000000",
        "param": -5,
        "flip": true
@@ -2083,10 +2075,8 @@
       },
       "badge": {
        "type": 3,
-       "color1": "#AbCdEf12",
-       "color2": [
-        "#ff0000"
-       ],
+       "color1": "#AbCdEf",
+       "color2": "#ff0000",
        "color3": "#000000",
        "param": -5,
        "flip": true
@@ -2290,10 +2280,8 @@
       },
       "badge": {
        "type": 3,
-       "color1": "#AbCdEf12",
-       "color2": [
-        "#ff0000"
-       ],
+       "color1": "#AbCdEf",
+       "color2": "#ff0000",
        "color3": "#000000",
        "param": -5,
        "flip": true
@@ -2478,10 +2466,8 @@
       },
       "badge": {
        "type": 3,
-       "color1": "#AbCdEf12",
-       "color2": [
-        "#ff0000"
-       ],
+       "color1": "#AbCdEf",
+       "color2": "#ff0000",
        "color3": "#000000",
        "param": -5,
        "flip": true
@@ -2543,7 +2529,7 @@
     "statName": "owner0"
    },
    "status": 200,
-   "response": "{\"ok\":1,\"gameTime\":1000,\"stats\":{\"W1N1\":{\"status\":\"normal\",\"minerals0\":{\"type\":\"H\",\"density\":3}},\"W2N1\":{\"status\":\"normal\",\"own\":{\"user\":\"a11ce0000000001\",\"level\":2},\"sign\":{\"user\":\"a11ce0000000001\",\"text\":\"mine\",\"time\":1,\"datetime\":2},\"safeMode\":true},\"W1N2\":{\"status\":\"normal\",\"novice\":1700000000000,\"own\":{\"user\":\"2\",\"level\":2},\"sign\":{\"user\":\"b0b000000000002\",\"text\":\"hi\",\"time\":5,\"datetime\":1},\"minerals0\":{\"type\":\"O\",\"density\":1}},\"W3N2\":{\"status\":\"normal\",\"openTime\":1600001005000}},\"statsMax\":{},\"users\":{\"2\":{\"_id\":\"2\",\"username\":\"Invader\",\"usernameLower\":\"invader\",\"cpu\":0,\"active\":0,\"meta\":{\"revision\":0,\"created\":1600001000000,\"version\":0},\"$loki\":1},\"a11ce0000000001\":{\"_id\":\"a11ce0000000001\",\"username\":\"alice\",\"usernameLower\":\"alice\",\"email\":\"alice@x.io\",\"cpu\":100,\"active\":10000,\"gcl\":1000,\"money\":12345,\"resources\":{\"token\":2},\"badge\":{\"type\":{\"path1\":\"M0\",\"path2\":\"M1\"},\"color1\":\"#000000\",\"color2\":\"#000000\",\"color3\":\"#000000\",\"param\":0,\"flip\":false},\"steam\":{\"id\":\"7656\",\"displayName\":\"A\",\"ownership\":[1],\"steamProfileLinkHidden\":1},\"customBadge\":{\"path1\":\"M0\",\"path2\":\"M1\"},\"power\":50000,\"powerExperimentations\":2,\"meta\":{\"revision\":5,\"created\":1600001000000,\"version\":0,\"updated\":1600001000000},\"$loki\":3},\"b0b000000000002\":{\"_id\":\"b0b000000000002\",\"username\":\"bob\",\"usernameLower\":\"bob\",\"cpu\":100,\"bot\":\"simplebot\",\"notifyPrefs\":{\"sendOnline\":false,\"disabled\":false,\"interval\":60},\"meta\":{\"revision\":3,\"created\":1600001000000,\"version\":0,\"updated\":1600001000000},\"$loki\":4,\"badge\":{\"type\":3,\"color1\":\"#AbCdEf12\",\"color2\":[\"#ff0000\"],\"color3\":\"#000000\",\"param\":-5,\"flip\":true},\"email\":\"bob@x.io\"}}}",
+   "response": "{\"ok\":1,\"gameTime\":1000,\"stats\":{\"W1N1\":{\"status\":\"normal\",\"minerals0\":{\"type\":\"H\",\"density\":3}},\"W2N1\":{\"status\":\"normal\",\"own\":{\"user\":\"a11ce0000000001\",\"level\":2},\"sign\":{\"user\":\"a11ce0000000001\",\"text\":\"mine\",\"time\":1,\"datetime\":2},\"safeMode\":true},\"W1N2\":{\"status\":\"normal\",\"novice\":1700000000000,\"own\":{\"user\":\"2\",\"level\":2},\"sign\":{\"user\":\"b0b000000000002\",\"text\":\"hi\",\"time\":5,\"datetime\":1},\"minerals0\":{\"type\":\"O\",\"density\":1}},\"W3N2\":{\"status\":\"normal\",\"openTime\":1600001005000}},\"statsMax\":{},\"users\":{\"2\":{\"_id\":\"2\",\"username\":\"Invader\",\"usernameLower\":\"invader\",\"cpu\":0,\"active\":0,\"meta\":{\"revision\":0,\"created\":1600001000000,\"version\":0},\"$loki\":1},\"a11ce0000000001\":{\"_id\":\"a11ce0000000001\",\"username\":\"alice\",\"usernameLower\":\"alice\",\"email\":\"alice@x.io\",\"cpu\":100,\"active\":10000,\"gcl\":1000,\"money\":12345,\"resources\":{\"token\":2},\"badge\":{\"type\":{\"path1\":\"M0\",\"path2\":\"M1\"},\"color1\":\"#000000\",\"color2\":\"#000000\",\"color3\":\"#000000\",\"param\":0,\"flip\":false},\"steam\":{\"id\":\"7656\",\"displayName\":\"A\",\"ownership\":[1],\"steamProfileLinkHidden\":1},\"customBadge\":{\"path1\":\"M0\",\"path2\":\"M1\"},\"power\":50000,\"powerExperimentations\":2,\"meta\":{\"revision\":5,\"created\":1600001000000,\"version\":0,\"updated\":1600001000000},\"$loki\":3},\"b0b000000000002\":{\"_id\":\"b0b000000000002\",\"username\":\"bob\",\"usernameLower\":\"bob\",\"cpu\":100,\"bot\":\"simplebot\",\"notifyPrefs\":{\"sendOnline\":false,\"disabled\":false,\"interval\":60},\"meta\":{\"revision\":3,\"created\":1600001000000,\"version\":0,\"updated\":1600001000000},\"$loki\":4,\"badge\":{\"type\":3,\"color1\":\"#AbCdEf\",\"color2\":\"#ff0000\",\"color3\":\"#000000\",\"param\":-5,\"flip\":true},\"email\":\"bob@x.io\"}}}",
    "db": {},
    "published": []
   },
@@ -2861,10 +2847,8 @@
       },
       "badge": {
        "type": 3,
-       "color1": "#AbCdEf12",
-       "color2": [
-        "#ff0000"
-       ],
+       "color1": "#AbCdEf",
+       "color2": "#ff0000",
        "color3": "#000000",
        "param": -5,
        "flip": true
@@ -7450,10 +7434,8 @@
       },
       "badge": {
        "type": 3,
-       "color1": "#AbCdEf12",
-       "color2": [
-        "#ff0000"
-       ],
+       "color1": "#AbCdEf",
+       "color2": "#ff0000",
        "color3": "#000000",
        "param": -5,
        "flip": true
@@ -7624,7 +7606,7 @@
       "branch": "fresh",
       "modules": {
        "main": "m",
-       "x$DOT$y": 1
+       "x$DOT$y": "1"
       },
       "timestamp": "2020-09-13T12:43:20.000Z",
       "_id": "385177dc240970a"
@@ -7816,10 +7798,8 @@
       },
       "badge": {
        "type": 3,
-       "color1": "#AbCdEf12",
-       "color2": [
-        "#ff0000"
-       ],
+       "color1": "#AbCdEf",
+       "color2": "#ff0000",
        "color3": "#000000",
        "param": -5,
        "flip": true
@@ -8559,10 +8539,8 @@
       },
       "badge": {
        "type": 3,
-       "color1": "#AbCdEf12",
-       "color2": [
-        "#ff0000"
-       ],
+       "color1": "#AbCdEf",
+       "color2": "#ff0000",
        "color3": "#000000",
        "param": -5,
        "flip": true

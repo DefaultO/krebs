@@ -1,26 +1,34 @@
-//! SockJS 0.3.24: `/socket/info`, `/socket/<server>/<session>/websocket` (`o`/`a[…]`/`h`/`c`, extended
-//! escaping, 25 s heartbeat) and raw `/socket/websocket`; no XHR fallbacks (ARCHITECTURE.md §8.1). Owner: WP04.
+//! SockJS 0.3.24: `/socket/info`, `/socket/<server>/<session>/websocket` (`o`/`a[…]`/`c`, extended escaping, websocket
+//! pings) and raw `/socket/websocket`; no XHR fallbacks (ARCHITECTURE.md §8.1). Owner: WP04.
 //!
 //! Not a mirror of a reference file: reproduces srvmods/sockjs/lib/{sockjs,transport,trans-websocket,
 //! chunking-test,utils}.js for the websocket transports (spec 10 SOCK-PREFIX, SOCK-INFO, SOCK-WS-SOCKJS,
-//! SOCK-WS-RAW, SOCK-HEARTBEAT; SOCK-FALLBACK omitted).
+//! SOCK-WS-RAW, SOCK-HEARTBEAT; SOCK-FALLBACK omitted). SOCK-HEARTBEAT differs in when: pings go on a fixed schedule, on raw
+//! websockets too (`ping_gap`). The answer rule is the same, and as there, a websocket gets no `h` frames.
 
-use crate::http::{Request, Response};
+use crate::http::{Request, Response, Socket};
 use crate::socket::server::{self as sock, Conn, Out};
 use crate::ws;
-use crate::Published;
+use crate::{Published, Slot};
 use std::io::{BufReader, Write};
-use std::net::TcpStream;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use util::json::Json;
 
 const PREFIX: &str = "/socket";
-/// sockjs `heartbeat_delay`.
-pub const HEARTBEAT: Duration = Duration::from_secs(25);
+/// The longest gap between websocket pings. sockjs pings a websocket after 25 s of silence and a raw one never, but here a
+/// socket that only receives has to answer something: see `ping_gap`.
+pub const MAX_PING_GAP: Duration = Duration::from_secs(20);
 /// trans-websocket.js: close if a ping is not answered within 10 s.
 pub const PONG_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// How far apart a socket's pings are, whatever its traffic. The read timeout is what frees a reader on Windows, so a client
+/// that sends nothing of its own would be dropped at `timeout` without the pongs. The page never sees a ping: the browser
+/// itself answers it.
+fn ping_gap(timeout: Duration) -> Duration {
+    (timeout / 2).min(MAX_PING_GAP)
+}
 
 /// `^/socket([/].+|[/]?)$`: requests sockjs consumes before Express (SOCK-PREFIX).
 pub fn is_socket_path(path: &str) -> bool {
@@ -50,8 +58,12 @@ fn route(path: &str) -> Route {
     }
 }
 
-/// sockjs `xhr_cors` filter.
+/// sockjs `xhr_cors` filter, for the same origins as the API (`http::origin_allowed`).
 fn xhr_cors(req: &Request, res: &mut Response) {
+    res.headers.push(("Vary".into(), "Origin".into()));
+    if !crate::http::origin_allowed(req) {
+        return;
+    }
     match req.header("origin") {
         Some(o) => {
             res.headers.push(("Access-Control-Allow-Credentials".into(), "true".into()));
@@ -59,7 +71,6 @@ fn xhr_cors(req: &Request, res: &mut Response) {
         }
         None => res.headers.push(("Access-Control-Allow-Origin".into(), "*".into())),
     }
-    res.headers.push(("Vary".into(), "Origin".into()));
     if let Some(h) = req.header("access-control-request-headers") {
         res.headers.push(("Access-Control-Allow-Headers".into(), h.into()));
     }
@@ -149,8 +160,9 @@ pub fn parse_client_frame(payload: &str) -> Result<Vec<String>, ()> {
 }
 
 /// Takes over an upgraded `/socket/...` request. `Err(stream)` hands the stream back when the path is not a
-/// websocket route.
-pub(crate) fn upgrade(p: &Arc<Published>, req: &Request, mut stream: TcpStream, reader: BufReader<TcpStream>) -> Result<(), TcpStream> {
+/// websocket route. `timeout` is how long reads wait, and how long the socket has to authenticate. `slot` stays with the
+/// writer thread, so the connection counts until that has ended too.
+pub(crate) fn upgrade(p: &Arc<Published>, req: &Request, mut stream: Socket, reader: BufReader<Socket>, slot: Arc<Slot>, timeout: Duration) -> Result<(), Socket> {
     let framed = match route(&req.path) {
         Route::Session => true,
         Route::Raw => false,
@@ -167,13 +179,20 @@ pub(crate) fn upgrade(p: &Arc<Published>, req: &Request, mut stream: TcpStream, 
     if stream.write_all(head.as_bytes()).is_err() {
         return Ok(());
     }
+    // On Windows a blocked read does not wake for the writer's shutdown, so the read timeout stays: it ends a reader whose
+    // writer has gone, and with it the connection's slot.
+    #[cfg(not(windows))]
     let _ = stream.set_read_timeout(None);
     let conn = p.hub().add_conn();
     let writer_conn = conn.clone();
+    let sign_in_by = Instant::now() + timeout;
     let spawned = std::thread::Builder::new()
         .name("ws-writer".into())
         .stack_size(128 << 10)
-        .spawn(move || write_loop(stream, &writer_conn, framed));
+        .spawn(move || {
+            let _slot = slot;
+            write_loop(stream, &writer_conn, framed, sign_in_by, ping_gap(timeout), PONG_TIMEOUT)
+        });
     if spawned.is_err() {
         p.hub().remove_conn(conn.id);
         return Ok(());
@@ -185,7 +204,7 @@ pub(crate) fn upgrade(p: &Arc<Published>, req: &Request, mut stream: TcpStream, 
     Ok(())
 }
 
-fn read_loop(p: &Published, conn: &Arc<Conn>, reader: BufReader<TcpStream>, framed: bool) {
+fn read_loop(p: &Published, conn: &Arc<Conn>, reader: BufReader<Socket>, framed: bool) {
     let mut rd = ws::Reader::new(reader);
     loop {
         match rd.next() {
@@ -203,7 +222,7 @@ fn read_loop(p: &Published, conn: &Arc<Conn>, reader: BufReader<TcpStream>, fram
                 }
             }
             Ok(ws::Message::Binary(_)) => {}
-            Ok(ws::Message::Ping(d)) => conn.out.push_control(Out::Pong(d)),
+            Ok(ws::Message::Ping(d)) => conn.out.push_pong(d),
             Ok(ws::Message::Pong(_)) => {
                 conn.pongs.fetch_add(1, Ordering::Relaxed);
             }
@@ -220,61 +239,82 @@ fn read_loop(p: &Published, conn: &Arc<Conn>, reader: BufReader<TcpStream>, fram
     }
 }
 
-fn write_loop(mut stream: TcpStream, conn: &Conn, framed: bool) {
+/// How this end says goodbye on its own account: SockJS's close frame, then the websocket's.
+fn say_goodbye(stream: &mut Socket, framed: bool, code: u16, reason: &str) {
+    if framed {
+        let _ = ws::write_frame(stream, ws::OP_TEXT, format!("c[{code},{}]", Json::Str(reason.into()).stringify()).as_bytes());
+    }
+    let _ = ws::write_close(stream, code, reason);
+}
+
+fn write_loop(mut stream: Socket, conn: &Conn, framed: bool, sign_in_by: Instant, ping_gap: Duration, answer_within: Duration) {
     if framed && ws::write_frame(&mut stream, ws::OP_TEXT, b"o").is_err() {
         return;
     }
-    let mut ping: Option<(Instant, u64)> = None; // outstanding ping: sent at, pong count then
-    let mut last_flush = Instant::now();
+    let mut unanswered: Option<(Instant, u64)> = None; // the oldest ping with no pong since: sent at, pong count before it
+    let mut next_ping = Instant::now() + ping_gap;
     loop {
-        let wait = match ping {
-            Some((at, _)) => PONG_TIMEOUT.saturating_sub(at.elapsed()),
-            None => HEARTBEAT.saturating_sub(last_flush.elapsed()),
-        };
+        let now = Instant::now();
+        let mut wait = next_ping.saturating_duration_since(now);
+        if let Some((at, _)) = unanswered {
+            wait = wait.min((at + answer_within).saturating_duration_since(now));
+        }
+        // a socket holds a connection slot, so one that never signs in gives it back, however it keeps busy. The stock
+        // client reconnects a second later, as it does from any close.
+        if conn.user().is_none() {
+            wait = wait.min(sign_in_by.saturating_duration_since(now));
+        }
         let Some(items) = conn.out.drain(wait) else { break };
-        if let Some((at, seen)) = ping {
+        if conn.user().is_none() && Instant::now() >= sign_in_by {
+            say_goodbye(&mut stream, framed, 1008, "Authenticate first");
+            break;
+        }
+        if let Some((at, seen)) = unanswered {
             if conn.pongs.load(Ordering::Relaxed) > seen {
-                ping = None;
-            } else if items.is_empty() && at.elapsed() >= PONG_TIMEOUT {
+                unanswered = None;
+            } else if at.elapsed() >= answer_within {
                 // session.close(3000, 'No response from heartbeat')
-                let _ = ws::write_frame(&mut stream, ws::OP_TEXT, br#"c[3000,"No response from heartbeat"]"#);
-                let _ = ws::write_close(&mut stream, 3000, "No response from heartbeat");
+                say_goodbye(&mut stream, framed, 3000, "No response from heartbeat");
                 break;
             }
         }
-        if items.is_empty() {
-            if ping.is_none() && last_flush.elapsed() >= HEARTBEAT {
-                // raw websockets have no heartbeat (RawWebsocketSessionReceiver)
-                if framed {
-                    if ws::write_frame(&mut stream, ws::OP_PING, b"").is_err() {
-                        break;
-                    }
-                    ping = Some((Instant::now(), conn.pongs.load(Ordering::Relaxed)));
-                }
-                last_flush = Instant::now();
+        let now = Instant::now();
+        if now >= next_ping {
+            // read first: a client can answer before the write returns here
+            let seen = conn.pongs.load(Ordering::Relaxed);
+            if ws::write_frame(&mut stream, ws::OP_PING, b"").is_err() {
+                break;
             }
+            unanswered.get_or_insert((Instant::now(), seen));
+            // a fixed schedule, unless a long write has put it a whole gap behind
+            next_ping += ping_gap;
+            if next_ping <= now {
+                next_ping = now + ping_gap;
+            }
+        }
+        if items.is_empty() {
             continue;
         }
         let mut texts: Vec<String> = Vec::new();
         let mut ok = true;
         let mut closing = None;
+        // after a failed write nothing more is tried: each try could wait out the write timeout again
         for item in items {
             match item {
                 Out::Text(t) => texts.push(t),
-                Out::Pong(d) => ok &= flush(&mut stream, &mut texts, framed) && ws::write_frame(&mut stream, ws::OP_PONG, &d).is_ok(),
+                Out::Pong(d) => ok = ok && flush(&mut stream, &mut texts, framed) && ws::write_frame(&mut stream, ws::OP_PONG, &d).is_ok(),
                 Out::Close(code, reason) => {
                     closing = Some((code, reason));
                     break;
                 }
             }
         }
-        ok &= flush(&mut stream, &mut texts, framed);
-        last_flush = Instant::now();
-        if let Some((code, reason)) = closing {
-            let _ = ws::write_close(&mut stream, code, &reason);
+        ok = ok && flush(&mut stream, &mut texts, framed);
+        if !ok {
             break;
         }
-        if !ok {
+        if let Some((code, reason)) = closing {
+            let _ = ws::write_close(&mut stream, code, &reason);
             break;
         }
     }
@@ -282,7 +322,7 @@ fn write_loop(mut stream: TcpStream, conn: &Conn, framed: bool) {
     let _ = stream.shutdown(std::net::Shutdown::Both);
 }
 
-fn flush(stream: &mut TcpStream, texts: &mut Vec<String>, framed: bool) -> bool {
+fn flush(stream: &mut Socket, texts: &mut Vec<String>, framed: bool) -> bool {
     if texts.is_empty() {
         return true;
     }
@@ -334,6 +374,85 @@ mod tests {
             assert_eq!(quote(input), want, "{input:?}");
         }
         assert_eq!(frame_messages(&["time 1".into(), "[\"x\",{}]".into()]), r#"a["time 1","[\"x\",{}]"]"#);
+    }
+
+    #[test]
+    fn pings_stay_inside_half_the_timeout_and_20_s() {
+        assert_eq!(ping_gap(Duration::from_secs(120)), Duration::from_secs(20));
+        assert_eq!(ping_gap(Duration::from_secs(30)), Duration::from_secs(15));
+        assert_eq!(ping_gap(Duration::from_secs(6)), Duration::from_secs(3));
+    }
+
+    /// A writer that pings every `gap`, its client's end of the socket, and the connection it serves.
+    fn writer(framed: bool, gap: Duration, answer_within: Duration) -> (std::net::TcpStream, Arc<Conn>, std::thread::JoinHandle<()>) {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let client = std::net::TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+        client.set_read_timeout(Some(Duration::from_secs(30))).unwrap();
+        let stream = Socket::new(listener.accept().unwrap().0);
+        let conn = crate::socket::server::Hub::default().add_conn();
+        let writer_conn = conn.clone();
+        let far_off = Instant::now() + Duration::from_secs(3600);
+        let thread = std::thread::spawn(move || write_loop(stream, &writer_conn, framed, far_off, gap, answer_within));
+        (client, conn, thread)
+    }
+
+    /// A socket with traffic was never silent, so it never got a ping, and the client had nothing to send.
+    #[test]
+    fn traffic_does_not_put_off_a_ping() {
+        for framed in [false, true] {
+            let (mut client, conn, thread) = writer(framed, Duration::from_millis(30), Duration::from_secs(600));
+            let mut pings = 0;
+            let mut texts_between = 0;
+            while pings < 5 {
+                assert!(conn.out.push_text("tick".into()));
+                let (_, op, _) = crate::ws::tests::server_frame(&mut client).unwrap();
+                match op {
+                    ws::OP_PING => {
+                        conn.pongs.fetch_add(1, Ordering::Relaxed);
+                        pings += 1;
+                    }
+                    _ => texts_between += 1,
+                }
+            }
+            assert!(texts_between > pings, "{texts_between} frames between {pings} pings");
+            conn.out.close();
+            thread.join().unwrap();
+        }
+    }
+
+    #[test]
+    fn a_ping_nobody_answers_ends_the_socket_even_with_traffic() {
+        for framed in [false, true] {
+            let (mut client, conn, thread) = writer(framed, Duration::from_millis(10), Duration::from_millis(100));
+            let started = Instant::now();
+            let close = loop {
+                assert!(started.elapsed() < Duration::from_secs(20), "still open");
+                conn.out.push_text("tick".into());
+                let (_, op, payload) = crate::ws::tests::server_frame(&mut client).unwrap();
+                if op == ws::OP_CLOSE {
+                    break payload;
+                }
+            };
+            assert_eq!(u16::from_be_bytes([close[0], close[1]]), 3000);
+            assert_eq!(&close[2..], b"No response from heartbeat");
+            assert!(started.elapsed() >= Duration::from_millis(100), "{:?}", started.elapsed());
+            thread.join().unwrap();
+        }
+    }
+
+    #[test]
+    fn answered_pings_keep_a_socket_open() {
+        let (mut client, conn, thread) = writer(true, Duration::from_millis(10), Duration::from_secs(5));
+        let started = Instant::now();
+        while started.elapsed() < Duration::from_secs(1) {
+            let (_, op, _) = crate::ws::tests::server_frame(&mut client).unwrap();
+            assert_ne!(op, ws::OP_CLOSE);
+            if op == ws::OP_PING {
+                conn.pongs.fetch_add(1, Ordering::Relaxed);
+            }
+        }
+        conn.out.close();
+        thread.join().unwrap();
     }
 
     #[test]

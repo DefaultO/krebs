@@ -29,7 +29,7 @@ Start
    Do not start Krebs from inside the zip, and do not put it in Program Files.
    Documents or the Desktop are good places.
 
-2. Double-click Krebs.exe.
+2. Open the Krebs folder that comes out of the zip, and double-click Krebs.exe.
 
    Windows may show a blue box that says "Windows protected your PC". It does this
    because Krebs is new and has no paid signature, not because anything was found.
@@ -55,7 +55,15 @@ No bot yet? Pick the starter-bot folder that came in this zip.
 Press Ready. When everyone is ready the match counts down, everybody picks a room and
 places a spawn, and the bots play. Hold Leave server to leave.
 
+You have 3 minutes to pick a room. If you have none by then, you get a free one.
+You then have 2 minutes to place a spawn. If you have not by then, you are out of the match.
+
 One Krebs runs up to 4 matches at a time. A lobby past that is told to wait for one to end.
+You can have a seat in one match at a time. A match you left keeps your seat, so you can go
+back to it, until you give the seat up. A match ends a minute after everyone has left it.
+
+The host can end any match: the black window shows its number when it starts, and typing
+stop and that number there, then Enter, ends it. Typing matches lists them.
 
 
 Playing with friends
@@ -92,14 +100,21 @@ These addresses work for people on your own network, at home for example. For fr
 over the internet, you have to forward port 21025 to this PC on your router, and give them
 your public address. Your router's manual says how. Krebs cannot do this for you.
 
+Joining a server means trusting it with your PC, not only with your sign-in. The Screeps
+client runs code that a server sends it, which is how Krebs shows its lobbies at all. A
+dishonest host could use that to run programs on your PC. Only join servers of people you
+trust.
+
 Steam confirms every sign-in, so nobody can make one up or reuse an old one. The host of a
 server you join does see your sign-in, though, and a dishonest one could pass it on to
-another Krebs server. Nothing is encrypted, so only join and share servers with people you
-trust.
-Your key is in the data folder, in steam-api-key.txt. Keep that file to yourself.
+another Krebs server. Nothing is encrypted, so only share your server with people you trust.
+Your key is in the data folder, in steam-api-key.txt. Krebs keeps it to your Windows account.
+Keep that file to yourself.
 While Steam cannot be reached, nobody can sign in.
 For each player, your PC asks Steam for their public profile picture.
-Every match runs on your PC, so more players means more work for it.
+Every match runs on your PC, so more players means more work for it. A match can use 2 GB of
+memory plus 1 GB per seat. A bot that asks for more ends that match, which then says so, and
+your server carries on.
 
 
 If something goes wrong
@@ -119,6 +134,9 @@ Use the new port in step 5, and give it to your friends too.
 
 "Krebs could not read its settings": krebs.json has a mistake. Fix it, or delete the file.
 Krebs then uses its normal settings, port 21025 and all.
+
+"Another Krebs is already using" a folder: look for its other window. To run a second Krebs,
+copy the Krebs folder somewhere else and give the copy another port.
 
 "Krebs could not save your world": the disk may be full, or the data folder cannot be written
 to. Keep the window open and fix that. Krebs tries again by itself and says when it works.

@@ -73,7 +73,7 @@ fn string(j: &Json, k: &str) -> Result<String, String> {
 }
 
 fn obj(j: &Json) -> Result<Obj, String> {
-    match Val::from_json(j) {
+    match Val::from_trusted_json(j) {
         Val::Obj(o) => Ok(o),
         _ => Err(format!("scenario: expected an object, got {}", j.stringify())),
     }

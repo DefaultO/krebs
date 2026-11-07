@@ -2,8 +2,10 @@
 //! objects with interned property names.
 
 use std::cell::RefCell;
+use std::collections::hash_map::Entry as MapEntry;
 use std::collections::HashMap;
 use std::fmt;
+use std::sync::atomic::{AtomicU32, Ordering::Relaxed};
 use std::sync::{Arc, Mutex, OnceLock};
 use util::json::Json;
 
@@ -24,6 +26,18 @@ const CHUNKS: usize = 26;
 static ARENA: [OnceLock<Box<[OnceLock<Entry>]>>; CHUNKS] = [const { OnceLock::new() }; CHUNKS];
 static NAMES: Mutex<Option<HashMap<&'static str, u32>>> = Mutex::new(None);
 
+/// What `Val::from_json` may add to the table, which is never freed. Its input can be a request body or a bot's output,
+/// so the names in it are the sender's to choose, and without a limit one client could grow the table for as long as it
+/// liked. The most this leaves behind is a few tens of MB. Names already in the table are not counted.
+const OUTSIDE_NAMES: u32 = 1 << 17;
+pub const OUTSIDE_NAME_BYTES: usize = 256;
+static OUTSIDE_ADDED: AtomicU32 = AtomicU32::new(0);
+
+/// How many of those limits' names have been used.
+pub fn outside_names_added() -> u32 {
+    OUTSIDE_ADDED.load(Relaxed)
+}
+
 thread_local! {
     /// Lock-free hit path for `intern`: each thread remembers the atoms it has seen (FxHash: property names only).
     static SEEN: RefCell<util::hash::FxHashMap<&'static str, Atom>> = RefCell::new(HashMap::default());
@@ -36,8 +50,17 @@ fn slot(i: u32) -> (usize, usize) {
 
 impl Atom {
     pub fn intern(s: &str) -> Atom {
+        Atom::get(s, false).expect("only an outside name is refused")
+    }
+
+    /// `intern` for a name from outside the server: None when it is new and past the limits above.
+    fn intern_outside(s: &str) -> Option<Atom> {
+        Atom::get(s, true)
+    }
+
+    fn get(s: &str, outside: bool) -> Option<Atom> {
         if let Some(a) = SEEN.with(|m| m.borrow().get(s).copied()) {
-            return a;
+            return Some(a);
         }
         let a = {
             let mut g = NAMES.lock().unwrap_or_else(|e| e.into_inner());
@@ -45,6 +68,14 @@ impl Atom {
             match names.get(s) {
                 Some(&i) => Atom(i),
                 None => {
+                    if outside {
+                        // Read and written under the lock.
+                        let added = OUTSIDE_ADDED.load(Relaxed);
+                        if s.len() > OUTSIDE_NAME_BYTES || added >= OUTSIDE_NAMES {
+                            return None;
+                        }
+                        OUTSIDE_ADDED.store(added + 1, Relaxed);
+                    }
                     let i = names.len() as u32;
                     let leaked: &'static str = Box::leak(s.into());
                     let (k, off) = slot(i);
@@ -56,7 +87,7 @@ impl Atom {
             }
         };
         SEEN.with(|m| m.borrow_mut().insert(a.as_str(), a));
-        a
+        Some(a)
     }
 
     fn entry(self) -> &'static Entry {
@@ -204,24 +235,67 @@ impl Obj {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
+
+    /// Linear in the keys: `set` scans the object, which a body of a million keys turns into minutes on the tick thread.
+    fn from_json(m: &[(String, Json)], name: fn(&str) -> Option<Atom>) -> Obj {
+        let mut o = Obj(Vec::with_capacity(m.len()));
+        let named = m.iter().filter_map(|(k, v)| Some((name(k)?, v)));
+        // The usual document: scanning a few keys beats hashing them, and this runs for every intent.
+        if m.len() <= 16 {
+            for (k, v) in named {
+                o.set(k, Val::convert(v, name));
+            }
+            return o;
+        }
+        let mut slots: HashMap<Atom, usize> = HashMap::with_capacity(m.len());
+        for (k, v) in named {
+            match slots.entry(k) {
+                MapEntry::Occupied(slot) => o.0[*slot.get()].1 = Val::convert(v, name),
+                MapEntry::Vacant(slot) => {
+                    slot.insert(o.0.len());
+                    o.0.push((k, Val::convert(v, name)));
+                }
+            }
+        }
+        // Stable: array-index keys ascending, then the rest in insertion order, as `set` leaves them.
+        o.0.sort_by_key(|(a, _)| a.array_index().map_or(u64::MAX, u64::from));
+        o
+    }
+}
+
+/// JS truthiness of a JSON value, for a request field that is only tested: no `Val`, so nothing is interned.
+pub fn json_truthy(j: &Json) -> bool {
+    match j {
+        Json::Null => false,
+        Json::Bool(b) => *b,
+        Json::Num(n) => *n != 0.0 && !n.is_nan(),
+        Json::Str(s) => !s.is_empty(),
+        Json::Arr(_) | Json::Obj(_) => true,
+    }
 }
 
 impl Val {
-    /// Keys are interned; duplicate keys and array-index keys follow JS order.
+    /// Duplicate keys and array-index keys follow JS order. Keys are interned, but this reads request bodies and bot
+    /// output too, so past the limits on outside names a new key is left out. A caller that must keep every key
+    /// (module names) compares the sizes and refuses.
     pub fn from_json(j: &Json) -> Val {
+        Val::convert(j, Atom::intern_outside)
+    }
+
+    /// `from_json` for text whose names the server or its host chose: a file it loads, its own constants, the host's
+    /// console, intents once sanitized. Those keep every key, however many names an outsider has spent.
+    pub fn from_trusted_json(j: &Json) -> Val {
+        Val::convert(j, |k| Some(Atom::intern(k)))
+    }
+
+    fn convert(j: &Json, name: fn(&str) -> Option<Atom>) -> Val {
         match j {
             Json::Null => Val::Null,
             Json::Bool(b) => Val::Bool(*b),
             Json::Num(n) => Val::Num(*n),
             Json::Str(s) => Val::Str(s.as_str().into()),
-            Json::Arr(a) => Val::Arr(a.iter().map(Val::from_json).collect()),
-            Json::Obj(m) => {
-                let mut o = Obj(Vec::with_capacity(m.len()));
-                for (k, v) in m {
-                    o.set(Atom::intern(k), Val::from_json(v));
-                }
-                Val::Obj(o)
-            }
+            Json::Arr(a) => Val::Arr(a.iter().map(|v| Val::convert(v, name)).collect()),
+            Json::Obj(m) => Val::Obj(Obj::from_json(m, name)),
         }
     }
 
@@ -436,6 +510,43 @@ mod tests {
         assert_eq!(json(&Val::Obj(o.clone())), r#"{"0":null,"1":4,"2":2,"10":null,"b":true,"a":3,"c":null}"#);
         assert_eq!(o.remove(Atom::intern("1")), Some(Val::Num(4.0)));
         assert_eq!(o.len(), 6);
+    }
+
+    /// A large object keeps `set`'s order and its last value per key, and takes linear time: 200 000 keys took minutes
+    /// through `set`. The keys are interned first: tests share the limit on outside names (tests/outside_names.rs has that).
+    #[test]
+    fn large_objects_are_built_in_linear_time() {
+        let mut m: Vec<(String, Json)> = (0..200_000).map(|i| (format!("big{i}"), Json::Num(i as f64))).collect();
+        for (k, _) in &m {
+            Atom::intern(k);
+        }
+        m.push(("big7".into(), Json::Str("last".into())));
+        m.push(("3".into(), Json::Bool(true)));
+        m.push(("1".into(), Json::Null));
+        Atom::intern("3");
+        Atom::intern("1");
+        let start = std::time::Instant::now();
+        let Val::Obj(o) = Val::from_json(&Json::Obj(m)) else { panic!() };
+        assert!(start.elapsed().as_secs() < 5, "{:?}", start.elapsed());
+        assert_eq!(o.len(), 200_002);
+        let keys: Vec<&str> = o.iter().take(3).map(|(k, _)| k.as_str()).collect();
+        assert_eq!(keys, ["1", "3", "big0"]);
+        assert_eq!(o.get(atom!("big7")).and_then(Val::as_str), Some("last"));
+    }
+
+    #[test]
+    fn long_keys_are_not_interned() {
+        let long = "k".repeat(OUTSIDE_NAME_BYTES + 1);
+        let Val::Obj(o) = Val::from_json(&Json::Obj(vec![(long.clone(), Json::Null), ("x".into(), Json::Null)])) else { panic!() };
+        assert_eq!(o.len(), 1);
+        assert!(NAMES.lock().unwrap().as_ref().unwrap().get(long.as_str()).is_none());
+    }
+
+    #[test]
+    fn json_truthiness() {
+        for (j, want) in [("null", false), ("0", false), ("\"\"", false), ("false", false), ("1", true), ("\"0\"", true), ("[]", true), ("{}", true)] {
+            assert_eq!(json_truthy(&Json::parse(j).unwrap()), want, "{j}");
+        }
     }
 
     #[test]

@@ -153,7 +153,6 @@ pub struct RuntimeConfig {
     /// 180
     pub idle_evict_s: u64,
     pub watchdog_poll_us: u64,
-    pub snapshot_dir: std::path::PathBuf,
     pub profile: policy::Profile,
     pub shard_name: Box<str>,
 }
@@ -192,10 +191,10 @@ pub struct RuntimeStats {
 }
 
 impl Runtime {
-    /// Builds (or loads the cached) player and system snapshots; `init_v8` must have run.
+    /// Builds the player and system snapshots; `init_v8` must have run.
     pub fn new(cfg: RuntimeConfig, bundle: Bundle) -> Runtime {
         watchdog::set_poll_us(cfg.watchdog_poll_us);
-        let snapshots = host::snapshots(&bundle, &cfg.snapshot_dir);
+        let snapshots = host::snapshots(&bundle);
         let shipped = |name: &str| {
             let file = |files: &[(&str, &'static str)]| files.iter().find(|f| f.0 == name).map(|f| f.1);
             file(bundle.files).is_some() && file(bundle.files) == file(bundle::FILES)

@@ -354,7 +354,7 @@ make(u):
 ## 4. Global scope (GLB-*)
 
 ### 4.1 GLB-LIST — names defined on the player global object
-Built-ins: everything V8 provides in a fresh context, including `WebAssembly`, `globalThis`, typed arrays, `Intl` (if ICU), `eval`, `Function`, `Promise`, `Proxy`, `Reflect`, `Atomics`/`SharedArrayBuffer` (V8-dependent). The V8 default `console` is overwritten.
+Built-ins: everything V8 provides in a fresh context, including `WebAssembly`, `globalThis`, typed arrays, `Intl` (if ICU), `eval`, `Function`, `Promise`, `Proxy`, `Reflect`, `Atomics`/`SharedArrayBuffer` (V8-dependent). The V8 default `console` is overwritten. Krebs differs here: a bot has no `SharedArrayBuffer`, no resizable buffers, no `ArrayBuffer.prototype.transfer` and no `Atomics.waitAsync`, and `Atomics.wait` throws (14 §5.15).
 
 | Name | Type | Descriptor | Lifetime | Source |
 |---|---|---|---|---|

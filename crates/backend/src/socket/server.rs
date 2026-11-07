@@ -33,6 +33,11 @@ pub const CHANNELS: &[(&str, ChannelFn)] = &[
 /// connection's room baselines are reset, so the next push is a full `getDiff([], …)` snapshot.
 pub const OUT_CAP: usize = 4 << 20;
 
+/// What a queued message costs beyond its text, counted against `OUT_CAP`, or short replies would cost several times the cap.
+/// A place in the queue is `size_of::<Out>()`, 32 bytes, and `VecDeque` doubles, so up to two of those. Its text has a heap
+/// block of 32 bytes or more even when it is 11 bytes long, as `auth failed` is.
+const ITEM_COST: usize = 96;
+
 /// What the writer thread sends next.
 pub(crate) enum Out {
     /// One protocol message (framed `a[…]` on SockJS, one text frame on raw websockets).
@@ -45,6 +50,9 @@ pub(crate) enum Out {
 struct OutState {
     items: VecDeque<Out>,
     bytes: usize,
+    /// The pong owed. One will do (RFC 6455 5.5.3 lets it answer the latest ping only), so a client that pings without
+    /// reading grows nothing.
+    pong: Option<Vec<u8>>,
     closed: bool,
 }
 
@@ -63,10 +71,11 @@ impl Outbox {
     /// False when the queue is full (message dropped) or closed.
     pub(crate) fn push_text(&self, s: String) -> bool {
         let mut st = self.lock();
-        if st.closed || (st.bytes + s.len() > OUT_CAP && !st.items.is_empty()) {
+        let cost = s.len() + ITEM_COST;
+        if st.closed || (st.bytes + cost > OUT_CAP && !st.items.is_empty()) {
             return false;
         }
-        st.bytes += s.len();
+        st.bytes += cost;
         st.items.push_back(Out::Text(s));
         self.cv.notify_one();
         true
@@ -76,6 +85,15 @@ impl Outbox {
         let mut st = self.lock();
         if !st.closed {
             st.items.push_back(o);
+            self.cv.notify_one();
+        }
+    }
+
+    /// Answers a ping, in place of any pong still waiting.
+    pub(crate) fn push_pong(&self, payload: Vec<u8>) {
+        let mut st = self.lock();
+        if !st.closed {
+            st.pong = Some(payload);
             self.cv.notify_one();
         }
     }
@@ -94,14 +112,15 @@ impl Outbox {
     /// closed and empty.
     pub(crate) fn drain(&self, timeout: Duration) -> Option<Vec<Out>> {
         let mut st = self.lock();
-        if st.items.is_empty() && !st.closed {
+        if st.items.is_empty() && st.pong.is_none() && !st.closed {
             st = self.cv.wait_timeout(st, timeout).unwrap_or_else(|e| e.into_inner()).0;
         }
-        if st.items.is_empty() {
+        if st.items.is_empty() && st.pong.is_none() {
             return if st.closed { None } else { Some(vec![]) };
         }
         st.bytes = 0;
-        Some(st.items.drain(..).collect())
+        let pong = st.pong.take().map(Out::Pong);
+        Some(pong.into_iter().chain(st.items.drain(..)).collect())
     }
 }
 
@@ -215,7 +234,13 @@ impl Hub {
         });
         st.rooms.values_mut().for_each(|v| v.retain(|s| s.conn != id));
         st.maps.values_mut().for_each(|v| v.retain(|c| *c != id));
-        st.memory.values_mut().for_each(|w| w.iter_mut().for_each(|m| m.conns.retain(|c| *c != id)));
+        st.memory.retain(|_, watches| {
+            watches.retain_mut(|w| {
+                w.conns.retain(|c| *c != id);
+                !w.conns.is_empty()
+            });
+            !watches.is_empty()
+        });
         st.resources.values_mut().for_each(|v| v.retain(|c| *c != id));
         st.map_visual.values_mut().for_each(|v| v.retain(|c| *c != id));
     }
@@ -305,6 +330,13 @@ fn room_channel_name(name: &str) -> bool {
     !name.is_empty() && name.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-')
 }
 
+/// A `user:<id>/<sub>` channel something is sent on. Any other name would only be kept for nothing, as long as the
+/// socket lasts (and the stock client's `steam-purchase` never gets a message here).
+fn user_channel(view: &WorldView, sub: &str) -> bool {
+    matches!(sub, "console" | "cpu" | "code" | "set-active-branch" | "newMessage" | "resources" | "money" | "memory")
+        || sub.strip_prefix("message:").is_some_and(|id| crate::user_by_id(view, id).is_some())
+}
+
 /// `user:<id>/<rest>` or `mapVisual:<id>` for the connection's own user, else None.
 fn own_user(view: &WorldView, user: Option<UserIdx>, id: &str) -> Option<UserIdx> {
     let u = user?;
@@ -389,6 +421,9 @@ fn builtin_subscribe(p: &Published, conn: &Arc<Conn>, channel: &str) {
             }
             return;
         }
+        if !user_channel(&view, sub) {
+            return;
+        }
         let mut hub = p.hub().lock();
         hub.register(channel, conn.id);
         if sub == "cpu" {
@@ -398,7 +433,7 @@ fn builtin_subscribe(p: &Published, conn: &Arc<Conn>, channel: &str) {
             }
         }
         if sub == "resources" {
-            hub.resources.entry(u).or_default().push(conn.id);
+            add_once(hub.resources.entry(u).or_default(), conn.id);
         }
         return;
     }
@@ -407,7 +442,7 @@ fn builtin_subscribe(p: &Published, conn: &Arc<Conn>, channel: &str) {
         let Some(u) = own_user(&view, user, id) else { return };
         let mut hub = p.hub().lock();
         hub.register(channel, conn.id);
-        hub.map_visual.entry(u).or_default().push(conn.id);
+        add_once(hub.map_visual.entry(u).or_default(), conn.id);
         let data = user::map_visual_json(&hub, u);
         hub.emit(channel, &data);
         return;
@@ -417,6 +452,13 @@ fn builtin_subscribe(p: &Published, conn: &Arc<Conn>, channel: &str) {
         if user.is_some() && room_channel_name(name) {
             map::subscribe(p, conn, name);
         }
+    }
+}
+
+/// A repeated subscribe must not grow a list that every tick walks.
+pub(crate) fn add_once(conns: &mut Vec<u64>, conn: u64) {
+    if !conns.contains(&conn) {
+        conns.push(conn);
     }
 }
 
@@ -437,8 +479,14 @@ fn unsubscribe(p: &Published, conn: &Arc<Conn>, channel: &str) {
         if let Some((id, sub)) = rest.split_once('/') {
             if let Some(&u) = engine::doc::Id::new(id).and_then(|i| view.user_ids.get(&i)) {
                 if let Some(path) = sub.strip_prefix("memory/") {
-                    for w in hub.memory.get_mut(&u).into_iter().flatten().filter(|w| w.path == path) {
-                        w.conns.retain(|c| *c != conn.id);
+                    // a watch nobody holds goes, or it would use up the user's limit for good
+                    if let Some(watches) = hub.memory.get_mut(&u) {
+                        watches.retain_mut(|w| {
+                            if w.path == path {
+                                w.conns.retain(|c| *c != conn.id);
+                            }
+                            !w.conns.is_empty()
+                        });
                     }
                 }
                 if sub == "resources" {
@@ -479,6 +527,47 @@ mod tests {
         assert!(!o.push_text("w".into()));
     }
 
+    /// Counting text alone let 11-byte replies queue up to about 25 MB with nothing read.
+    #[test]
+    fn short_messages_cost_what_they_really_take() {
+        assert!(ITEM_COST >= 2 * std::mem::size_of::<Out>());
+        let o = Outbox::default();
+        let mut queued = 0;
+        while o.push_text("auth failed".into()) {
+            queued += 1;
+        }
+        assert_eq!(queued, OUT_CAP / (ITEM_COST + 11));
+        assert_eq!(o.drain(Duration::ZERO).unwrap().len(), queued);
+        assert!(o.push_text("the queue has room again".into()));
+    }
+
+    #[test]
+    fn a_normal_burst_still_fits() {
+        let o = Outbox::default();
+        let message = "x".repeat(1 << 10);
+        assert!((0..3000).all(|_| o.push_text(message.clone())), "3 MB of room updates");
+    }
+
+    /// Each ping took a place in the queue, so 48 MB of them cost 250 MB, with the socket's buffers full and the writer stuck.
+    #[test]
+    fn pings_queue_one_pong() {
+        let o = Outbox::default();
+        assert!(o.push_text("first".into()));
+        for i in 0..200_000u32 {
+            o.push_pong(i.to_be_bytes().to_vec());
+        }
+        let items = o.drain(Duration::ZERO).unwrap();
+        assert_eq!(items.len(), 2, "one pong and the message");
+        assert!(matches!(&items[0], Out::Pong(d) if d == &199_999u32.to_be_bytes()), "for the latest ping, ahead of what waits");
+        assert!(matches!(&items[1], Out::Text(t) if t == "first"));
+        assert!(o.drain(Duration::ZERO).unwrap().is_empty());
+        o.push_pong(vec![]);
+        assert!(matches!(&o.drain(Duration::from_secs(5)).unwrap()[..], [Out::Pong(_)]), "the writer does not wait it out");
+        o.close();
+        o.push_pong(vec![]);
+        assert!(o.drain(Duration::ZERO).is_none(), "nothing more once closed");
+    }
+
     #[test]
     fn gzip_only_when_shorter() {
         let hub = Hub::default();
@@ -508,6 +597,97 @@ mod tests {
         on_message(&p, &c, "unsubscribe server-message");
         system::send_server_message(&p, "again");
         assert!(c.out.drain(Duration::ZERO).unwrap().is_empty());
+    }
+
+    const ALICE: &str = "a11ce0000000001";
+
+    fn signed_in(p: &crate::Published) -> Arc<Conn> {
+        let c = p.hub().add_conn();
+        on_message(p, &c, &format!("auth {}", crate::authlib::gen_token(ALICE)));
+        assert!(c.user().is_some());
+        c
+    }
+
+    fn watch(verb: &str, path: &str) -> String {
+        format!("{verb} user:{ALICE}/memory/{path}")
+    }
+
+    fn watches(p: &crate::Published) -> usize {
+        p.hub().lock().memory.values().map(Vec::len).sum()
+    }
+
+    #[test]
+    fn memory_watches_are_capped_and_go_with_their_sockets() {
+        let p = crate::Published::new(crate::fake::view(&crate::fake::world()));
+        let c = signed_in(&p);
+        for i in 0..user::MAX_WATCHES + 20 {
+            on_message(&p, &c, &watch("subscribe", &format!("w{i}")));
+        }
+        assert_eq!(watches(&p), user::MAX_WATCHES);
+        on_message(&p, &c, &watch("unsubscribe", "w0"));
+        assert_eq!(watches(&p), user::MAX_WATCHES - 1, "a dropped watch makes room");
+        on_message(&p, &c, &watch("subscribe", "again"));
+        assert_eq!(watches(&p), user::MAX_WATCHES);
+        p.hub().remove_conn(c.id);
+        assert!(p.hub().lock().memory.is_empty(), "the path strings must not outlive the socket");
+    }
+
+    #[test]
+    fn a_long_memory_path_is_not_kept() {
+        let p = crate::Published::new(crate::fake::view(&crate::fake::world()));
+        let c = signed_in(&p);
+        on_message(&p, &c, &watch("subscribe", &"x".repeat(user::MAX_WATCH_PATH)));
+        assert_eq!(watches(&p), 1);
+        on_message(&p, &c, &watch("subscribe", &"x".repeat(user::MAX_WATCH_PATH + 1)));
+        assert_eq!(watches(&p), 1);
+    }
+
+    #[test]
+    fn repeating_a_subscribe_grows_nothing() {
+        let p = crate::Published::new(crate::fake::view(&crate::fake::world()));
+        let c = signed_in(&p);
+        for _ in 0..50 {
+            on_message(&p, &c, &format!("subscribe user:{ALICE}/resources"));
+            on_message(&p, &c, &format!("subscribe mapVisual:{ALICE}"));
+            on_message(&p, &c, &watch("subscribe", "a.s"));
+            on_message(&p, &c, "subscribe room:W2N1");
+            on_message(&p, &c, "subscribe roomMap2:W2N1");
+        }
+        let hub = p.hub().lock();
+        assert_eq!(hub.resources[&crate::fake::ALICE].len(), 1);
+        assert_eq!(hub.map_visual[&crate::fake::ALICE].len(), 1);
+        assert_eq!(hub.memory[&crate::fake::ALICE][0].conns.len(), 1);
+        assert_eq!(hub.rooms["W2N1"].len(), 1);
+        assert_eq!(hub.maps["W2N1"].len(), 1);
+    }
+
+    #[test]
+    fn only_real_channels_are_registered() {
+        let p = crate::Published::new(crate::fake::view(&crate::fake::world()));
+        let c = signed_in(&p);
+        for i in 0..100 {
+            on_message(&p, &c, &format!("subscribe user:{ALICE}/junk{i}"));
+            on_message(&p, &c, &format!("subscribe user:{ALICE}/message:nobody{i}"));
+            on_message(&p, &c, &format!("subscribe roomMap2:nosuchroom{i}"));
+        }
+        for sub in ["console", "cpu", "code", "set-active-branch", "newMessage", "resources", "money", "memory", "message:b0b000000000002"] {
+            on_message(&p, &c, &format!("subscribe user:{ALICE}/{sub}"));
+            let channel = format!("user:{ALICE}/{sub}");
+            assert!(p.hub().lock().listeners.contains_key(&channel), "{channel}");
+        }
+        let hub = p.hub().lock();
+        assert_eq!(hub.listeners.len(), 9);
+        assert!(hub.maps.is_empty(), "a room that is not there has nothing to push");
+    }
+
+    #[test]
+    fn a_room_past_the_edge_of_the_map_still_gets_its_answer() {
+        let p = crate::Published::new(crate::fake::view(&crate::fake::world()));
+        let c = signed_in(&p);
+        c.out.drain(Duration::ZERO);
+        on_message(&p, &c, "subscribe roomMap2:E40S40");
+        let got = c.out.drain(Duration::ZERO).unwrap();
+        assert!(matches!(&got[..], [Out::Text(t)] if t == r#"["roomMap2:E40S40",{}]"#));
     }
 
     #[test]

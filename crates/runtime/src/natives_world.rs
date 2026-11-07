@@ -180,9 +180,16 @@ fn grid_data(scope: &mut v8::PinScope, args: v8::FunctionCallbackArguments, mut 
 fn load_terrain(_scope: &mut v8::PinScope, _args: v8::FunctionCallbackArguments, _rv: v8::ReturnValue<v8::Value>) {}
 
 thread_local! {
-    /// pf.cc keeps two path finders per thread and allocates more for deeper recursion.
+    /// pf.cc keeps two path finders per thread and allocates more for deeper recursion, which it frees afterwards.
     static PATH_FINDERS: RefCell<Vec<PathFinder>> = const { RefCell::new(Vec::new()) };
+    /// Searches running on this thread: each holds about 2 MB that no bot limit counts.
+    static SEARCHES: Cell<usize> = const { Cell::new(0) };
 }
+
+const KEPT_FINDERS: usize = 2;
+/// Unlike the addon, which goes on until the stack runs out: a search from inside a roomCallback is rare, and a deeper
+/// one has no use.
+const MAX_SEARCH_DEPTH: usize = 8;
 
 /// Map room coordinate of the addon (`parseRoomName`: W0 = 127, E0 = 128) to engine coordinates.
 const MAP_OFFSET: i64 = 128;
@@ -242,11 +249,16 @@ fn search(scope: &mut v8::PinScope, args: v8::FunctionCallbackArguments, mut rv:
     let Some(origin) = world_pos(scope, args.get(0)) else { return };
     let Some(world) = with_run(|ctx| ctx.world_static()) else { return };
 
+    if SEARCHES.get() >= MAX_SEARCH_DEPTH {
+        return throw_error(scope, "PathFinder.search is nested too deep");
+    }
+
     // Backing stores of returned matrices stay alive (even if their buffer is detached) until the
     // search ends; the crate reads them live, as the addon reads its TypedArrayContents pointers.
     let mut keep: Vec<v8::SharedRef<v8::BackingStore>> = Vec::new();
     let undefined: v8::Local<v8::Value> = v8::undefined(scope).into();
     let mut pf = PATH_FINDERS.with(|p| p.borrow_mut().pop()).unwrap_or_default();
+    SEARCHES.set(SEARCHES.get() + 1);
     let terrain = |r: RoomXY| world.room_by_xy(r.x, r.y).map(|i| world.terrain(i));
     // CHITIN_PF_RECORD (pf_record.rs): what the callback returned for each room, in call order.
     let (recording, mut calls) = (crate::pf_record::enabled(), Vec::new());
@@ -257,7 +269,13 @@ fn search(scope: &mut v8::PinScope, args: v8::FunctionCallbackArguments, mut rv:
         }
         cost
     });
-    PATH_FINDERS.with(|p| p.borrow_mut().push(pf));
+    SEARCHES.set(SEARCHES.get() - 1);
+    PATH_FINDERS.with(|p| {
+        let mut finders = p.borrow_mut();
+        if finders.len() < KEPT_FINDERS {
+            finders.push(pf);
+        }
+    });
     if recording {
         crate::pf_record::record(origin, &goals, &opts, callback.is_some(), &calls, terrain, &result);
     }
@@ -308,12 +326,18 @@ fn room_cost<'a>(
     if view.byte_length() != 2500 {
         return RoomCost::Terrain;
     }
-    if let Some(store) = view.get_backing_store() {
-        keep.push(store);
+    let Some(store) = view.get_backing_store() else { return RoomCost::Terrain };
+    // Holding a store stops a detach from freeing it, not a resize from unmapping the pages above the new length, and
+    // the search reads earlier matrices again after every callback. The bot context has no such buffers (host.rs); this
+    // holds on its own. The addon predates them, and a normal CostMatrix is a plain Uint8Array.
+    if store.is_resizable_by_user_javascript() || store.is_shared() {
+        return RoomCost::Terrain;
     }
-    // SAFETY: 2500 bytes of a view whose backing store `keep` holds until the search returns; Cell
-    // because later callbacks may write to it, which the search must see.
-    RoomCost::Matrix(unsafe { std::slice::from_raw_parts(view.data() as *const Cell<u8>, 2500) })
+    let data = view.data() as *const Cell<u8>;
+    keep.push(store);
+    // SAFETY: 2500 bytes of a view of a store of fixed size, which `keep` holds until the search returns;
+    // Cell because later callbacks may write to it, which the search must see.
+    RoomCost::Matrix(unsafe { std::slice::from_raw_parts(data, 2500) })
 }
 
 pub(crate) fn throw_error(scope: &mut v8::PinScope, msg: &str) {
@@ -448,6 +472,89 @@ mod tests {
         drop(guard);
         drop(iso);
         assert_eq!((flags.extra.load(Relaxed), Arc::strong_count(&flags), Arc::strong_count(&blob)), (0, 1, 1));
+    }
+
+    /// A context with the natives as `N`, no bot lockdown (`host.rs`): what `room_cost` does alone. Rooms W1N1 to W4N1 of
+    /// open terrain, and `W` for a matrix full of walls.
+    fn with_search<R>(f: impl FnOnce(&mut v8::PinScope) -> R) -> R {
+        crate::init_v8();
+        let mut rooms = Rooms { names: Vec::new(), xy: HashMap::new(), terrain: Vec::new() };
+        for name in ["W1N1", "W2N1", "W3N1", "W4N1"] {
+            rooms.xy.insert(xy(name), rooms.names.len() as RoomIdx);
+            rooms.names.push(name.into());
+            rooms.terrain.push([0; 2500]);
+        }
+        let mut iso = v8::Isolate::new(Default::default());
+        v8::scope!(let scope, &mut iso);
+        let context = v8::Context::new(scope, Default::default());
+        let scope = &mut v8::ContextScope::new(scope, context);
+        let natives = crate::natives::player_natives(scope, "shard0", "private", false);
+        let global = context.global(scope);
+        set(scope, global, "N", natives.into());
+        let _guard = RunGuard::enter(RunCtx::new(&rooms, 0, Vec::new(), 0, 1000, RunMeter::start(crate::Meter::Thread, 0.0), Clock::ThreadCpu));
+        f(scope)
+    }
+
+    fn eval(scope: &mut v8::PinScope, js: &str) -> String {
+        let code = v8::String::new(scope, js).unwrap();
+        v8::Script::compile(scope, code, None).unwrap().run(scope).unwrap().to_rust_string_lossy(scope)
+    }
+
+    /// From W1N1 across W2N1 and on, so the callback runs for one room after another.
+    const SEARCH: &str = "function search(cb) { return N.nativeMod.search({xx: 6340, yy: 6325}, [{range: 0, pos: {xx: 6240, yy: 6325}}], cb, 1, 5, 16, 20000, 2000, false, 1.2); }\n";
+
+    /// Bot-made matrices: this order of calls read unmapped memory and killed the process, and holding the backing
+    /// store does not help, because `resize` decommits its pages.
+    #[test]
+    fn resizable_and_shared_matrices_are_not_read() {
+        with_search(|scope| {
+            let plain = eval(scope, &format!("{SEARCH} JSON.stringify(search(undefined).path.length)"));
+            assert!(plain.parse::<u32>().unwrap() > 90, "{plain}");
+            // Crossed in the first room, unmapped from the callback of the next.
+            let js = format!(
+                "{SEARCH} var b = new ArrayBuffer(2500, {{maxByteLength: 1 << 20}}), m = new Uint8Array(b), calls = 0;
+                JSON.stringify(search(function () {{ if (++calls === 2) b.resize(0); return m; }}).path.length)"
+            );
+            assert_eq!(eval(scope, &js), plain);
+            let js = format!(
+                "{SEARCH} var w = new Uint8Array(new ArrayBuffer(2500, {{maxByteLength: 1 << 20}})); w.fill(255);
+                JSON.stringify(search(function () {{ return w; }}).path.length)"
+            );
+            assert_eq!(eval(scope, &js), plain, "a matrix full of walls would leave no path");
+            let js = format!(
+                "{SEARCH} var s = new Uint8Array(new SharedArrayBuffer(2500)); s.fill(255);
+                JSON.stringify(search(function () {{ return s; }}).path.length)"
+            );
+            assert_eq!(eval(scope, &js), plain);
+            // A fixed buffer detached in a later callback is still read: the store is held.
+            let js = format!(
+                "{SEARCH} var f = new ArrayBuffer(2500), p = new Uint8Array(f), n = 0; p.fill(255);
+                var r = search(function (xx) {{ if (++n === 2) f.transfer(); return n === 1 ? p : undefined; }}); r.path.length + ',' + r.incomplete"
+            );
+            let out = eval(scope, &js);
+            assert_eq!(out, "0,true", "walls all around the origin");
+        });
+    }
+
+    #[test]
+    fn nested_searches_stop_and_their_finders_go() {
+        with_search(|scope| {
+            let js = format!(
+                "{SEARCH} var deepest = 0, error = '';
+                function nest(depth) {{
+                    deepest = Math.max(deepest, depth);
+                    search(function () {{ nest(depth + 1); }});
+                }}
+                try {{ nest(1); }} catch (e) {{ error = e.message; }}
+                deepest + ' ' + error"
+            );
+            assert_eq!(eval(scope, &js), format!("{} PathFinder.search is nested too deep", MAX_SEARCH_DEPTH + 1));
+            assert_eq!(PATH_FINDERS.with(|p| p.borrow().len()), KEPT_FINDERS);
+            assert_eq!(SEARCHES.get(), 0);
+            // A bot that catches it can search again, and one nested search is what the addon keeps two finders for.
+            let js = format!("{SEARCH} var inner = 0; search(function () {{ inner = search(undefined).path.length; }}); inner > 90");
+            assert_eq!(eval(scope, &js), "true");
+        });
     }
 
     #[test]

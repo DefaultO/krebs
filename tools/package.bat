@@ -1,8 +1,12 @@
 @echo off
 setlocal
 rem Builds the download for players and leaves it in dist\.
-rem It builds in a clean copy of this folder: only what a clone with its submodules has, so no private mod, world or old
-rem build gets in, and the mod list in crates\modlist\Cargo.toml stays as it is here. Nothing else in this folder changes.
+rem A release is built from a fresh clone at its tag, so that it holds what that commit says and nothing else. So this stops
+rem at what a clone would not have: uncommitted changes, changes git status hides, a submodule that differs from its link,
+rem or a mod folder that is not in the repository. KREBS_ALLOW_DIRTY=1 lets a trial build through, which is not for publishing.
+rem It then builds in a copy of this folder with no world, old build or mods\platform, which is private, and the mod list in
+rem crates\modlist\Cargo.toml stays as it is here. Nothing else in this folder changes. Files git ignores may be copied, and
+rem the build reads none of them.
 rem The build goes to CARGO_TARGET_DIR if that is set, otherwise to target\package. The fast V8 comes from
 rem RUSTY_V8_ARCHIVE if that is set, then from this PC's own build, then from the download tools\dist.bat knows.
 rem The files that go beside the program are in tools\package\.
@@ -18,6 +22,12 @@ for %%m in (bare matchrun) do if not exist mods\%%m\Cargo.toml (
     echo mods\%%m is missing, and players cannot have a match without it. Run: git submodule update --init
     exit /b 1
 )
+if "%KREBS_ALLOW_DIRTY%"=="1" (
+    echo KREBS_ALLOW_DIRTY is set, so this build may hold what no commit has. Do not publish it.
+) else (
+    call :committed
+    if errorlevel 1 exit /b 1
+)
 
 for /f "tokens=3" %%v in ('findstr /b /c:"version = " Cargo.toml') do set "VERSION=%%~v"
 if not defined VERSION (
@@ -29,7 +39,9 @@ set "ZIP=%ROOT%\dist\Krebs-v%VERSION%-windows-x64.zip"
 if not defined CARGO_TARGET_DIR set "CARGO_TARGET_DIR=%ROOT%\target\package"
 for %%d in ("%CARGO_TARGET_DIR%") do set "CARGO_TARGET_DIR=%%~fd"
 set "SOURCE=%CARGO_TARGET_DIR%\source"
-set "STAGE=%CARGO_TARGET_DIR%\stage"
+set "STAGE_ROOT=%CARGO_TARGET_DIR%\stage"
+rem Everything in the zip sits in one folder, so that Extract Here in Downloads does not leave Krebs.exe among the downloads.
+set "STAGE=%STAGE_ROOT%\Krebs"
 
 set "FAST=%ROOT%\target\ptrcomp\release\gn_out"
 if not defined RUSTY_V8_ARCHIVE if exist "%FAST%\obj\rusty_v8.lib" (
@@ -39,7 +51,7 @@ if not defined RUSTY_V8_ARCHIVE if exist "%FAST%\obj\rusty_v8.lib" (
 
 echo Cleaning.
 if exist "%SOURCE%" rmdir /s /q "%SOURCE%"
-if exist "%STAGE%" rmdir /s /q "%STAGE%"
+if exist "%STAGE_ROOT%" rmdir /s /q "%STAGE_ROOT%"
 if exist "%CARGO_TARGET_DIR%\dist\krebs.exe" del /q "%CARGO_TARGET_DIR%\dist\krebs.exe"
 mkdir "%STAGE%"
 
@@ -111,13 +123,71 @@ for %%s in ("/api/lobbies" "/api/matchrun/view") do (
 rem Only now: a build that stops on the way leaves the last zip where it was.
 if exist "%ROOT%\dist" rmdir /s /q "%ROOT%\dist"
 mkdir "%ROOT%\dist"
-"%SystemRoot%\System32\tar.exe" -a -c -f "%ZIP%" -C "%STAGE%" Krebs.exe krebs.json "Let friends join.bat" README.txt LICENSE.txt THIRD_PARTY_NOTICES.txt RUST_NOTICES.html starter-bot
+"%SystemRoot%\System32\tar.exe" -a -c -f "%ZIP%" -C "%STAGE_ROOT%" Krebs
 if errorlevel 1 (
     echo Making the zip failed.
     exit /b 1
 )
 "%SystemRoot%\System32\tar.exe" -t -v -f "%ZIP%"
 for %%z in ("%ZIP%") do echo Built %%~fz, %%~zz bytes
+exit /b 0
+
+rem Stops unless this folder is one commit and the commits it links to, and lists what is not.
+:committed
+where git >nul 2>nul
+if errorlevel 1 (
+    echo git was not found, so nothing here can say what is in this folder. For a trial build, set KREBS_ALLOW_DIRTY=1.
+    exit /b 1
+)
+set "GIT=git -c safe.directory=*"
+set "FOUND=%TEMP%\krebs-package-%RANDOM%%RANDOM%.txt"
+%GIT% rev-parse --verify HEAD >nul 2>nul
+if errorlevel 1 (
+    echo This folder is not a git clone, so nothing can say what is in it. A release is built from a fresh clone at its tag.
+    exit /b 1
+)
+rem Changed and new files, here and in the submodules, and a submodule on another commit.
+%GIT% status --porcelain --ignore-submodules=none > "%FOUND%"
+if errorlevel 1 goto :git_failed
+call :none_of "Uncommitted changes"
+if errorlevel 1 exit /b 1
+rem A submodule status starts with a space when it matches its link.
+%GIT% submodule status --recursive > "%FOUND%.all"
+if errorlevel 1 goto :git_failed
+findstr /v /b /c:" " "%FOUND%.all" > "%FOUND%"
+del "%FOUND%.all"
+call :none_of "Submodules that differ from their links"
+if errorlevel 1 exit /b 1
+rem git status cannot see into these: run.bat marks Cargo.lock and the mod list this way.
+%GIT% ls-files -v > "%FOUND%.all"
+if errorlevel 1 goto :git_failed
+findstr /b /c:"S " /c:"h " "%FOUND%.all" > "%FOUND%"
+del "%FOUND%.all"
+call :none_of "Files git status has been told to skip"
+if errorlevel 1 exit /b 1
+rem crates\modlist\build.rs compiles in every folder here. mods\platform stays out of the copy, so it cannot get in.
+(for /f "delims=" %%m in ('dir /b /ad mods') do if /i not "%%m"=="platform" (
+    %GIT% ls-tree --name-only HEAD "mods/%%m" | findstr /r "." >nul || echo mods\%%m
+)) > "%FOUND%"
+call :none_of "Mod folders that are not in the repository"
+if errorlevel 1 exit /b 1
+del "%FOUND%"
+exit /b 0
+
+:git_failed
+echo git could not say what is in this folder.
+if exist "%FOUND%" del "%FOUND%"
+if exist "%FOUND%.all" del "%FOUND%.all"
+exit /b 1
+
+:none_of
+for %%f in ("%FOUND%") do if %%~zf gtr 0 (
+    echo %~1, so a build here would hold what no commit says:
+    type "%FOUND%"
+    echo A release is built from a fresh clone at its tag. For a trial build, set KREBS_ALLOW_DIRTY=1.
+    del "%FOUND%"
+    exit /b 1
+)
 exit /b 0
 
 rem Notepad wants Windows line endings, whatever line endings a checkout has.

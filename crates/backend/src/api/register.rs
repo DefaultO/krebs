@@ -8,7 +8,6 @@
 use crate::api::authmod::valid_username;
 use crate::http::{obj, Request, Response};
 use crate::{edit_user, field, obj_set, s, ApiCtx};
-use engine::doc::Val;
 use std::sync::Arc;
 use util::json::Json;
 
@@ -56,7 +55,7 @@ pub fn set_username(req: &Request, ctx: &ApiCtx) -> Response {
         return Response::error("TypeError: Cannot read properties of undefined (reading 'toLowerCase')");
     };
     let mut email = None;
-    if let Some(e) = b.get("email").filter(|e| crate::truthy(Some(&Val::from_json(e)))) {
+    if let Some(e) = b.get("email").filter(|e| engine::doc::json_truthy(e)) {
         match e.as_str() {
             Some(e) if valid_email(e) => email = Some(e.to_lowercase()),
             _ => return Response::error("invalid email"),

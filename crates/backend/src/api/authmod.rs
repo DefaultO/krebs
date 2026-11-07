@@ -7,7 +7,7 @@
 use crate::api::auth::{default_code, new_user_doc};
 use crate::http::{obj, Request, Response};
 use crate::{authlib, edit_user, obj_set, s, str_field, ApiCtx};
-use engine::doc::{Obj, Val};
+use engine::doc::Obj;
 use engine::world::{UserIdx, WorldView};
 use std::sync::Arc;
 use util::json::Json;
@@ -101,9 +101,10 @@ pub fn password(req: &Request, ctx: &ApiCtx) -> Response {
     }
 }
 
-/// `^[a-zA-Z0-9_-]{3,}$` (register.js set-username).
+/// `^[a-zA-Z0-9_-]{3,}$` (register.js set-username), and at most 32 long: names go out to every page on every poll.
+/// A new name only: worlds keep the names they hold.
 pub fn valid_username(name: &str) -> bool {
-    name.len() >= 3 && name.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-')
+    (3..=32).contains(&name.len()) && name.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-')
 }
 
 /// POST /api/register/submit
@@ -117,14 +118,18 @@ pub fn submit(req: &Request, ctx: &ApiCtx) -> Response {
     }
     let (username, email) = (username.to_string(), email.to_lowercase());
     let auth = auth_for(password, &Obj::new());
-    let modules = b.get("modules").filter(|m| matches!(m, Json::Obj(_))).map(|m| crate::api::user::modules_to_db(m.clone()));
+    // Here and not in `write`, which runs on the tick thread.
+    let modules = match b.get("modules").filter(|m| matches!(m, Json::Obj(_))).map(|m| crate::api::user::checked_modules(m.clone())).transpose() {
+        Ok(m) => m,
+        Err(e) => return Response::error(&e),
+    };
     let r = crate::write(ctx, move |w| {
         let lower = username.to_lowercase();
         if w.usernames.contains_key(lower.as_str()) {
             return Err("exists".to_string());
         }
         let doc = new_user_doc(w, vec![("email", s(&email)), ("username", s(&username)), ("usernameLower", s(&lower))]);
-        crate::add_user(w, doc, auth, vec![default_code(modules.map(|m| Val::from_json(&m)))]);
+        crate::add_user(w, doc, auth, vec![default_code(modules)]);
         Ok(())
     });
     match r {
@@ -164,5 +169,27 @@ mod tests {
         let (_, ok) = fake::run(password, &ctx, "POST", "/api/user/password", r#"{"oldPassword":"hunter22","password":"longer-pass"}"#);
         assert_eq!(ok.stringify(), r#"{"ok":1}"#);
         assert_eq!(fake::run(signin, &ctx, "POST", "/api/auth/signin", r#"{"email":"carol","password":"longer-pass"}"#).0, 200);
+    }
+
+    #[test]
+    fn usernames_have_a_length() {
+        assert!(!valid_username("ab"));
+        assert!(valid_username("abc"));
+        assert!(valid_username(&"n".repeat(32)));
+        assert!(!valid_username(&"n".repeat(33)));
+        assert!(!valid_username(&"n".repeat(10 << 20)));
+    }
+
+    /// The modules of a sign-up are converted before `write`, with the same limits as an upload.
+    #[test]
+    fn submit_checks_modules_as_an_upload_does() {
+        let (ctx, _h) = fake::ctx(None);
+        let body = |name: &str, modules: String| format!(r#"{{"username":"{name}","email":"{name}@x.io","password":"hunter22","modules":{modules}}}"#);
+        let many: Vec<String> = (0..=crate::api::user::MAX_MODULES).map(|i| format!(r#""m{i}":"""#)).collect();
+        let (_, j) = fake::run(submit, &ctx, "POST", "/api/register/submit", &body("many", format!("{{{}}}", many.join(","))));
+        assert_eq!(j.get("error").and_then(Json::as_str), Some("too many modules"));
+        assert!(ctx.published.get().usernames.get("many").is_none());
+        let (_, j) = fake::run(submit, &ctx, "POST", "/api/register/submit", &body("fine", r#"{"main":"x","a.b":"y"}"#.into()));
+        assert_eq!(j.stringify(), r#"{"ok":1}"#);
     }
 }

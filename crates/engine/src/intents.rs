@@ -27,7 +27,7 @@ pub fn parse_store_output(json: &Json, meta: &RoomsMeta) -> UserIntents {
     out.count = json.get("count").and_then(Json::as_f64).unwrap_or(0.0) as u32;
     for (key, value) in json.get("intents").and_then(Json::as_object).into_iter().flatten() {
         match key.as_str() {
-            "notify" => out.notify = value.as_array().into_iter().flatten().map(Val::from_json).collect(),
+            "notify" => out.notify = value.as_array().into_iter().flatten().map(Val::from_trusted_json).collect(),
             "global" => out.global = value.as_object().map(|_| obj(value)),
             room => {
                 let Some(idx) = room_idx(meta, room) else { continue };
@@ -41,7 +41,7 @@ pub fn parse_store_output(json: &Json, meta: &RoomsMeta) -> UserIntents {
 
 /// Keys are intent and field names (fixed tables), so interning them is fine.
 fn obj(v: &Json) -> Obj {
-    match Val::from_json(v) {
+    match Val::from_trusted_json(v) {
         Val::Obj(o) => o,
         _ => Obj::new(),
     }

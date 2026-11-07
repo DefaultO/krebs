@@ -120,7 +120,7 @@ fn world() -> &'static Fake {
         let mut terrain = [0u8; 2500];
         terrain[0] = 1;
         terrain[2499] = 2;
-        Fake { users: (0..2000).map(|i| format!("u{i}")).collect(), terrain, stores: Mutex::new(Vec::new()), market: Arc::new(market()) }
+        Fake { users: (0..2100).map(|i| format!("u{i}")).collect(), terrain, stores: Mutex::new(Vec::new()), market: Arc::new(market()) }
     })
 }
 
@@ -143,7 +143,6 @@ fn config(heap_mb: usize, hard_timeout_ms: u64, meter: Meter) -> RuntimeConfig {
         hard_timeout_ms,
         idle_evict_s: 180,
         watchdog_poll_us: 500,
-        snapshot_dir: std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("snapshots"),
         profile: engine::policy::Profile::Private,
         shard_name: "shard0".into(),
     }
@@ -716,6 +715,10 @@ fn thousand_isolates() {
     let pool = util::pool::Pool::new(threads);
     let rt = new_runtime(config(256, 5000, Meter::Thread));
     let run = |user: usize| Run::new(1000 + user as UserIdx, "module.exports.loop = function () {};");
+    // The process's own start: the first VMs cost about 33 MB more than the rest, for V8 and the threads. Counted here it
+    // adds 0.03 MB to every VM, which took a build at 4.97 MB a VM over the limit on some runs.
+    let warm = 100;
+    assert!(pool.map(warm, |i| run(n + i).on(&rt)).iter().all(|o| is(o, RunStatus::Done)));
     let mem0 = private_bytes();
     let t = Instant::now();
     let outs = pool.map(n, |i| run(i).on(&rt));
@@ -743,6 +746,211 @@ fn host_overhead() {
         run.on(rt());
     }
     eprintln!("host overhead: {:?} per run", t.elapsed() / n);
+}
+
+// ---- what a bot is not given ----
+
+/// V8 allocates a resizable buffer outside the array buffer allocator, which is what holds a VM to its memory limit, so
+/// none must exist in a bot: not from the options, not from `transfer`, not from the real constructor.
+#[test]
+fn a_bot_has_only_fixed_buffers() {
+    let run = Run::new(41, r#"
+        module.exports.loop = function () {
+            var p = ArrayBuffer.prototype;
+            H.log([typeof SharedArrayBuffer, typeof p.resize, typeof p.transfer, typeof p.transferToFixedLength, typeof Atomics.waitAsync].join());
+            var a = new ArrayBuffer(8, {maxByteLength: 1 << 30});
+            H.log([a.byteLength, a.resizable, a.maxByteLength, a instanceof ArrayBuffer, a.constructor === ArrayBuffer].join());
+            class X extends ArrayBuffer { constructor() { super(16, {maxByteLength: 1 << 30}); this.mine = 1; } }
+            var x = new X();
+            H.log([x.byteLength, x.resizable, x instanceof X, x.mine, Object.prototype.toString.call(x)].join());
+            try { new ArrayBuffer(1 << 30, {maxByteLength: 1 << 30}); H.log('made'); } catch (e) { H.log(e.message); }
+            var r = Reflect.construct(ArrayBuffer, [4], Object);
+            H.log([r.byteLength, Object.getPrototypeOf(r) === Object.prototype].join());
+            var bad = [];
+            [undefined, 1.9, '32', null, -0.5, NaN].forEach(function (n) { bad.push(new ArrayBuffer(n).byteLength); });
+            H.log(bad.join());
+            [-1, Infinity].forEach(function (n) { try { new ArrayBuffer(n); } catch (e) { H.log(e.name + ': ' + e.message); } });
+            try { ArrayBuffer(1); } catch (e) { H.log(e.name); }
+            try { new ArrayBuffer(1n); } catch (e) { H.log(e.name); }
+            H.log([ArrayBuffer.isView(new Uint8Array(1)), ArrayBuffer[Symbol.species] === ArrayBuffer, ArrayBuffer.name, ArrayBuffer.length].join());
+            var slice = new ArrayBuffer(8).slice(2);
+            H.log([slice.byteLength, slice.constructor === ArrayBuffer, new Uint8Array(new ArrayBuffer(4)).length].join());
+        };"#);
+    let out = run.on(rt());
+    assert!(is(&out, RunStatus::Done), "{}", status(&out));
+    assert_eq!(
+        out.console_log,
+        [
+            "undefined,undefined,undefined,undefined,undefined",
+            "8,false,8,true,true",
+            "16,false,true,1,[object ArrayBuffer]",
+            "Array buffer allocation failed",
+            ",true",
+            "0,1,32,0,0,0",
+            "RangeError: Invalid array buffer length",
+            "RangeError: Invalid array buffer length",
+            "TypeError",
+            "TypeError",
+            "true,true,ArrayBuffer,1",
+            "6,true,4",
+        ]
+    );
+}
+
+/// Every place a bot's code can look at the stack while a buffer is made, and every error V8 throws from under the real
+/// constructor: a frame's `getFunction` must not give it back, or the options work again.
+#[test]
+fn a_bot_cannot_get_the_real_array_buffer_back() {
+    let mut run = Run::new(42, r#"
+        module.exports.loop = function () {
+            var found = [], seen = 0;
+            function look(sites) {
+                if (!Array.isArray(sites)) return;
+                sites.forEach(function (c) {
+                    seen++;
+                    [c.getFunction(), c.getThis()].forEach(function (x) {
+                        if (typeof x === 'function' && x !== ArrayBuffer && /Buffer/.test(x.name)) found.push(c.toString());
+                    });
+                });
+            }
+            function here() {
+                var o = {};
+                Error.captureStackTrace(o);
+                look(o.stack);
+                sloppy();
+            }
+            function sloppy() {
+                for (var f = sloppy.caller, n = 0; f && n < 50; f = f.caller, n++) {
+                    var a = f.arguments;
+                    for (var i = 0; a && i < a.length; i++) if (typeof a[i] === 'function' && a[i] !== ArrayBuffer && /Buffer/.test(a[i].name)) found.push('arguments');
+                }
+            }
+            Error.prepareStackTrace = function (e, sites) { return sites; };
+            var attempts = [
+                function () { new ArrayBuffer(-1); },
+                function () { new ArrayBuffer(1e30); },
+                function () { new ArrayBuffer(1e12); },
+                function () { new Uint8Array(1e12); },
+                function () { new Uint8Array(-1); },
+                function () { new Float64Array(1e15); },
+                function () { new ArrayBuffer(8).slice({valueOf: function () { here(); return 0; }}); },
+                function () { new ArrayBuffer({valueOf: function () { here(); return 1; }}); },
+                function () { new ArrayBuffer(1, {get maxByteLength() { here(); return 8; }}); },
+                function () { Reflect.construct(ArrayBuffer, [1], new Proxy(function () {}, {get: function (t, k) { here(); return t[k]; }})); },
+                function () { class X extends ArrayBuffer { constructor() { here(); super({valueOf: function () { here(); return 1; }}); here(); } } new X(); },
+                function () { var B = function () {}; B[Symbol.species] = function (n) { here(); return new ArrayBuffer(n); }; var a = new ArrayBuffer(8); a.constructor = B; a.slice(1); },
+                function () { new Uint8Array({get length() { here(); return 1; }}); },
+                function () { new Uint8Array(new ArrayBuffer(8), {valueOf: function () { here(); return 0; }}); }
+            ];
+            attempts.forEach(function (f) {
+                try { f(); } catch (e) { look(e.stack); }
+            });
+            delete Error.prepareStackTrace;
+            H.log(found.join('; ') || 'none');
+            H.log(seen > 20 ? 'looked' : 'saw ' + seen);
+            var shared = new WebAssembly.Memory({initial: 1, maximum: 1, shared: true}).buffer;
+            var proto = Object.getPrototypeOf(shared);
+            H.log([proto.constructor === Object, typeof proto.grow, Object.prototype.toString.call(shared)].join());
+        };"#);
+    run.meta = r#"{"cpu":2000}"#.into();
+    let out = run.on(rt());
+    assert!(is(&out, RunStatus::Done), "{}", status(&out));
+    assert_eq!(out.console_log, ["none", "looked", "true,undefined,[object SharedArrayBuffer]"]);
+
+    // The audit's way in: with a plain handler, Object.prototype.get was a trap and got the real constructor as its first
+    // argument. Every trap name goes on Object.prototype here, every operation that looks one up runs, and the things
+    // the trap itself touches are replaced as well. Descriptors have no prototype, or `get` and `set` would be read from it.
+    let mut run = Run::new(46, r#"
+        module.exports.loop = function () {
+            var names = ['get', 'set', 'has', 'deleteProperty', 'ownKeys', 'getOwnPropertyDescriptor', 'defineProperty',
+                'getPrototypeOf', 'setPrototypeOf', 'isExtensible', 'preventExtensions', 'apply', 'construct'];
+            var called = [], real = null, made = [];
+            function keep(name) {
+                return function (target) {
+                    called.push(name);
+                    if (typeof target === 'function') real = target;
+                    return Reflect[name].apply(Reflect, arguments);
+                };
+            }
+            function touch() {
+                void ArrayBuffer.isView;
+                ArrayBuffer.mine = 1;
+                void ('mine' in ArrayBuffer);
+                void Object.keys(ArrayBuffer);
+                void Object.getOwnPropertyDescriptor(ArrayBuffer, 'prototype');
+                Object.defineProperty(ArrayBuffer, 'mine2', {__proto__: null, value: 1, configurable: true});
+                delete ArrayBuffer.mine;
+                delete ArrayBuffer.mine2;
+                void Object.getPrototypeOf(ArrayBuffer);
+                Object.setPrototypeOf(ArrayBuffer, Function.prototype);
+                void Object.isExtensible(ArrayBuffer);
+                try { ArrayBuffer(1); } catch (e) { void e; }
+                made.push(new ArrayBuffer(8).byteLength);
+                void (new ArrayBuffer(4) instanceof ArrayBuffer);
+                made.push(new ArrayBuffer(8).slice(2).byteLength);
+            }
+            names.forEach(function (n) { Object.prototype[n] = keep(n); });
+            touch();
+            names.forEach(function (n) { delete Object.prototype[n]; });
+            H.log(called.join() || 'no trap');
+            H.log(real ? 'real' : 'no constructor');
+            H.log(made.join());
+
+            // The bot's own function under `new ArrayBuffer()`, where the list of arguments is empty.
+            var read = [];
+            Object.defineProperty(Array.prototype, '0', {__proto__: null, configurable: true,
+                get: function () { read.push('get'); return 1 << 30; }, set: function () { read.push('set'); }});
+            var empty = new ArrayBuffer().byteLength, given = new ArrayBuffer(8).byteLength;
+            delete Array.prototype[0];
+            H.log([empty, given, read.join() || 'not read'].join());
+
+            // Replacing what the trap calls does nothing: it holds its own copy and calls it directly.
+            var saved = [Reflect.construct, Function.prototype.call, Function.prototype.apply], hit = [];
+            Reflect.construct = function () { hit.push('Reflect.construct'); return saved[0].apply(Reflect, arguments); };
+            Function.prototype.call = function () { hit.push('call'); };
+            Function.prototype.apply = function () { hit.push('apply'); };
+            var size = new ArrayBuffer(8).byteLength;
+            Function.prototype.apply = saved[2];
+            Function.prototype.call = saved[1];
+            Reflect.construct = saved[0];
+            H.log([size, hit.join() || 'not called'].join());
+        };"#);
+    run.meta = r#"{"cpu":2000}"#.into();
+    let out = run.on(rt());
+    assert!(is(&out, RunStatus::Done), "{}", status(&out));
+    assert_eq!(out.console_log, ["no trap", "no constructor", "8,6", "0,8,not read", "8,not called"]);
+}
+
+/// A bot used to sleep through its CPU limit on `Atomics.wait`, which held every tick for the 5 s hard timeout.
+#[test]
+fn a_bot_cannot_sleep() {
+    let run = Run::new(43, r#"
+        module.exports.loop = function () {
+            var shared = new Int32Array(new WebAssembly.Memory({initial: 1, maximum: 1, shared: true}).buffer);
+            try { H.log(String(Atomics.wait(shared, 0, 0, 2000))); } catch (e) { H.log(e.name + ': ' + e.message); }
+            H.log(String(Atomics.add(new Int32Array(1), 0, 1)));
+        };"#);
+    let start = Instant::now();
+    let out = run.on(rt());
+    assert!(is(&out, RunStatus::Done), "{}", status(&out));
+    assert!(start.elapsed().as_millis() < 1500, "{:?}", start.elapsed());
+    assert!(out.console_log[0].starts_with("TypeError: "), "{:?}", out.console_log);
+    assert_eq!(out.console_log[1], "0");
+}
+
+/// A cost matrix on a buffer that can be unmapped under the search is not read: this one crashed the process.
+#[test]
+fn a_cost_matrix_on_a_shared_buffer_is_ignored() {
+    let run = Run::new(44, r#"
+        module.exports.loop = function () {
+            var n = H.natives, wall = new Uint8Array(new WebAssembly.Memory({initial: 1, maximum: 1, shared: true}).buffer, 0, 2500);
+            wall.fill(255);
+            var r = n.nativeMod.search({xx: 6325, yy: 6325}, [{range: 0, pos: {xx: 6328, yy: 6325}}], function () { return wall; }, 1, 5, 16, 2000, 1000, false, 1.2);
+            H.log([r.incomplete, r.path.length].join());
+        };"#);
+    let out = run.on(rt());
+    assert!(is(&out, RunStatus::Done), "{}", status(&out));
+    assert_eq!(out.console_log, ["false,3"], "walls in the matrix would leave no path");
 }
 
 /// Committed private memory of this process.
