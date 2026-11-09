@@ -982,7 +982,12 @@ fn private_bytes() -> usize {
         unsafe { K32GetProcessMemoryInfo(GetCurrentProcess(), &mut c, c.cb) };
         c.private
     }
-    #[cfg(not(windows))]
+    // resident, as statm's second field on Linux
+    #[cfg(target_os = "macos")]
+    {
+        util::sys::process_memory() as usize
+    }
+    #[cfg(target_os = "linux")]
     {
         let s = std::fs::read_to_string("/proc/self/statm").unwrap();
         s.split(' ').nth(1).unwrap().parse::<usize>().unwrap() * 4096

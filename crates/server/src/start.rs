@@ -235,7 +235,11 @@ fn make_sure_of_steam_key(data: &Path) {
         give_up(&format!("Krebs could not save the key in {} ({e}).", data.display()));
     }
     // the key was on screen, and the next thing people do with this window is share what it says
+    #[cfg(windows)]
     let _ = std::process::Command::new(steam_web::system_program("cmd")).args(["/c", "cls"]).status();
+    // clear the screen and the scrollback, then home the cursor
+    #[cfg(not(windows))]
+    print!("\x1b[2J\x1b[3J\x1b[H");
     println!("  Thanks, Krebs saved that key.\n");
 }
 
