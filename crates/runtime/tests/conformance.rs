@@ -727,7 +727,11 @@ fn thousand_isolates() {
     let per_vm_mb = (private_bytes() - mem0) as f64 / n as f64 / 1048576.0;
     let heap_mb = rt.stats().heap_used_mb / n as f64;
     eprintln!("{n} isolates (created + one tick) in {elapsed:?} on {threads} threads; {per_vm_mb:.2} MB committed and {heap_mb:.2} MB used heap per VM");
-    assert!(elapsed.as_secs_f64() < 5.0, "{elapsed:?}");
+    // On a machine that shares its cores with other work the time says more about the neighbours than about Krebs: a busy
+    // Linux machine took 10.7 s, and a build machine has two or three cores for it. KREBS_TEST_SHARED_MACHINE is for
+    // those, and leaves a bound that a VM ten times as slow still fails. The memory bound is the same everywhere.
+    let limit = if std::env::var_os("KREBS_TEST_SHARED_MACHINE").is_some_and(|v| !v.is_empty()) { 60.0 } else { 5.0 };
+    assert!(elapsed.as_secs_f64() < limit, "{elapsed:?}, the limit is {limit} s");
     assert!(per_vm_mb <= 5.0, "{per_vm_mb} MB per VM");
 }
 

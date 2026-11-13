@@ -1,0 +1,110 @@
+# Builds Krebs and runs its tests on Linux and macOS, on x64 and arm64, for every push to main and every pull request.
+# Krebs is written on Windows, where tools\check-platforms.bat can only say that the code compiles for those systems.
+# Here it is linked and run on them.
+#
+# Krebs lives on Gitea, and a job copies each push to GitHub, this file with it (README.md, Develop). The machines are
+# GitHub's, so this runs there: for the copy, and for pull requests from forks. It uses no secret.
+name: Linux and macOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to a pull request stops the run for the older one. Each push to main gets its own run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    # Gitea reads this folder too, and has no machines with these labels.
+    if: github.server_url == 'https://github.com'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The machines GitHub gives a public repository for free. Linux on arm64 and the Intel Mac have no -latest
+          # label, so theirs name a version.
+          - { name: Linux x64, runner: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { name: Linux arm64, runner: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu }
+          - { name: macOS arm64, runner: macos-latest, target: aarch64-apple-darwin }
+          - { name: macOS Intel, runner: macos-26-intel, target: x86_64-apple-darwin }
+    steps:
+      # An action is named by its commit, as the V8 library is by its sha256: a tag can be moved to other code.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The submodule URLs are relative, so a fork would look for the mods under its own name, where there may be none.
+      # This takes them from the originals, at the commits the checkout links to.
+      - name: Fetch the mods
+        run: git -c "url.https://github.com/DefaultO/.insteadOf=https://github.com/$GITHUB_REPOSITORY_OWNER/" submodule update --init --depth 1
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+          rustc -vV
+
+      # Keeps the crates the v8 crate depends on, downloaded and compiled, which is every crate Krebs gets from outside.
+      # What is in the repository is built again each time, because Cargo does that to a fresh checkout whatever is kept,
+      # and the V8 library is fetched each time, so that its sha256 is checked each time. Only a run on main saves, so
+      # pull requests cannot fill the space.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: ${{ matrix.target }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-on-failure: true
+
+      # tools/v8-env.sh is what run.sh asks. With no library built on this machine it leaves the v8 crate to fetch the
+      # plain prebuilt from denoland/rusty_v8, and names the sha256 that archive must have: the build stops at any other.
+      - name: Pin the V8 library
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          . tools/v8-env.sh
+          host="$(rustc -vV | sed -n 's/^host: //p')"
+          if [ "$host" != "$TARGET" ]; then
+              echo "::error::This machine builds for $host, and the job is meant for $TARGET."
+              exit 1
+          fi
+          if [ -z "${RUSTY_V8_ARCHIVE_SHA256:-}" ]; then
+              echo "::error::tools/v8-env.sh has no sha256 for $host."
+              exit 1
+          fi
+          echo "RUSTY_V8_ARCHIVE_SHA256=$RUSTY_V8_ARCHIVE_SHA256" >> "$GITHUB_ENV"
+
+      - name: Test the crates that need no V8
+        run: cargo test
+
+      # With the mods here the first build stops on purpose, so that Cargo reads the list of them again
+      # (crates/modlist/build.rs), and the second takes them in. run.sh does the same.
+      - name: Build everything
+        run: |
+          build() { cargo test --workspace --release -j 4 --no-run; }
+          build || { echo "Building once more: a build stops when it finds the list of mods changed."; build; }
+
+      # The v8 crate writes beside the library where it came from and what the archive hashed to.
+      - name: Check that the V8 library is the pinned one
+        run: |
+          cat target/release/gn_out/obj/librusty_v8.sum
+          grep -qx "archive-sha256 $RUSTY_V8_ARCHIVE_SHA256" target/release/gn_out/obj/librusty_v8.sum
+
+      # --release because debug V8 tests crash in Isolate::new, and no runtime/ptrcomp because the prebuilt has no
+      # pointer compression (README.md, Tests). KREBS_TEST_SHARED_MACHINE loosens the one bound that measures how fast
+      # the machine is, which says little on one that shares its cores.
+      - name: Test everything
+        env:
+          KREBS_TEST_SHARED_MACHINE: 1
+        run: cargo test --workspace --release -j 4 --no-fail-fast

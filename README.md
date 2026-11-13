@@ -124,7 +124,9 @@ Each Windows script below has a `.sh` twin for macOS and Linux.
 The downloads are built and tested on Windows. The macOS and Linux builds come from people who run Krebs there, and no
 release is tested on them. `tools\check-platforms.bat` checks from Windows that every crate and test still compiles for
 Linux and macOS, on x64 and arm64, without linking or running anything. Run it before a release, and after any change
-that touches the system: it needs the four targets from `rustup target add` once, and says which.
+that touches the system: it needs the four targets from `rustup target add` once, and says which. On GitHub,
+[.github/workflows/test.yml](.github/workflows/test.yml) builds Krebs and runs the tests below on Linux and macOS, on x64
+and arm64, for every push to `main` and every pull request.
 
 ```
 git clone --recursive https://github.com/DefaultO/krebs.git
@@ -203,6 +205,10 @@ On macOS and Linux leave out the middle line and `--features runtime/ptrcomp`: t
 no V8. The last runs everything, and has to be `--release`: debug V8 tests crash
 in `Isolate::new`. `-j 4` is there because V8 crates take a lot of memory to link. A mod that is checked out is tested with
 the rest.
+
+The test `thousand_isolates` gives 1000 VMs 5 seconds. A machine that shares its cores with other work, like the ones
+GitHub runs the tests on, does not always make that, and says little by missing it: set `KREBS_TEST_SHARED_MACHINE=1`
+there and the test allows 60.
 
 `node tools/parity-report.js` regenerates `docs/parity-status.md`. The scripts in `tools/oracle` re-record the test fixtures
 from the official server, which they find through `SCREEPS_ROOT`. Building and testing do not need them.
