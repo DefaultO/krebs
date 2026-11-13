@@ -121,6 +121,11 @@ Krebs builds on Windows (x64), macOS (Apple silicon and Intel) and Linux (x64 an
 the command line tools (`xcode-select --install`); on Linux a C compiler and linker (`build-essential` or the like).
 Each Windows script below has a `.sh` twin for macOS and Linux.
 
+The downloads are built and tested on Windows. The macOS and Linux builds come from people who run Krebs there, and no
+release is tested on them. `tools\check-platforms.bat` checks from Windows that every crate and test still compiles for
+Linux and macOS, on x64 and arm64, without linking or running anything. Run it before a release, and after any change
+that touches the system: it needs the four targets from `rustup target add` once, and says which.
+
 ```
 git clone --recursive https://github.com/DefaultO/krebs.git
 ```
@@ -163,6 +168,9 @@ tools\package.bat    the zip for players, in dist\, built in a clean copy, with 
 tools/package.sh     the same on macOS (a .zip) and Linux (a .tar.gz), for the machine it runs on
 ```
 
+The archive from `tools/package.sh` holds the Windows `README.txt` and, beside it, `README-macos-linux.txt`, which says what
+is different there and that it is not a tested release.
+
 A release is built from a fresh clone at its tag, so that it holds what that commit says and nothing else.
 `tools\package.bat` stops at anything a clone would not have: uncommitted changes, files `git status` has been told to skip
 (which is what `run.bat` does to `Cargo.lock` and the mod list), a submodule that differs from its link, or a mod folder that
@@ -179,7 +187,8 @@ That library is built for Windows only. On macOS and Linux, `run.sh` and `tools/
 v8 crate downloads once from [denoland/rusty_v8](https://github.com/denoland/rusty_v8/releases), without pointer
 compression: its pointer-compressed prebuilt shares one 4 GB cage among all bots, which a server with many of them runs
 out of. A library with a cage per isolate built on that machine at `target/ptrcomp/release/gn_out` is used instead when it
-is there. `tools/v8-env.sh` says which.
+is there. `tools/v8-env.sh` says which, and pins the sha256 of the plain prebuilt for the four targets, as
+`tools/v8-download.bat` does for the Windows library: a build stops if the archive it fetched is another one.
 
 ### Tests
 

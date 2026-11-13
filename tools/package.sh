@@ -121,6 +121,8 @@ chmod +x "$STAGE/krebs" "$STAGE"/Let\ friends\ join.*
 mkdir "$STAGE/starter-bot"
 cp "$ROOT/tools/package/starter-bot/main.js" "$STAGE/starter-bot/"
 cp "$ROOT/tools/package/README.txt" "$STAGE/README.txt"
+# README.txt is the Windows one. This page says what is different here, and that this build is not a tested release.
+cp "$ROOT/tools/package/README-macos-linux.txt" "$STAGE/README-macos-linux.txt"
 cp "$ROOT/LICENSE" "$STAGE/LICENSE.txt"
 cp "$ROOT/THIRD_PARTY_NOTICES.md" "$STAGE/THIRD_PARTY_NOTICES.txt"
 

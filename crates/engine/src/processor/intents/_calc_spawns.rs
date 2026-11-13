@@ -681,12 +681,12 @@ pub(crate) mod support {
         js_max(dx, dy)
     }
 
-    /// utils.js:657 calcTerminalEnergyCost. ponytail: `f64::exp` is the platform libm, V8's Math.exp is
-    /// fdlibm; they differ in the last ulp for ~10 % of integer ranges, but a check of every range 0..=300
-    /// with every amount 1..=300000 against node 22 found no different cost. Port fdlibm `exp` if a
-    /// non-integer range or a larger amount ever reaches here.
+    /// utils.js:657 calcTerminalEnergyCost, through `crate::utils` and so through `js_exp`, the port of V8's Math.exp.
+    /// This used the system's `exp`, which differs from V8's in the last bits for one range in ten. On Windows no cost
+    /// of a send came out different for that (every range 0..=600 with every amount 1..=300000), but Linux and macOS
+    /// bring their own `exp`, and nothing had checked those.
     pub fn calc_terminal_energy_cost(amount: f64, range: f64) -> f64 {
-        (amount * (1.0 - (-range / 30.0).exp())).ceil()
+        crate::utils::calc_terminal_energy_cost(amount, range)
     }
 
     /// utils.js:615 calcResources(object).

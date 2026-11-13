@@ -1957,7 +1957,7 @@ fn from_words(hi: i32, lo: u32) -> f64 {
 /// `Math.pow`: V8's fdlibm `__ieee754_pow` (e_pow.c), with ECMAScript's NaN for `(±1) ** ±∞` and NaN `y`.
 /// Rust's `powf` (the platform libm) differs in the last ulp for some inputs.
 #[allow(clippy::excessive_precision, clippy::approx_constant, clippy::eq_op)] // fdlibm verbatim: constants, NaN as (z-z)/(z-z)
-pub(crate) fn js_pow(x: f64, y: f64) -> f64 {
+pub fn js_pow(x: f64, y: f64) -> f64 {
     if y.is_nan() || (x.abs() == 1.0 && y.is_infinite()) {
         return f64::NAN;
     }

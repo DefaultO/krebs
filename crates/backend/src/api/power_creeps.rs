@@ -39,7 +39,8 @@ fn json_of(o: &Obj) -> Json {
 /// `calcFreePowerLevels(user, userPowerCreeps)`.
 fn free_power_levels(user: &Obj, pcs: &[DocRef]) -> f64 {
     let power = field(user, "power").and_then(Val::as_f64).filter(|p| *p != 0.0 && !p.is_nan()).unwrap_or(0.0);
-    let level = (power / C::POWER_LEVEL_MULTIPLY as f64).powf(1.0 / C::POWER_LEVEL_POW as f64).floor();
+    // V8's Math.pow, as the processor counts the same levels: the system's `pow` is a different one on each system
+    let level = engine::processor::js_pow(power / C::POWER_LEVEL_MULTIPLY as f64, 1.0 / C::POWER_LEVEL_POW as f64).floor();
     // _.sum(userPowerCreeps, 'level'): numbers only
     let used = pcs.len() as f64 + pcs.iter().filter_map(|p| field(&p.obj, "level").and_then(Val::as_f64)).sum::<f64>();
     level - used
@@ -399,6 +400,23 @@ mod tests {
 
     fn err(j: &Json) -> Option<&str> {
         j.get("error").and_then(Json::as_str)
+    }
+
+    /// A level starts exactly at its square: `Math.pow(x, 0.5)` in V8 is the square root, on every system.
+    #[test]
+    fn power_levels_start_at_their_squares() {
+        let user = |power: f64| {
+            let mut o = Obj::new();
+            o.set(engine::doc::Atom::intern("power"), Val::Num(power));
+            o
+        };
+        for n in [0u32, 1, 2, 3, 10, 99, 1000, 12345, 100_000] {
+            let at = f64::from(n) * f64::from(n) * C::POWER_LEVEL_MULTIPLY as f64;
+            assert_eq!(free_power_levels(&user(at), &[]), f64::from(n), "{n}");
+            if n > 0 {
+                assert_eq!(free_power_levels(&user(at - 1.0), &[]), f64::from(n) - 1.0, "just below {n}");
+            }
+        }
     }
 
     /// Ids that are not strings: findOne is strict (delete/cancel-delete), the `==` find of rename/upgrade matches
