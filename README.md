@@ -206,9 +206,10 @@ no V8. The last runs everything, and has to be `--release`: debug V8 tests crash
 in `Isolate::new`. `-j 4` is there because V8 crates take a lot of memory to link. A mod that is checked out is tested with
 the rest.
 
-The test `thousand_isolates` gives 1000 VMs 5 seconds. A machine that shares its cores with other work, like the ones
-GitHub runs the tests on, does not always make that, and says little by missing it: set `KREBS_TEST_SHARED_MACHINE=1`
-there and the test allows 60.
+Two tests hold Krebs to a time that only a machine with its cores to itself keeps: `thousand_isolates` gives 1000 VMs
+5 seconds, and `infinite_loop_dies_at_the_deadline` wants a bot stopped within 2 ms of its limit. A machine that shares
+its cores with other work, like the ones GitHub runs the tests on, says little by missing those: set
+`KREBS_TEST_SHARED_MACHINE=1` there, and they allow 60 seconds and 45 ms.
 
 `node tools/parity-report.js` regenerates `docs/parity-status.md`. The scripts in `tools/oracle` re-record the test fixtures
 from the official server, which they find through `SCREEPS_ROOT`. Building and testing do not need them.

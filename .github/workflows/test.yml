@@ -115,8 +115,8 @@ jobs:
           done
 
       # --release because debug V8 tests crash in Isolate::new, and no runtime/ptrcomp because the prebuilt has no
-      # pointer compression (README.md, Tests). KREBS_TEST_SHARED_MACHINE loosens the one bound that measures how fast
-      # the machine is, which says little on one that shares its cores.
+      # pointer compression (README.md, Tests). KREBS_TEST_SHARED_MACHINE loosens the two time bounds that only a machine
+      # with its cores to itself keeps.
       - name: Test everything
         env:
           KREBS_TEST_SHARED_MACHINE: 1
