@@ -95,11 +95,24 @@ jobs:
           build() { cargo test --workspace --release -j 4 --no-run; }
           build || { echo "Building once more: a build stops when it finds the list of mods changed."; build; }
 
-      # The v8 crate writes beside the library where it came from and what the archive hashed to.
+      # The v8 crate writes beside the library where it came from and what the archive hashed to. Which folder that is
+      # depends on the version of Cargo, so the record is looked for.
       - name: Check that the V8 library is the pinned one
         run: |
-          cat target/release/gn_out/obj/librusty_v8.sum
-          grep -qx "archive-sha256 $RUSTY_V8_ARCHIVE_SHA256" target/release/gn_out/obj/librusty_v8.sum
+          records="$(find target/release -name librusty_v8.sum)"
+          if [ -z "$records" ]; then
+              echo "::error::The v8 crate left no record of the library it fetched. What there is of it:"
+              find target/release -name 'librusty_v8*'
+              exit 1
+          fi
+          for record in $records; do
+              echo "$record"
+              cat "$record"
+              if ! grep -qx "archive-sha256 $RUSTY_V8_ARCHIVE_SHA256" "$record"; then
+                  echo "::error::$record does not name the pinned sha256, $RUSTY_V8_ARCHIVE_SHA256."
+                  exit 1
+              fi
+          done
 
       # --release because debug V8 tests crash in Isolate::new, and no runtime/ptrcomp because the prebuilt has no
       # pointer compression (README.md, Tests). KREBS_TEST_SHARED_MACHINE loosens the one bound that measures how fast
