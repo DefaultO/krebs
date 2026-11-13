@@ -402,7 +402,8 @@ mod tests {
         let mut cur = String::new();
         let mut num = false;
         for c in s.chars() {
-            let is_num = c.is_ascii_digit() || c == '.' || c == 'e' && num || (c == '-' && !num);
+            // An exponent's sign stays in the number: 1.4e-14 is one token.
+            let is_num = c.is_ascii_digit() || c == '.' || c == 'e' && num || (c == '-' && (!num || cur.ends_with('e')));
             if is_num != num && !cur.is_empty() {
                 out.push(std::mem::take(&mut cur));
             }

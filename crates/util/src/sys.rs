@@ -1,8 +1,8 @@
 //! OS services std lacks, through direct FFI (no crates): per-thread CPU time,
-//! physical core count, OS randomness and a Ctrl-C hook. Windows and Linux.
+//! physical core count, OS randomness and a Ctrl-C hook. Windows, Linux and macOS.
 
-#[cfg(not(any(all(windows, target_arch = "x86_64"), target_os = "linux")))]
-compile_error!("util::sys supports x86_64 Windows and Linux");
+#[cfg(not(any(all(windows, target_arch = "x86_64"), target_os = "linux", target_os = "macos")))]
+compile_error!("util::sys supports x86_64 Windows, Linux and macOS");
 
 /// CPU time consumed by the calling thread, in ns.
 pub fn thread_cpu_ns() -> u64 {
@@ -19,7 +19,7 @@ impl ThreadClock {
     }
 
     /// CPU time the thread has consumed, in ns (same scale as `thread_cpu_ns`).
-    /// Linux: 0 once the thread has exited; Windows keeps the final value.
+    /// Linux and macOS: 0 once the thread has exited; Windows keeps the final value.
     pub fn cpu_ns(&self) -> u64 {
         self.0.cpu_ns()
     }
@@ -41,7 +41,7 @@ pub fn os_random(buf: &mut [u8]) {
 }
 
 /// Runs `f` on its own thread whenever Ctrl-C / Ctrl-Break / console close / logoff / shutdown
-/// (Windows) or SIGINT / SIGTERM (Linux) arrives. Installing again replaces the callback.
+/// (Windows) or SIGINT / SIGTERM (Linux, macOS) arrives. Installing again replaces the callback.
 /// `f` only has to ask for a stop: on a console close the process stays up until main exits,
 /// for as long as Windows allows, which is about 5 s.
 pub fn on_ctrl_c(f: impl Fn() + Send + Sync + 'static) {
@@ -376,6 +376,178 @@ mod imp {
     }
 }
 
+#[cfg(target_os = "macos")]
+mod imp {
+    use std::ffi::{c_char, c_int, c_long, c_void};
+    use std::sync::atomic::{AtomicI32, Ordering::Relaxed};
+    use std::sync::Once;
+
+    type MachPort = u32;
+    type KernReturn = c_int;
+
+    #[repr(C)]
+    struct Timespec {
+        sec: i64,
+        nsec: c_long,
+    }
+
+    /// Darwin `struct sigaction`: handler union, sigset_t (u32), flags.
+    #[repr(C)]
+    struct SigAction {
+        handler: usize,
+        mask: u32,
+        flags: c_int,
+    }
+
+    /// `thread_extended_info`: user and system time in ns.
+    #[repr(C)]
+    struct ThreadExtendedInfo {
+        user_ns: u64,
+        system_ns: u64,
+        rest: [i32; 8],
+        name: [u8; 64],
+    }
+
+    /// `mach_task_basic_info`.
+    #[repr(C)]
+    #[derive(Default)]
+    struct TaskBasicInfo {
+        virtual_size: u64,
+        resident_size: u64,
+        resident_size_max: u64,
+        user_time: [i32; 2],
+        system_time: [i32; 2],
+        policy: i32,
+        suspend_count: i32,
+    }
+
+    extern "C" {
+        static mach_task_self_: MachPort;
+        fn mach_thread_self() -> MachPort;
+        fn mach_port_deallocate(task: MachPort, name: MachPort) -> KernReturn;
+        fn thread_info(thread: MachPort, flavor: c_int, info: *mut c_int, count: *mut u32) -> KernReturn;
+        fn task_info(task: MachPort, flavor: c_int, info: *mut c_int, count: *mut u32) -> KernReturn;
+        fn clock_gettime(clock: c_int, ts: *mut Timespec) -> c_int;
+        fn sysctlbyname(name: *const c_char, old: *mut c_void, oldlen: *mut usize, new: *const c_void, newlen: usize) -> c_int;
+        fn getentropy(buf: *mut c_void, len: usize) -> c_int;
+        fn sigaction(sig: c_int, act: *const SigAction, old: *mut SigAction) -> c_int;
+        fn pipe(fds: *mut c_int) -> c_int;
+        fn read(fd: c_int, buf: *mut c_void, n: usize) -> isize;
+        fn write(fd: c_int, buf: *const c_void, n: usize) -> isize;
+    }
+
+    const CLOCK_THREAD_CPUTIME_ID: c_int = 16;
+    const THREAD_EXTENDED_INFO: c_int = 5;
+    const MACH_TASK_BASIC_INFO: c_int = 20;
+    const SIGINT: c_int = 2;
+    const SIGTERM: c_int = 15;
+    const SA_RESTART: c_int = 0x0002;
+
+    fn words<T>() -> u32 {
+        (std::mem::size_of::<T>() / 4) as u32
+    }
+
+    pub fn thread_cpu_ns() -> u64 {
+        let mut ts = Timespec { sec: 0, nsec: 0 };
+        // SAFETY: valid out pointer.
+        assert_eq!(unsafe { clock_gettime(CLOCK_THREAD_CPUTIME_ID, &mut ts) }, 0, "CLOCK_THREAD_CPUTIME_ID");
+        ts.sec as u64 * 1_000_000_000 + ts.nsec as u64
+    }
+
+    /// Our own send right to the thread's Mach port. Holding it keeps the name from being reused for another thread:
+    /// once the thread exits it is a dead name, thread_info fails and the clock reads 0, as on Linux.
+    pub struct Clock(MachPort);
+
+    impl Clock {
+        pub fn current() -> Clock {
+            // SAFETY: returns a new send right to the calling thread, released in Drop.
+            Clock(unsafe { mach_thread_self() })
+        }
+
+        pub fn cpu_ns(&self) -> u64 {
+            let mut info = ThreadExtendedInfo { user_ns: 0, system_ns: 0, rest: [0; 8], name: [0; 64] };
+            let mut count = words::<ThreadExtendedInfo>();
+            // SAFETY: info is a thread_extended_info of count words.
+            let kr = unsafe { thread_info(self.0, THREAD_EXTENDED_INFO, (&mut info as *mut ThreadExtendedInfo).cast(), &mut count) };
+            if kr == 0 {
+                info.user_ns + info.system_ns
+            } else {
+                0
+            }
+        }
+    }
+
+    impl Drop for Clock {
+        fn drop(&mut self) {
+            // SAFETY: we own this send right.
+            unsafe { mach_port_deallocate(mach_task_self_, self.0) };
+        }
+    }
+
+    pub fn physical_cores() -> Option<usize> {
+        let mut n: c_int = 0;
+        let mut len = std::mem::size_of::<c_int>();
+        // SAFETY: NUL-terminated name, n is an int of len bytes.
+        let ok = unsafe { sysctlbyname(c"hw.physicalcpu".as_ptr(), (&mut n as *mut c_int).cast(), &mut len, std::ptr::null(), 0) } == 0;
+        (ok && n > 0).then_some(n as usize)
+    }
+
+    pub fn process_memory() -> u64 {
+        let mut info = TaskBasicInfo::default();
+        let mut count = words::<TaskBasicInfo>();
+        // SAFETY: info is a mach_task_basic_info of count words.
+        let kr = unsafe { task_info(mach_task_self_, MACH_TASK_BASIC_INFO, (&mut info as *mut TaskBasicInfo).cast(), &mut count) };
+        if kr == 0 {
+            info.resident_size
+        } else {
+            0
+        }
+    }
+
+    pub fn os_random(buf: &mut [u8]) {
+        // getentropy takes at most 256 bytes a call.
+        for chunk in buf.chunks_mut(256) {
+            // SAFETY: chunk is a valid writable buffer of at most 256 bytes.
+            let r = unsafe { getentropy(chunk.as_mut_ptr().cast(), chunk.len()) };
+            assert_eq!(r, 0, "getentropy failed: {}", std::io::Error::last_os_error());
+        }
+    }
+
+    static PIPE_W: AtomicI32 = AtomicI32::new(-1);
+
+    extern "C" fn handler(_sig: c_int) {
+        // Only async-signal-safe work here: wake the callback thread through the pipe.
+        // SAFETY: writing one byte from a valid buffer; a bad fd only makes write fail.
+        unsafe { write(PIPE_W.load(Relaxed), [1u8].as_ptr().cast(), 1) };
+    }
+
+    pub fn install_ctrl_c() {
+        static ONCE: Once = Once::new();
+        ONCE.call_once(|| {
+            let mut fds = [0 as c_int; 2];
+            // SAFETY: fds holds two ints.
+            assert_eq!(unsafe { pipe(fds.as_mut_ptr()) }, 0, "pipe failed");
+            PIPE_W.store(fds[1], Relaxed);
+            let r = fds[0];
+            std::thread::Builder::new()
+                .name("ctrl-c".into())
+                .spawn(move || loop {
+                    let mut b = 0u8;
+                    // SAFETY: valid one-byte buffer.
+                    if unsafe { read(r, (&mut b as *mut u8).cast(), 1) } == 1 {
+                        super::run_ctrl_c();
+                    }
+                })
+                .expect("spawn ctrl-c thread");
+            let act = SigAction { handler: handler as extern "C" fn(c_int) as usize, mask: 0, flags: SA_RESTART };
+            for sig in [SIGINT, SIGTERM] {
+                // SAFETY: act is a valid sigaction; old may be null.
+                assert_eq!(unsafe { sigaction(sig, &act, std::ptr::null_mut()) }, 0, "sigaction failed");
+            }
+        });
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -390,7 +562,7 @@ mod tests {
     #[test]
     fn thread_cpu_matches_reference() {
         // Reference: GetThreadTimes on Windows (charged per 15.6 ms clock tick, so it is
-        // noisy on a loaded machine: up to 3 tries), CLOCK_THREAD_CPUTIME_ID on Linux.
+        // noisy on a loaded machine: up to 3 tries), CLOCK_THREAD_CPUTIME_ID on Linux and macOS.
         std::thread::spawn(|| {
             #[cfg(windows)]
             let reference = imp::thread_times_ns;

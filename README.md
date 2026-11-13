@@ -115,8 +115,11 @@ One more that does not come from Krebs:
 
 ## Develop
 
-You need Windows, [Rust](https://rustup.rs) and the
-[C++ build tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/). Rust's setup offers to install them.
+Krebs builds on Windows (x64), macOS (Apple silicon and Intel) and Linux (x64 and arm64). You need
+[Rust](https://rustup.rs) and a C++ toolchain: on Windows the
+[C++ build tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/), which Rust's setup offers to install; on macOS
+the command line tools (`xcode-select --install`); on Linux a C compiler and linker (`build-essential` or the like).
+Each Windows script below has a `.sh` twin for macOS and Linux.
 
 ```
 git clone --recursive https://github.com/DefaultO/krebs.git
@@ -142,7 +145,7 @@ git config submodule.mods/bare.url https://github.com/DefaultO/krebs-bare.git
 git submodule update --init mods/bare
 ```
 
-`run.bat` builds the server if the code changed, makes a world on the first run and starts it. Extra arguments go to the
+`run.bat` (Windows) or `./run.sh` (macOS, Linux) builds the server if the code changed, makes a world on the first run and starts it. Extra arguments go to the
 server. Page files in `mods/bare` reload on a reconnect.
 
 With the mods here, a build lists them in `crates/modlist/Cargo.toml` and `Cargo.lock`, and neither list belongs in a commit.
@@ -157,6 +160,7 @@ git pull
 
 ```
 tools\package.bat    the zip for players, in dist\, built in a clean copy, with everything in a Krebs folder
+tools/package.sh     the same on macOS (a .zip) and Linux (a .tar.gz), for the machine it runs on
 ```
 
 A release is built from a fresh clone at its tag, so that it holds what that commit says and nothing else.
@@ -171,6 +175,12 @@ faster. `run.bat` downloads that library once, as a prebuilt, and the matching b
 have to build it. `tools/v8-ptrcomp.ps1` is how it was made, which takes about 40 minutes. `tools/v8-download.bat` fetches it
 from GitHub, or from Gitea if that fails, and a pinned sha256 has to match either way.
 
+That library is built for Windows only. On macOS and Linux, `run.sh` and `tools/dist.sh` use the plain prebuilt that the
+v8 crate downloads once from [denoland/rusty_v8](https://github.com/denoland/rusty_v8/releases), without pointer
+compression: its pointer-compressed prebuilt shares one 4 GB cage among all bots, which a server with many of them runs
+out of. A library with a cage per isolate built on that machine at `target/ptrcomp/release/gn_out` is used instead when it
+is there. `tools/v8-env.sh` says which.
+
 ### Tests
 
 ```
@@ -179,7 +189,7 @@ set RUSTY_V8_ARCHIVE=https://github.com/DefaultO/krebs/releases/download/v8-152.
 cargo test --workspace --release --features runtime/ptrcomp -j 4 --no-fail-fast
 ```
 
-Those are for cmd: in PowerShell the middle line is `$env:RUSTY_V8_ARCHIVE="..."`. The address also works with
+On macOS and Linux leave out the middle line and `--features runtime/ptrcomp`: the v8 crate fetches its own prebuilt, and `tools/v8-env.sh` says why it has to be the one without pointer compression. Those are for cmd: in PowerShell the middle line is `$env:RUSTY_V8_ARCHIVE="..."`. The address also works with
 `gitea.defaul.to` in place of `github.com`. The first command runs the crates that need
 no V8. The last runs everything, and has to be `--release`: debug V8 tests crash
 in `Isolate::new`. `-j 4` is there because V8 crates take a lot of memory to link. A mod that is checked out is tested with
