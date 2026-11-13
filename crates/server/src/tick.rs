@@ -153,7 +153,7 @@ impl<S: Stages> TickLoop<S> {
             apply(w, c);
         }
         self.stage(w, Stage::Start);
-        if w.env.paused && self.run_ticks.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_sub(1)).is_err() {
+        if w.env.paused && self.run_ticks.try_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_sub(1)).is_err() {
             self.stage(w, Stage::Finish);
             return false;
         }

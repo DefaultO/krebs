@@ -704,13 +704,15 @@ mod tests {
         assert_eq!(renamed(&[("a$DOT$b", 1.0), ("a.b", 2.0), ("main", 3.0)]), want(&[("a.b", 1.0), ("main", 3.0)]));
     }
 
-    /// 100 000 dotted names stalled ticks for 53 s through the scans this replaced.
+    /// 100 000 dotted names stalled ticks for 53 s through the scans this replaced, in a release build, and three times
+    /// as many would take them nine times as long. So the bound can be wide and still tell the two apart: a debug build
+    /// on a build machine in the cloud took 5.6 s for this.
     #[test]
     fn many_dotted_module_names_take_linear_time() {
         let list: Vec<(String, Val)> = (0..300_000).map(|i| (format!("m{i}$DOT$js"), Val::Null)).collect();
         let start = std::time::Instant::now();
         let out = rename_modules(list);
-        assert!(start.elapsed().as_secs() < 5, "{:?}", start.elapsed());
+        assert!(start.elapsed().as_secs() < 60, "{:?}", start.elapsed());
         assert_eq!((out.len(), out[299_999].0.as_str()), (300_000, "m299999.js"));
     }
 }

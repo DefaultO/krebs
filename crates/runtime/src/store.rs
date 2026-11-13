@@ -601,7 +601,7 @@ mod tests {
     }
 
     /// Everything a bot picks the size of goes through here after its CPU has stopped. Each of these took minutes at this
-    /// size when the decoder or the room groups scanned.
+    /// size when the decoder or the room groups scanned, so a minute each tells the two apart on any machine.
     #[test]
     fn large_outputs_take_linear_time() {
         let n = 200_000;
@@ -612,7 +612,7 @@ mod tests {
             let bytes = serialize(&src);
             let t = std::time::Instant::now();
             assert!(store(&bytes, room_of).is_some());
-            assert!(t.elapsed().as_secs_f64() < 5.0, "{:?}", t.elapsed());
+            assert!(t.elapsed().as_secs_f64() < 60.0, "{:?}", t.elapsed());
         }
     }
 

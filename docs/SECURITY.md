@@ -92,14 +92,20 @@ these or says when they fall behind, so a person has to look.
 4. If a bug a bot can reach is public and the pinned version does not have the fix, rebuild as below. Until the new library
    is out, tell hosts to run only bots they trust.
 
+Last looked on 2026-11-13. The newest `v8` crate was still 152.2.0, so there was nothing to move to. From the first update
+after Chrome 152 went stable (152.0.7977.75, 2026-09-01) to 157.0.8103.78 (2026-11-11), Chrome's Stable Channel Update
+posts for desktop list 92 fixes in V8, 73 of them rated High, and none marked as used in attacks. Which of them the pinned
+V8 needs was not worked out: some are for code newer than it. Take it that some apply, and keep to bots you trust.
+
 ### Rebuilding and republishing the library
 
 These steps come from `tools/v8-ptrcomp.ps1`, `tools/v8-download.bat` and `vendor/v8`.
 
 1. **Pick the version.** Change `v8 = "=152.2.0"` in `crates/runtime/Cargo.toml`.
 2. **Update `vendor/v8`.** It is that crate without its V8 tree. Carry over Krebs's changes, which are marked `chitin:` in
-   `vendor/v8/build.rs` and `vendor/v8/src/binding.cc`: a cage per isolate, and a version string of its own. Compare it with
-   the published crate of the old version first, in case anything else has changed.
+   `vendor/v8/build.rs` and `vendor/v8/src/binding.cc`: a cage per isolate, and a version string of its own. A third, in
+   `vendor/v8/src/isolate.rs`, only renames a call that newer Rust warns about, and can go once the crate has done the
+   same. Compare it with the published crate of the old version first, in case anything else has changed.
 3. **Update the pins in `tools/v8-ptrcomp.ps1`.** The crate's address and sha256; the `icudtl.dat` commit and sha256, and the
    `chromium_crates_io` commit and digest, both at the commits the new `v8/DEPS` pins. Check that `tools/v8-ptrcomp.patch`
    still applies. A changed patch makes the script extract the sources again.

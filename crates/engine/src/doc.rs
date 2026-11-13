@@ -562,6 +562,7 @@ mod tests {
 
     /// A large object keeps `set`'s order and its last value per key, and takes linear time: 200 000 keys took minutes
     /// through `set`. The keys are interned first: tests share the limit on outside names (tests/outside_names.rs has that).
+    /// The bound is a minute, which a debug build on a busy build machine keeps and the scans did not.
     #[test]
     fn large_objects_are_built_in_linear_time() {
         let mut m: Vec<(String, Json)> = (0..200_000).map(|i| (format!("big{i}"), Json::Num(i as f64))).collect();
@@ -575,7 +576,7 @@ mod tests {
         Atom::intern("1");
         let start = std::time::Instant::now();
         let Val::Obj(o) = Val::from_json(&Json::Obj(m)) else { panic!() };
-        assert!(start.elapsed().as_secs() < 5, "{:?}", start.elapsed());
+        assert!(start.elapsed().as_secs() < 60, "{:?}", start.elapsed());
         assert_eq!(o.len(), 200_002);
         let keys: Vec<&str> = o.iter().take(3).map(|(k, _)| k.as_str()).collect();
         assert_eq!(keys, ["1", "3", "big0"]);

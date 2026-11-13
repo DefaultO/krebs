@@ -971,13 +971,14 @@ mod tests {
         }
     }
 
-    /// 2 MB of distinct keys took 73 s when every key was looked up in all the others.
+    /// 2 MB of distinct keys took 73 s when every key was looked up in all the others. The bound is well under that and
+    /// well over what a debug build on a busy build machine takes.
     #[test]
     fn distinct_keys_cost_no_more_than_the_limit() {
         let many: String = (0..1_000_000).map(|i| format!("k{i:07}=&")).collect();
         let started = Instant::now();
         assert_eq!(parse_qs(&many).as_object().unwrap().len(), QS_PARAMS);
-        assert!(started.elapsed() < Duration::from_secs(1), "{:?}", started.elapsed());
+        assert!(started.elapsed() < Duration::from_secs(20), "{:?}", started.elapsed());
     }
 
     /// A handler runs on top of this, so the depth limit has to leave it room on the thread that really runs it.

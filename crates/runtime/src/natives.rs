@@ -141,7 +141,7 @@ unsafe extern "C" fn ab_allocate_uninitialized(f: &VmFlags, len: usize) -> *mut 
 
 unsafe extern "C" fn ab_free(f: &VmFlags, data: *mut c_void, len: usize) {
     f.extra.fetch_sub(len, Relaxed);
-    let _ = f.next_check.fetch_update(Relaxed, Relaxed, |n| Some(n.saturating_sub(len)));
+    let _ = f.next_check.update(Relaxed, Relaxed, |n| n.saturating_sub(len));
     // SAFETY: allocated by allocate_buffer with this length.
     unsafe { std::alloc::dealloc(data.cast(), buffer_layout(len)) };
 }

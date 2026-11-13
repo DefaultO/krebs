@@ -116,7 +116,7 @@ One more that does not come from Krebs:
 ## Develop
 
 Krebs builds on Windows (x64), macOS (Apple silicon and Intel) and Linux (x64 and arm64). You need
-[Rust](https://rustup.rs) and a C++ toolchain: on Windows the
+[Rust](https://rustup.rs) 1.95 or newer (`rustup update` gets it) and a C++ toolchain: on Windows the
 [C++ build tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/), which Rust's setup offers to install; on macOS
 the command line tools (`xcode-select --install`); on Linux a C compiler and linker (`build-essential` or the like).
 Each Windows script below has a `.sh` twin for macOS and Linux.
