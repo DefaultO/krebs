@@ -397,50 +397,74 @@ impl RoomSnapshot {
         RoomSnapshot::new(draft, processed_at)
     }
 
-    /// The room blob, built by the first viewer from the cached doc JSON and shared by every later one.
+    /// The room as runners hand it to VMs, made for the first viewer and shared by every later one.
     pub fn blob(&self) -> &RoomBlob {
         self.blob.get_or_init(|| {
-            let docs_len: usize = self.objects.iter().map(|d| d.json().len() + 1).sum();
-            let mut s = String::with_capacity(docs_len + self.objects.len() * 8 + 256);
+            let mut info = String::with_capacity(256);
+            write_obj_ascii(&mut info, &self.info);
+            RoomBlob::new(info.into(), self.objects.clone())
+        })
+    }
+
+    /// Whether a runner has asked for this room since it was installed: some player sees it.
+    pub fn viewed(&self) -> bool {
+        self.blob.get().is_some()
+    }
+}
+
+/// A room for the VMs that see it (§6.6): the rooms doc as ASCII JSON and the snapshot's docs in order, each with its
+/// cached JSON. A VM that held the room in its last run is sent only the docs that changed (the runtime's doc reuse).
+/// One that did not parses `text()`, ASCII `{"room":<rooms doc>,"seq":[s0,…],"objects":[d0,d1,…]}`, which is put
+/// together when the first such VM asks and shared from then on: on a late world it is a megabyte a tick that no VM
+/// reads.
+#[derive(Clone)]
+pub struct RoomBlob {
+    /// Empty for a blob that is only its text.
+    pub info: Arc<str>,
+    /// In blob order; none for a blob that is only its text.
+    pub docs: Arc<[DocRef]>,
+    text: Arc<OnceLock<Arc<[u8]>>>,
+}
+
+impl RoomBlob {
+    /// `info`: the rooms doc as ASCII JSON, never empty.
+    pub fn new(info: Arc<str>, docs: Arc<[DocRef]>) -> RoomBlob {
+        RoomBlob { info, docs, text: Arc::default() }
+    }
+
+    /// A blob that is only a text made elsewhere (tests): nothing for doc reuse to work with.
+    pub fn from_text(text: Arc<[u8]>) -> RoomBlob {
+        RoomBlob { info: Arc::from(""), docs: Arc::from([]), text: Arc::new(OnceLock::from(text)) }
+    }
+
+    pub fn is_text_only(&self) -> bool {
+        self.info.is_empty()
+    }
+
+    pub fn text(&self) -> &Arc<[u8]> {
+        self.text.get_or_init(|| {
+            let docs_len: usize = self.docs.iter().map(|d| d.json().len() + 1).sum();
+            let mut s = String::with_capacity(docs_len + self.docs.len() * 8 + self.info.len() + 64);
             s.push_str("{\"room\":");
-            write_obj_ascii(&mut s, &self.info);
-            let info_end = s.len() as u32;
+            s.push_str(&self.info);
             s.push_str(",\"seq\":[");
-            for (i, d) in self.objects.iter().enumerate() {
+            for (i, d) in self.docs.iter().enumerate() {
                 if i > 0 {
                     s.push(',');
                 }
                 util::num::write_js_string(&mut s, d.seq as f64);
             }
             s.push_str("],\"objects\":[");
-            let mut offsets = Vec::with_capacity(self.objects.len() + 1);
-            for (i, d) in self.objects.iter().enumerate() {
+            for (i, d) in self.docs.iter().enumerate() {
                 if i > 0 {
                     s.push(',');
                 }
-                offsets.push(s.len() as u32);
                 s.push_str(d.json());
             }
-            s.push(']');
-            offsets.push(s.len() as u32);
-            s.push('}');
-            assert!(s.len() <= u32::MAX as usize, "room blob over 4 GiB");
-            RoomBlob { json: Arc::from(s.into_bytes()), offsets: offsets.into(), info_end, docs: self.objects.clone() }
+            s.push_str("]}");
+            Arc::from(s.into_bytes())
         })
     }
-}
-
-/// ASCII `{"room":<rooms doc>,"seq":[s0,…],"objects":[d0,d1,…]}`; `offsets` has n+1 entries: the start of doc i,
-/// and `offsets[n]` = position of the closing `]`; doc i = `json[offsets[i] .. offsets[i+1]-1]`.
-/// Precisely: `offsets[n]` is one past the closing `]` (the `]` stands where the next separator would), so the
-/// slice formula holds for the last doc too. The rooms doc is `json[8 .. info_end]`; `docs` are the snapshot's docs
-/// in blob order (empty for a hand-made blob), for the runtime's doc reuse (§6.6).
-#[derive(Clone)]
-pub struct RoomBlob {
-    pub json: Arc<[u8]>,
-    pub offsets: Arc<[u32]>,
-    pub info_end: u32,
-    pub docs: Arc<[DocRef]>,
 }
 
 /// One user's footprint in one room (VIS-ROOMS, ORDER-RUNTIME-ROOMIDS).
@@ -1298,16 +1322,26 @@ mod tests {
             let seqs = c.get("seq").and_then(Json::as_array).unwrap();
             let docs: Vec<DocRef> = seqs.iter().zip(objects).map(|(s, o)| Doc::new(s.as_f64().unwrap() as u64, obj(o))).collect();
             let snap = room(obj(c.get("room").unwrap()), docs, vec![], &UserIds::default());
+            assert!(!snap.viewed());
             let b = snap.blob();
-            let text = std::str::from_utf8(&b.json).unwrap();
+            assert!(snap.viewed() && !b.is_text_only());
+            let text = std::str::from_utf8(b.text()).unwrap();
             assert_eq!(text, c.get("out").and_then(Json::as_str).unwrap());
-            assert_eq!(b.offsets.len(), objects.len() + 1);
-            let off = |i: usize| b.offsets[i] as usize;
-            for (i, o) in objects.iter().enumerate() {
-                assert_eq!(&Json::parse(&text[off(i)..off(i + 1) - 1]).unwrap(), o, "doc {i} of {text}");
+            assert_eq!(Json::parse(&b.info).unwrap(), *c.get("room").unwrap());
+            assert_eq!(b.docs.len(), objects.len());
+            // the docs in order, each as its own JSON, are the text's `objects`
+            let mut at = text.find(",\"objects\":[").unwrap() + 12;
+            for (i, (d, o)) in b.docs.iter().zip(objects).enumerate() {
+                assert_eq!(&text[at..at + d.json().len()], d.json(), "doc {i} of {text}");
+                assert_eq!(&Json::parse(d.json()).unwrap(), o, "doc {i} of {text}");
+                at += d.json().len() + 1;
             }
-            assert_eq!(&text[off(objects.len()) - 1..], "]}");
-            assert!(std::ptr::eq(snap.blob(), b), "built once");
+            assert!(text.ends_with("]}"));
+            assert!(std::ptr::eq(snap.blob(), b), "made once");
+            // a copy shares the text, which is put together once
+            assert!(Arc::ptr_eq(b.clone().text(), snap.blob().text()));
+            let hand = RoomBlob::from_text(Arc::from(&b"{}"[..]));
+            assert!(hand.is_text_only() && &**hand.text() == b"{}");
         }
     }
 

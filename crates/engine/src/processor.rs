@@ -449,6 +449,13 @@ pub fn process_room(ctx: &TickCtx, room: RoomIdx, prev: &Arc<RoomSnapshot>, inte
         let mut ops = Vec::new();
         index_ops(room, &prev.objects, &next.objects, ctx.user_ids, &mut ops);
         out.index = Some((prev.clone(), ops));
+        // §6.6: a room some player sees goes to its VMs as each changed doc's JSON. Written here, on the thread that
+        // just made the docs, and not by the first runner to ask: on a late world that was 2 ms of every run.
+        if prev.viewed() {
+            for d in &next.objects {
+                d.json();
+            }
+        }
     }
     out
 }

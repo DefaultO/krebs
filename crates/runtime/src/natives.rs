@@ -214,6 +214,8 @@ pub(crate) struct RunCtx {
     pub flags: *const VmFlags,
     /// Promises rejected without a handler (ENV-MICROTASKS), with their reasons.
     pub rejections: Vec<(v8::Global<v8::Promise>, v8::Global<v8::Value>)>,
+    /// The run's room blobs, as `__tick`'s `blobs` numbers them (the `blob` native).
+    pub blobs: Vec<Option<engine::world::RoomBlob>>,
 }
 
 impl RunCtx {
@@ -235,6 +237,7 @@ impl RunCtx {
             codegen_limit: usize::MAX,
             flags: std::ptr::null(),
             rejections: Vec::new(),
+            blobs: Vec::new(),
         }
     }
 
@@ -315,6 +318,7 @@ pub(crate) fn player_natives<'s>(scope: &mut v8::PinScope<'s, '_>, shard: &str, 
     set_fn(scope, o, "base64ToBuffer", base64_to_buffer);
     set_fn(scope, o, "mark", mark);
     set_fn(scope, o, "docsOff", docs_off);
+    set_fn(scope, o, "blob", blob);
     crate::natives_world::install(scope, o);
     crate::natives_market::install(scope, o);
     for (k, v) in [("shardName", shard), ("profile", profile)] {
@@ -337,6 +341,18 @@ pub(crate) fn system_natives<'s>(scope: &mut v8::PinScope<'s, '_>) -> v8::Local<
 fn cpu_time(scope: &mut v8::PinScope, _args: v8::FunctionCallbackArguments, mut rv: v8::ReturnValue<v8::Value>) {
     if let Some(ms) = with_run(|c| c.meter.now_ms()) {
         rv.set(v8::Number::new(scope, ms).into());
+    }
+}
+
+/// `blob(i)`: the whole text of the run's room blob `i` (§6.6), for a room the VM parses whole: one it did not hold in
+/// its last run, or any room once it stopped taking docs over. Put together on the first call for that room and shared
+/// by every VM after it; undefined when `i` names no room.
+fn blob(scope: &mut v8::PinScope, args: v8::FunctionCallbackArguments, mut rv: v8::ReturnValue<v8::Value>) {
+    let i = args.get(0).uint32_value(scope).unwrap_or(u32::MAX) as usize;
+    let text = with_run(|c| c.blobs.get(i).and_then(Option::as_ref).map(|b| b.text().clone())).flatten();
+    if let Some(text) = text {
+        debug_assert!(text.is_ascii(), "room blobs are ASCII (§3.4)");
+        rv.set(crate::marshal::external_latin1(scope, &text).into());
     }
 }
 

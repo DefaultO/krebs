@@ -497,6 +497,7 @@ pub(crate) fn run(rt: &Runtime, world: &dyn WorldAccess, input: RunInput) -> Run
         vm.docs = None;
     }
     let plans = vm.docs.as_mut().map(|c| c.plan(&input.blobs, &input.blob_rooms));
+    with_run(|c| c.blobs = input.blobs.clone());
 
     let slot = watchdog::slot();
     let (player, hard) = {

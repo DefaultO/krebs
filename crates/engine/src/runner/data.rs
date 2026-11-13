@@ -551,7 +551,7 @@ mod tests {
                     assert_eq!(e.2, -1.0);
                     continue;
                 };
-                let b = Json::parse(std::str::from_utf8(&blob.json).unwrap()).unwrap();
+                let b = Json::parse(std::str::from_utf8(blob.text()).unwrap()).unwrap();
                 let seqs = b.get("seq").and_then(Json::as_array).unwrap();
                 for (sq, d) in seqs.iter().zip(b.get("objects").and_then(Json::as_array).unwrap()) {
                     let id = s(d.get("_id")).unwrap().to_string();

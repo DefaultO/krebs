@@ -25,7 +25,9 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 /// How long an idle worker (or a waiting caller) spins before sleeping.
-/// Back-to-back calls in a tick then never pay a thread wake-up.
+/// Back-to-back calls then never pay a thread wake-up. A worker spins only while calls do come back to back
+/// (`Shared::burst`): a tick's parallel stages are milliseconds apart, so every worker spun its 100 µs after each of
+/// them and found nothing, on CPU that other servers on the machine could have used.
 const SPIN: Duration = Duration::from_micros(100);
 
 const CLOSED: u64 = 1 << 31;
@@ -35,8 +37,9 @@ pub struct Pool {
     shared: Arc<Shared>,
     workers: Vec<JoinHandle<()>>,
     /// Serialises callers. A call that finds it taken (a concurrent caller, or
-    /// a nested call from inside a job) runs its items inline instead.
-    call: Mutex<()>,
+    /// a nested call from inside a job) runs its items inline instead. Holds when
+    /// the last job that went to the workers ended.
+    call: Mutex<Option<Instant>>,
 }
 
 /// Keeps hot atomics on separate cache lines.
@@ -51,6 +54,8 @@ struct Shared {
     job: UnsafeCell<Option<Job>>,
     panic: Mutex<Option<Box<dyn Any + Send>>>,
     sleepers: AtomicUsize,
+    /// The current job came within SPIN of the one before, so the next may too.
+    burst: AtomicBool,
     shutdown: AtomicBool,
     lock: Mutex<()>,
     wake: Condvar,
@@ -100,6 +105,7 @@ impl Pool {
             job: UnsafeCell::new(None),
             panic: Mutex::new(None),
             sleepers: AtomicUsize::new(0),
+            burst: AtomicBool::new(false),
             shutdown: AtomicBool::new(false),
             lock: Mutex::new(()),
             wake: Condvar::new(),
@@ -117,7 +123,7 @@ impl Pool {
                     .expect("spawn pool worker")
             })
             .collect();
-        Pool { shared, workers, call: Mutex::new(()) }
+        Pool { shared, workers, call: Mutex::new(None) }
     }
 
     pub fn threads(&self) -> usize {
@@ -162,7 +168,7 @@ impl Pool {
 
     fn run_job(&self, n: usize, batch: usize, f: &(dyn Fn(usize) + Sync)) {
         assert!(n <= usize::MAX / 2, "too many items");
-        let _guard = match self.call.try_lock() {
+        let mut last = match self.call.try_lock() {
             Ok(g) => g,
             Err(TryLockError::Poisoned(e)) => e.into_inner(), // an earlier job panicked
             Err(TryLockError::WouldBlock) => {
@@ -183,6 +189,7 @@ impl Pool {
         let f: *const (dyn Fn(usize) + Sync + '_) = f;
         let f = unsafe { std::mem::transmute::<*const (dyn Fn(usize) + Sync + '_), *const (dyn Fn(usize) + Sync + 'static)>(f) };
         let job = Job { f, n, batch };
+        sh.burst.store(last.is_some_and(|t| t.elapsed() <= SPIN), Relaxed);
 
         // 1. Publish. The previous job is CLOSED with count 0, so no worker reads `job` now.
         // SAFETY: see `unsafe impl Sync for Shared`.
@@ -216,6 +223,7 @@ impl Pool {
         }
         // SAFETY: nobody is inside the job any more; drop the dangling pointer.
         unsafe { *sh.job.get() = None };
+        *last = Some(Instant::now());
         let payload = sh.panic.lock().unwrap_or_else(|e| e.into_inner()).take();
         if let Some(p) = payload {
             panic::resume_unwind(p);
@@ -253,6 +261,7 @@ fn worker(sh: &Shared) {
 /// Waits for an epoch other than `seen`; None on shutdown.
 fn wait_for_job(sh: &Shared, seen: u64) -> Option<u64> {
     let start = Instant::now();
+    let burst = sh.burst.load(Relaxed);
     let mut spins = 0u32;
     loop {
         let e = sh.state.0.load(Acquire) >> 32;
@@ -263,7 +272,7 @@ fn wait_for_job(sh: &Shared, seen: u64) -> Option<u64> {
             return None;
         }
         spins = spins.wrapping_add(1);
-        if spins.is_multiple_of(64) && start.elapsed() > SPIN {
+        if !burst || (spins.is_multiple_of(64) && start.elapsed() > SPIN) {
             break;
         }
         std::hint::spin_loop();

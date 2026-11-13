@@ -23,7 +23,9 @@
 //     meta            per-user JSON string (§6.6 FROZEN shape; cpu/cpuBucket null = Infinity). `codeVersion` becomes
 //                     vanilla's userCodeTimestamp, which bots read as module.timestamp / require.timestamp: it
 //                     must be the active branch's `timestamp` (data.js:197, `|| 0`), not CodeState.version.
-//     blobs           array parallel to meta.rooms: room blob JSON string, or null/undefined (not a room)
+//     blobs           array parallel to meta.rooms: true for a room, whose blob JSON string natives.blob(i) returns
+//                     (the host puts it together only when asked: a room the VM holds needs its plan alone), a
+//                     blob JSON string itself, or null/undefined (not a room)
 //     eventLogs       array parallel to the VISION rooms of meta.rooms: event-log string or null
 //     memory          Memory string, or undefined = the string this VM saw last (passed in, or produced by the
 //                     last run that returned). After a run whose Memory the host did not commit (total error,
@@ -281,7 +283,8 @@
                         }
                     }
                 } else if (blobs[i] != null) {
-                    var blob = jsonParse(blobs[i]);
+                    // chitin: a room is `true`, and the host puts its text together when asked (natives.blob)
+                    var blob = jsonParse(blobs[i] === true ? natives.blob(i) : blobs[i]);
                     room = blob.room;
                     docs = blob.objects;
                     seqs = blob.seq;

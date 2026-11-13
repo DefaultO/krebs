@@ -509,18 +509,18 @@ fn natives_core_and_world() {
 
 #[test]
 fn room_blobs_are_shared_external_strings() {
-    let blob = engine::world::RoomBlob { json: Arc::from(&br#"{"room":{},"seq":[],"objects":[]}"#[..]), offsets: Arc::from(&[0u32][..]), info_end: 0, docs: Arc::from([]) };
-    let before = Arc::strong_count(&blob.json);
+    let blob = engine::world::RoomBlob::from_text(Arc::from(&br#"{"room":{},"seq":[],"objects":[]}"#[..]));
+    let before = Arc::strong_count(blob.text());
     for user in [16, 17] {
         let mut run = Run::new(user, "module.exports.loop = function () { global.keep = H.blobs[0]; H.log(JSON.parse(H.blobs[0]).seq.length); };");
         run.blobs = vec![Some(blob.clone()), None];
         assert_eq!(run.on(rt()).console_log, ["0"]);
     }
     // Each VM holds one count on the same allocation: the bytes were not copied.
-    assert_eq!(Arc::strong_count(&blob.json), before + 2);
+    assert_eq!(Arc::strong_count(blob.text()), before + 2);
     rt().reset_user(16, "test");
     rt().reset_user(17, "test");
-    assert_eq!(Arc::strong_count(&blob.json), before, "disposal releases the external strings");
+    assert_eq!(Arc::strong_count(blob.text()), before, "disposal releases the external strings");
 }
 
 #[test]
@@ -626,7 +626,7 @@ fn heap_stats_match_isolated_vm() {
         H.log(H.natives.heapStats().externally_allocated_size - h.externally_allocated_size);
     };"#);
     let big = vec![b' '; 8 << 20];
-    run.blobs = vec![Some(engine::world::RoomBlob { json: Arc::from(&big[..]), offsets: Arc::from(&[0u32][..]), info_end: 0, docs: Arc::from([]) })];
+    run.blobs = vec![Some(engine::world::RoomBlob::from_text(Arc::from(&big[..])))];
     let out = run.on(rt());
     assert!(is(&out, RunStatus::Done), "{}", status(&out));
     // The whole terrain (5000 bytes) is charged at creation, as vanilla's terrain copy; the room copy is

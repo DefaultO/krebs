@@ -10,23 +10,25 @@
 //! In the subset both paths give the same Json (tests::matches_the_system_isolate).
 
 use engine::system::{sanitize_intent, sanitize_user_intents, INTENT_TYPES};
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use util::json::Json;
 
-/// A deserialized value of the subset.
+/// A deserialized value of the subset. ASCII strings, which nearly all are (names, ids, a tick's visuals), stay in the
+/// bytes they were read from.
 #[derive(Debug)]
-enum Js {
+enum Js<'a> {
     Undef,
     Null,
     Bool(bool),
     Num(f64),
-    Str(String),
-    Arr(Vec<Js>),
-    Obj(Vec<(String, Js)>),
+    Str(Cow<'a, str>),
+    Arr(Vec<Js<'a>>),
+    Obj(Vec<(Cow<'a, str>, Js<'a>)>),
 }
 
-impl Js {
-    fn get(&self, key: &str) -> &Js {
+impl Js<'_> {
+    fn get(&self, key: &str) -> &Self {
         match self {
             Js::Obj(props) => props.iter().find(|(k, _)| k == key).map_or(&Js::Undef, |(_, v)| v),
             _ => &Js::Undef,
@@ -167,6 +169,7 @@ fn store_intents(user_intents: &Js, object_room: &impl Fn(&str) -> Option<String
             return None;
         }
 
+        let i: &str = i;
         if i == "notify" {
             let input = Json::Obj(vec![("notify".into(), input_json(value)?)]);
             let notify = sanitize_user_intents(&input, &[]).ok()?.get(engine::doc::Atom::intern("notify")).map(|v| v.to_json());
@@ -188,7 +191,7 @@ fn store_intents(user_intents: &Js, object_room: &impl Fn(&str) -> Option<String
         let room = match object_room(i) {
             Some(room) => room,
             // `({})[i]`: inherited members are truthy objects without a room
-            None if OBJECT_PROTOTYPE.contains(&i.as_str()) => return None,
+            None if OBJECT_PROTOTYPE.contains(&i) => return None,
             None => continue,
         };
 
@@ -274,10 +277,10 @@ fn input_json(v: &Js) -> Option<Json> {
         Js::Null => Json::Null,
         Js::Bool(b) => Json::Bool(*b),
         Js::Num(n) => Json::Num(*n),
-        Js::Str(s) => Json::Str(s.clone()),
+        Js::Str(s) => Json::Str(s.to_string()),
         Js::Arr(items) => Json::Arr(items.iter().map(input_json).collect::<Option<_>>()?),
         Js::Obj(props) => Json::Obj(
-            props.iter().filter(|(_, v)| !matches!(v, Js::Undef)).map(|(k, v)| Some((k.clone(), input_json(v)?))).collect::<Option<_>>()?,
+            props.iter().filter(|(_, v)| !matches!(v, Js::Undef)).map(|(k, v)| Some((k.to_string(), input_json(v)?))).collect::<Option<_>>()?,
         ),
     })
 }
@@ -291,18 +294,18 @@ fn json(v: &Js) -> Option<Json> {
         Js::Bool(b) => Json::Bool(*b),
         Js::Num(n) if n.is_finite() => Json::Num(if *n == 0.0 { 0.0 } else { *n }),
         Js::Num(_) => Json::Null,
-        Js::Str(s) => Json::Str(s.clone()),
+        Js::Str(s) => Json::Str(s.to_string()),
         Js::Arr(items) => Json::Arr(items.iter().map(|x| json(x).unwrap_or(Json::Null)).collect()),
-        Js::Obj(props) => Json::Obj(props.iter().filter_map(|(k, v)| Some((k.clone(), json(v)?))).collect()),
+        Js::Obj(props) => Json::Obj(props.iter().filter_map(|(k, v)| Some((k.to_string(), json(v)?))).collect()),
     })
 }
 
-fn has_repeats(props: &[(String, Js)]) -> bool {
+fn has_repeats(props: &[(Cow<str>, Js)]) -> bool {
     if props.len() <= SCAN {
         return props.iter().enumerate().any(|(i, (k, _))| props[..i].iter().any(|(earlier, _)| earlier == k));
     }
     let mut seen = HashSet::with_capacity(props.len());
-    !props.iter().all(|(k, _)| seen.insert(k.as_str()))
+    !props.iter().all(|(k, _)| seen.insert(&**k))
 }
 
 /// ValueSerializer bytes (v8/src/objects/value-serializer.cc, format 13-16), the subset only.
@@ -365,7 +368,7 @@ impl<'a> Wire<'a> {
     }
 
     // ReadObjectInternal for the subset tags
-    fn value(&mut self, depth: usize) -> Option<Js> {
+    fn value(&mut self, depth: usize) -> Option<Js<'a>> {
         if depth > MAX_DEPTH {
             return None;
         }
@@ -386,7 +389,7 @@ impl<'a> Wire<'a> {
             b'N' => Js::Num(f64::from_le_bytes(self.bytes(8)?.try_into().ok()?)),
             b'"' | b'c' => Js::Str(self.string_body()?),
             b'o' => {
-                let mut props: Vec<(String, Js)> = Vec::new();
+                let mut props: Vec<(Cow<'a, str>, Js<'a>)> = Vec::new();
                 while self.peek_tag()? != b'{' {
                     // string keys only: number keys and array-index strings keep JS key order out of this path
                     let Js::Str(key) = self.value(depth + 1)? else { return None };
@@ -441,18 +444,18 @@ impl<'a> Wire<'a> {
     }
 
     // ReadOneByteString / ReadTwoByteString (the tag already read); a lone surrogate is not handled
-    fn string_body(&mut self) -> Option<String> {
+    fn string_body(&mut self) -> Option<Cow<'a, str>> {
         let tag = self.b[self.pos - 1];
         let n = self.varint()? as usize;
         let raw = self.bytes(n)?;
         if tag == b'"' {
             // Latin-1; visuals are long and ASCII, and ASCII is its own UTF-8
-            return Some(if raw.is_ascii() { std::str::from_utf8(raw).ok()?.to_string() } else { raw.iter().map(|&c| c as char).collect() });
+            return Some(if raw.is_ascii() { Cow::Borrowed(std::str::from_utf8(raw).ok()?) } else { Cow::Owned(raw.iter().map(|&c| c as char).collect()) });
         }
         if n % 2 != 0 {
             return None;
         }
-        String::from_utf16(&raw.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect::<Vec<_>>()).ok()
+        String::from_utf16(&raw.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect::<Vec<_>>()).ok().map(Cow::Owned)
     }
 }
 
@@ -635,7 +638,7 @@ mod tests {
 
     #[test]
     fn repeated_keys_are_found_at_any_size() {
-        let keys = |n: usize| (0..n).map(|i| (format!("k{i}"), Js::Null)).collect::<Vec<_>>();
+        let keys = |n: usize| (0..n).map(|i| (Cow::Owned(format!("k{i}")), Js::Null)).collect::<Vec<_>>();
         for n in [2, SCAN, SCAN + 1, 1000] {
             assert!(!has_repeats(&keys(n)), "{n}");
             let mut repeated = keys(n);

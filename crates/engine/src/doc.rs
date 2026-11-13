@@ -18,7 +18,13 @@ pub struct Atom(u32);
 struct Entry {
     s: &'static str,
     index: Option<u32>,
+    /// `"name":` as a document's JSON has it, made the first time a document with this key is written.
+    key: OnceLock<Option<&'static str>>,
 }
+
+/// Longer names are written out each time: a name from outside can be `OUTSIDE_NAME_BYTES` long, and this second copy
+/// is never freed either.
+const KEY_BYTES: usize = 48;
 
 /// Append-only arena: chunk k holds 64 << k entries, so slots never move and
 /// `as_str` reads them without a lock.
@@ -80,7 +86,7 @@ impl Atom {
                     let leaked: &'static str = Box::leak(s.into());
                     let (k, off) = slot(i);
                     let chunk = ARENA[k].get_or_init(|| (0..64usize << k).map(|_| OnceLock::new()).collect());
-                    let _ = chunk[off].set(Entry { s: leaked, index: array_index(leaked) });
+                    let _ = chunk[off].set(Entry { s: leaked, index: array_index(leaked), key: OnceLock::new() });
                     names.insert(leaked, i);
                     Atom(i)
                 }
@@ -102,6 +108,22 @@ impl Atom {
     /// Canonical array index ⇒ enumerated first (JS key order).
     pub fn array_index(self) -> Option<u32> {
         self.entry().index
+    }
+
+    /// `"name":`, the key as a document's JSON has it with its colon, for a short name that needs no escape. Kept per
+    /// atom: a document's keys are the same few names over and over, and quoting them each time was a good part of
+    /// writing it.
+    fn json_key(self) -> Option<&'static str> {
+        let e = self.entry();
+        *e.key.get_or_init(|| {
+            (e.s.len() <= KEY_BYTES && plain(e.s.as_bytes())).then(|| {
+                let mut k = String::with_capacity(e.s.len() + 3);
+                k.push('"');
+                k.push_str(e.s);
+                k.push_str("\":");
+                &*Box::leak(k.into_boxed_str())
+            })
+        })
     }
 }
 
@@ -365,14 +387,31 @@ fn write_obj(out: &mut String, o: &Obj, ascii: bool) {
         if i > 0 {
             out.push(',');
         }
-        write_str(out, k.as_str(), ascii);
-        out.push(':');
+        match k.json_key() {
+            Some(key) => out.push_str(key),
+            None => {
+                write_str(out, k.as_str(), ascii);
+                out.push(':');
+            }
+        }
         write_val(out, x, ascii);
     }
     out.push('}');
 }
 
+/// Printable ASCII with no quote or backslash: JSON quotes it as it stands, in either mode. Ids, names and types all are.
+fn plain(b: &[u8]) -> bool {
+    b.iter().all(|&c| (0x20..0x80).contains(&c) && c != b'"' && c != b'\\')
+}
+
 pub(crate) fn write_str(out: &mut String, s: &str, ascii: bool) {
+    if plain(s.as_bytes()) {
+        out.reserve(s.len() + 2);
+        out.push('"');
+        out.push_str(s);
+        out.push('"');
+        return;
+    }
     if !ascii || s.is_ascii() {
         return util::json::write_quoted(out, s);
     }
@@ -409,12 +448,21 @@ impl Doc {
         Arc::new(Doc { seq, obj, json: OnceLock::new() })
     }
 
-    /// Cached ASCII `write_json` of `obj`.
+    /// Cached ASCII `write_json` of `obj`. Written into a buffer the thread keeps, so the text is allocated once, at its
+    /// size: a creep's 700 bytes used to grow a new string ten times over.
     pub fn json(&self) -> &str {
+        thread_local!(static TEXT: RefCell<String> = const { RefCell::new(String::new()) });
         self.json.get_or_init(|| {
-            let mut s = String::new();
-            write_obj(&mut s, &self.obj, true);
-            s.into()
+            TEXT.with(|t| {
+                let mut s = t.borrow_mut();
+                s.clear();
+                write_obj(&mut s, &self.obj, true);
+                let text = Box::from(s.as_str());
+                if s.capacity() > 1 << 20 {
+                    *s = String::new();
+                }
+                text
+            })
         })
     }
 

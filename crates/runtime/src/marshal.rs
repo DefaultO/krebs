@@ -81,11 +81,14 @@ pub(crate) fn tick_args<'s>(scope: &mut v8::PinScope<'s, '_>, input: RunInput, p
     let meta = owned(scope, input.meta).into();
     let blobs = v8::Array::new(scope, input.blobs.len() as i32);
     for (i, b) in input.blobs.iter().enumerate() {
+        // A room is `true`: its text is put together only if the VM asks for it (`natives.blob`), which one that held
+        // the room in its last run does not.
         let v: v8::Local<v8::Value> = match b {
-            Some(b) => {
-                debug_assert!(b.json.is_ascii(), "room blobs are ASCII (§3.4)");
-                external_latin1(scope, &b.json).into()
+            Some(b) if b.is_text_only() => {
+                debug_assert!(b.text().is_ascii(), "room blobs are ASCII (§3.4)");
+                external_latin1(scope, b.text()).into()
             }
+            Some(_) => v8::Boolean::new(scope, true).into(),
             None => v8::null(scope).into(),
         };
         blobs.set_index(scope, i as u32, v);

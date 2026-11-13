@@ -117,9 +117,28 @@ pub const INTENT_TYPES: &[(&str, IntentType)] = &[
     ("withdraw", &[("id", S), ("amount", N), ("resourceType", S)]),
 ];
 
+/// A built-in name's place in `INTENT_TYPES`, and the atoms of the name and of its fields.
+struct Builtins {
+    index: util::hash::FxHashMap<&'static str, usize>,
+    atoms: Vec<(Atom, Vec<Atom>)>,
+}
+
+/// Looking a name up beats asking for each of the table's names in turn, which is what every intent of every bot went
+/// through; the atoms save a lookup per name and field.
+static BUILTINS: std::sync::LazyLock<Builtins> = std::sync::LazyLock::new(|| Builtins {
+    index: INTENT_TYPES.iter().enumerate().rev().map(|(i, (name, _))| (*name, i)).collect(),
+    atoms: INTENT_TYPES.iter().map(|(name, fields)| (Atom::intern(name), fields.iter().map(|(f, _)| Atom::intern(f)).collect())).collect(),
+});
+
+/// Objects up to this many keys are sanitized by looking their keys up; a bot sends one to three.
+const FEW_KEYS: usize = 8;
+
 /// `intentTypes[name] || customIntentTypes[name]`.
 pub fn intent_type(name: &str, custom: CustomIntentTypes) -> Option<IntentType> {
-    INTENT_TYPES.iter().chain(custom).find(|(n, _)| *n == name).map(|(_, t)| *t)
+    match BUILTINS.index.get(name) {
+        Some(&i) => Some(INTENT_TYPES[i].1),
+        None => custom.iter().find(|(n, _)| *n == name).map(|(_, t)| *t),
+    }
 }
 
 /// `sanitizeUserIntents(input, customIntentTypes)` (vanilla: system.js:95), e.g. `input = {[name]: intent}`.
@@ -132,6 +151,33 @@ pub fn sanitize_user_intents(input: &Json, custom: CustomIntentTypes) -> Result<
         return Err(format!("TypeError: Cannot read properties of null (reading '{}')", INTENT_TYPES[0].0));
     }
     let mut intent_result = Obj::new();
+    // With no custom names the loop below asks `input` for each built-in name in table order. For an object of a few
+    // keys this finds the same names from the keys' side: a name's first key is the one `get` returns, the names
+    // go in table order, and so do the errors.
+    if let (true, Json::Obj(members)) = (custom.is_empty(), input) {
+        if members.len() <= FEW_KEYS {
+            let mut found = [(usize::MAX, input); FEW_KEYS];
+            let mut n = 0;
+            for (key, value) in members {
+                if let Some(&i) = BUILTINS.index.get(key.as_str()) {
+                    if !found[..n].iter().any(|f| f.0 == i) {
+                        found[n] = (i, value);
+                        n += 1;
+                    }
+                }
+            }
+            found[..n].sort_unstable_by_key(|f| f.0);
+            for &(i, value) in found[..n].iter().filter(|f| truthy(f.1)) {
+                let name = INTENT_TYPES[i].0;
+                let sanitized = match value {
+                    Json::Arr(items) => Val::Arr(items.iter().map(|i| sanitize_intent(name, i, custom).map(Val::Obj)).collect::<Result<_, _>>()?),
+                    _ => Val::Obj(sanitize_intent(name, value, custom)?),
+                };
+                intent_result.set(BUILTINS.atoms[i].0, sanitized);
+            }
+            return Ok(intent_result);
+        }
+    }
     // Built-in names inside arrays are sanitized without customIntentTypes (system.js:100); the built-in schema
     // wins anyway, so both loops share one body.
     for &(name, _) in INTENT_TYPES.iter().chain(custom) {
@@ -150,12 +196,17 @@ pub fn sanitize_user_intents(input: &Json, custom: CustomIntentTypes) -> Result<
 // vanilla: system.js:84 — every declared field is emitted, present or not
 pub fn sanitize_intent(name: &str, intent: &Json, custom: CustomIntentTypes) -> Result<Obj, String> {
     let mut result = Obj::new();
-    for &(field, t) in intent_type(name, custom).unwrap_or(&[]) {
+    let builtin = BUILTINS.index.get(name).copied();
+    let fields = match builtin {
+        Some(i) => INTENT_TYPES[i].1,
+        None => custom.iter().find(|(n, _)| *n == name).map_or(&[][..], |(_, t)| *t),
+    };
+    for (at, &(field, t)) in fields.iter().enumerate() {
         if matches!(intent, Json::Null) {
             return Err(format!("TypeError: Cannot read properties of null (reading '{field}')"));
         }
         if let Some(v) = transform(t, get(intent, field))? {
-            result.set(Atom::intern(field), v);
+            result.set(builtin.map_or_else(|| Atom::intern(field), |i| BUILTINS.atoms[i].1[at]), v);
         }
     }
     Ok(result)
@@ -168,8 +219,16 @@ fn transform(t: FieldType, value: Option<&Json>) -> Result<Option<Val>, String> 
         Ok(Some(Val::Str(substring(&s, n).into())))
     };
     Ok(Some(match t {
-        FieldType::String => Val::Str(js_string(value)?.into()),
-        FieldType::Number => number(parse_int(&js_string(value)?)),
+        // What nearly every intent holds: a string is its own `"" + v`, and a whole number below 2^53 prints as its
+        // digits, which parseInt reads back.
+        FieldType::String => match value {
+            Some(Json::Str(s)) => Val::Str(s.as_str().into()),
+            _ => Val::Str(js_string(value)?.into()),
+        },
+        FieldType::Number => match value {
+            Some(&Json::Num(n)) if n.fract() == 0.0 && n.abs() < 9007199254740992.0 => number(n),
+            _ => number(parse_int(&js_string(value)?)),
+        },
         FieldType::Boolean => Val::Bool(truthy_opt(value)),
         FieldType::Price => number(parse_int(&util::num::to_fixed(1000.0 * to_number(value)?, 0))),
         FieldType::StringArr => return map_array(value, |i| Ok(Val::Str(js_string(Some(i))?.into()))),
@@ -337,6 +396,48 @@ mod tests {
             n += 1;
         }
         assert!(n > 1000, "{n} cases");
+    }
+
+    /// `sanitize_user_intents` finds an object's names from its few keys where it used to ask for every name of the
+    /// table. A custom name that no input holds forces the old loop: both give the same result or the same error for
+    /// every fixture input, and for keys the fixture has none of.
+    #[test]
+    fn few_keys_match_the_table_loop() {
+        const NEVER: CustomIntentTypes = &[("\u{1}never", &[])];
+        let both = |input: &Json, what: &str| {
+            let fast = sanitize_user_intents(input, &[]);
+            assert_eq!(fast, sanitize_user_intents(input, NEVER), "{what}");
+            fast.map(|o| Val::Obj(o).to_json().stringify())
+        };
+        let text = include_str!("../tests/fixtures/system/sanitize.ndjson");
+        let mut n = 0;
+        for line in text.lines().skip(1) {
+            let case = Json::parse(line).unwrap();
+            if !case.get("custom").unwrap().as_bool().unwrap() {
+                let _ = both(&Json::parse(case.get("in").unwrap().as_str().unwrap()).unwrap(), line);
+                n += 1;
+            }
+        }
+        assert!(n > 500, "{n} cases");
+
+        let obj = |members: &[(&str, &str)]| Json::Obj(members.iter().map(|(k, v)| (k.to_string(), Json::parse(v).unwrap())).collect());
+        // table order, whatever the keys' order
+        let out = both(&obj(&[("say", r#"{"message":"hi"}"#), ("move", r#"{"direction":3}"#), ("attack", r#"{"id":"a"}"#), ("other", "1")]), "order");
+        assert_eq!(out.unwrap(), r#"{"attack":{"id":"a","x":null,"y":null},"move":{"id":"undefined","direction":3},"say":{"message":"hi","isPublic":false}}"#);
+        // a name's first key is the one that counts, falsy or not
+        assert_eq!(both(&obj(&[("move", "0"), ("move", r#"{"direction":1}"#), ("pull", r#"{"id":"p"}"#), ("pull", "0")]), "repeats").unwrap(), r#"{"pull":{"id":"p"}}"#);
+        // the first error in table order
+        let err = both(&obj(&[("say", "[null]"), ("attack", "[null]")]), "errors").unwrap_err();
+        assert_eq!(err, "TypeError: Cannot read properties of null (reading 'id')");
+        // more keys than the short path takes
+        let many: Vec<(String, Json)> = INTENT_TYPES.iter().take(FEW_KEYS + 4).rev().map(|(name, _)| (name.to_string(), Json::parse(r#"{"id":"x","roomName":"W1N1"}"#).unwrap())).collect();
+        assert!(both(&Json::Obj(many), "many").is_ok());
+        // numbers and strings the short transforms take, against the long way round
+        for (v, want) in [("7", "7"), ("-0", "0"), ("-3", "-3"), ("2.5", "2"), ("9007199254740992", "9007199254740992"), ("1e21", "1"), ("\"12px\"", "12"), ("null", "null")] {
+            let out = both(&obj(&[("move", &format!(r#"{{"id":{v},"direction":{v}}}"#))]), v).unwrap();
+            let id = if v.starts_with('"') { v.to_string() } else { format!("\"{}\"", if v == "-0" { "0" } else if v == "1e21" { "1e+21" } else { v }) };
+            assert_eq!(out, format!(r#"{{"move":{{"id":{id},"direction":{want}}}}}"#), "{v}");
+        }
     }
 
     #[test]

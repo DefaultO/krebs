@@ -23,7 +23,7 @@ and changed only through an interface PR (§14.1). Hardware: target 16C/32T, 64 
 5. **Pointer compression off by default; `tools/v8-ptrcomp.ps1` builds V8 from source with it (`runtime/ptrcomp`), a 4 GB cage per isolate.** The crate's ptrcomp puts all isolates in one 4 GB cage and has no IsolateGroup API, so `vendor/v8` gives every isolate a group of its own (`src/binding.cc`, `build.rs`); no prebuilt library exists. Its builtins are laid out by a profile of our own workload (builtins PGO), and its compilers keep optimized code off the global `Memory` cell that every tick replaces (§2.9).
 6. **Startup snapshot = lodash 3.10.1 + our game-API bundle + JS-mod game slots, built at boot and kept in memory, never read from disk; natives are installed per isolate by `_init(natives)` and then deleted.** Isolate creation in ms; no external-reference table.
 7. **World data reaches isolates as one immutable ASCII JSON blob per room snapshot (`Arc<[u8]>` → `String::new_external_onebyte_raw`, zero copy, shared by every viewer) plus a small per-user meta JSON; JS parses with the captured `JSON.parse` and runs the mirrored `game.js` eagerly.** V8's parser is the fastest object builder; fresh raw objects every tick are vanilla-observable (02 §3.8).
-8. **Each document caches its ASCII JSON (`OnceLock`); a blob is the concatenation of cached docs plus element offsets (FROZEN).** Serialization follows changed objects, not viewers; the offsets make lazy per-object materialization (M5) an internal change.
+8. **Each document caches its ASCII JSON (`OnceLock`); a room's text is the concatenation of cached docs (FROZEN).** Serialization follows changed objects, not viewers. The text is put together only for a VM that parses the room whole (§6.6): one that held the room is sent its changed docs alone. A doc's place in the text follows from the lengths of the docs before it, should lazy per-object materialization (M5) want it.
 9. **Everything world-sized reaches JS through lazy natives:** terrain (per-room copy on demand), accessibility, room status, mapgrid exit data (built in Rust once per TICK-ACCESSIBLE snapshot), market orders/history (per-resource JSON, built once per tick). Vanilla's per-player copies of `accessibleRooms`, the world grid and all orders are O(players × world).
 10. **Intents leave through vanilla's path: the player isolate's `outMessage` is serialized with `ValueSerializer` and deserialized in the worker's *system isolate* (one per worker thread: lodash + `common/system.js` + `engine/utils.js`), which runs the `storeIntents` port and returns one JSON string.** Same as `ExternalCopy` → node realm (runtime.js:296, make.js:192): clone failures, `""+v`/`parseInt` on real NaN/Infinity/BigInt/Date, immunity to bot prototype patches; no second context per player.
 11. **One CPU meter for `getUsed()`, deadlines and billing: OS thread CPU time (`Thread`, default); `Wall` reproduces the private server; `Fixed` advances 0.01 ms per call (reproducible runs).** 02 §8.13; `while (getUsed() < x)` loops end in deterministic runs.
@@ -536,6 +536,28 @@ Open, older than this work, from an accessor on `Object.prototype` named after a
 Game setup keeps `register._objects[i]` in a local where vanilla reads it back; and vanilla's per-type counter `c`, dropped
 here, is a table such an accessor would see.
 
+**The runner's own stages on a late one-bot world** (2026-11-13). A world from a bot test farm: one bot with 11 rooms and
+about 545 creeps on 121 rooms, 53 rooms processed a tick, 38 rooms and 3,900 docs in its sight, the fixed meter, fast V8,
+five other servers busy on the same machine. Of a 59 ms tick the bot's own loop was 30 ms. Around it, on the runner
+thread: build input 2.6 ms (2.1 writing the JSON of the ~970 docs a tick changes, 0.55 concatenating 960 KB of room
+texts that the VM never read, since doc reuse sends it a 465 KB plan), the plan 0.9 ms, store 1.9 ms. Now a doc's JSON
+is written into a buffer its thread keeps and allocated once, each key quoted once per atom and plain strings copied in
+one pass; P3 writes it for the docs it changes in a room that had a viewer; a room's text is put together only when a
+VM asks for it (`natives.blob`); `DocCache` keeps per held doc whether it may be taken over; `sanitize_user_intents`
+finds an object's names from its keys where it asked for all 66, and reads strings and whole numbers directly; the wire
+reader borrows ASCII strings; and pool workers spin after a job only while jobs come back to back, which a tick's
+never do. Interleaved, 4 rounds of 200 ticks: 59.3 → 55.3 ms/tick (runs 58.6–60.3 against 54.2–56.0), build input 2.59
+→ 0.06, store 1.84 → 1.42, and the CPU of the whole process 100.2 → 87.1 ms a tick (96.9–103.3 against 84.4–90.5), which
+is what counts when a farm fills every core. With the same seed both builds print the same console lines and export the
+same world after 1,500 ticks, apart from what the bot writes from its own heap statistics and clock.
+
+What that world's tick still holds, measured the same day: parsing the plan 3.0 ms (the 529 creeps are 372 KB of it,
+fresh every tick as above, and 312 roads a tick change because a step wears them); `roomObjects`, `userObjects` and the
+merge 2.5 ms; Game setup 13.6 ms, 11.2 of it the object loop at 2.9 µs an object; GC about 4.5 ms on the runner thread
+(3.7 scavenges and 0.7 full collections a run on the default young generation, which `runner.semiSpaceMb` and
+`--heap-growing-percent` above trade memory against). P3 costs 225 µs a room on one thread and 272 on sixteen;
+`O::get` is a fifth of it at 131 k calls a tick, and two fifths of the entries it scans belong to keys the doc lacks.
+
 Rejected: per-room readiness (above); overlapping P3(T) with P1(T+1) (players must see T's final state); binary
 blobs with JS overlay views (rewrites every game file accessor, breaks the mirror rule, XX-COMPAT-STALE-OBJECTS);
 building V8 objects from Rust (~60 ns/property, slower than `JSON.parse`, nothing shared).
@@ -779,12 +801,13 @@ pub struct RoomSnapshot {
     pub presence: Arc<[(UserIdx, Presence)]>,           // derived
     pub user_refs: Arc<[UserIdx]>,                      // users named by docs here (user, reservation.user, sign.user)
     pub has_movers: bool, pub has_terminal_send: bool, pub has_power_creeps: bool,
-    blob: std::sync::OnceLock<RoomBlob>,                // §6.6, built by the first viewer
+    blob: std::sync::OnceLock<RoomBlob>,                // §6.6, made for the first viewer
 }
-impl RoomSnapshot { pub fn blob(&self) -> &RoomBlob; }
-/// ASCII `{"room":<rooms doc>,"seq":[s0,…],"objects":[d0,d1,…]}`; `offsets` has n+1 entries: the start of doc i,
-/// and offsets[n] = position of the closing `]`; doc i = json[offsets[i] .. offsets[i+1]-1].
-pub struct RoomBlob { pub json: Arc<[u8]>, pub offsets: Arc<[u32]> }
+impl RoomSnapshot { pub fn blob(&self) -> &RoomBlob; pub fn viewed(&self) -> bool; }
+/// The rooms doc as ASCII JSON and the docs in order. `text()` is ASCII
+/// `{"room":<rooms doc>,"seq":[s0,…],"objects":[d0,d1,…]}`, put together on first use and shared by every copy.
+pub struct RoomBlob { pub info: Arc<str>, pub docs: Arc<[DocRef]>, /* text */ }
+impl RoomBlob { pub fn text(&self) -> &Arc<[u8]>; }
 
 /// One user's footprint in one room (VIS-ROOMS, ORDER-RUNTIME-ROOMIDS).
 #[derive(Clone, Default)]
@@ -1346,8 +1369,10 @@ after the player isolate is unlocked), a `PathFinder` stack.
 (ORDER-RUNTIME-ROOMIDS, incl. the `"null"`/`"undefined"` quirk names). `users` = data.js `userIdsHash` (self,
 `user_refs` of vision rooms, transaction counterparties), projected to `{_id, username, badge}` (never full docs).
 
-**Room blobs**: `RoomSnapshot::blob()` (§3.4), built once per snapshot by its first viewer from cached doc JSON.
-Every blob, event log, Memory and segment enters V8 through `new_external_onebyte_raw(ptr, len, drop_fn)` with
+**Room blobs**: `RoomSnapshot::blob()` (§3.4), made once per snapshot for its first viewer: the rooms doc's JSON and
+the docs, whose JSON P3 writes as it makes them when the room had a viewer (`RoomSnapshot::viewed`). `__tick` gets
+`true` for a room and asks `natives.blob(i)` for its text when it parses the room whole; the text is put together on
+the first such call and shared by every VM after it. Every blob text, event log, Memory and segment enters V8 through `new_external_onebyte_raw(ptr, len, drop_fn)` with
 `ptr = Arc::into_raw(arc.clone())` and `drop_fn` = `Arc::from_raw` + drop (zero copies; each isolate holds one strong
 count until its GC frees the string); non-Latin-1 `JsStr` uses `new_external_twobyte`. A global atomic counts live
 blob bytes (alloc/drop) for the governor.
@@ -1375,11 +1400,10 @@ doc, so A′ would parse them anyway, one at a time; it pays only for light bots
 
 **Doc reuse (J11)**: on the same region 98% of a user's docs are JSON-identical to its previous tick (97.5% the same
 `Arc`). Each VM keeps the docs it assembled last run (`heldRooms` in prelude.js); the host keeps the matching
-`DocRef`s per room (`runtime/src/doc_reuse.rs` `DocCache`, reset with the VM) and sends, beside the complete blobs,
-one ASCII JSON string `[generation, [blob index, rooms doc, ops, changed docs…], …]` for the rooms the VM also had:
+`DocRef`s per room (`runtime/src/doc_reuse.rs` `DocCache`, reset with the VM) and sends one ASCII JSON string `[generation, [blob index, rooms doc, ops, changed docs…], …]` for the rooms the VM also had:
 ops `k, n` take held docs k..k+n (with their seqs), `-1 - seq` takes the next changed doc. Docs match on seq plus
 `Arc::ptr_eq` or equal JSON (a held `Arc` is never mutated in place). A generation mismatch (the VM did not finish
-taking the last input) makes the JS side parse every blob. Vanilla parses every doc each tick, so the player must
+taking the last input) makes the JS side parse every blob's text (`natives.blob`). Vanilla parses every doc each tick, so the player must
 never reach a taken-over doc:
 - never taken over: docs whose getters return a piece of the doc (`creep.body`, `spawning.directions` of spawns and
   invader cores, a tombstone's power creep `powers`: kinds creep, powerCreep, spawn, invaderCore, tombstone), and docs
@@ -1414,6 +1438,7 @@ _init(natives) — captured in closures by js/host/prelude.js, then `delete glob
       interrupt-captured stack (OBS-STACK-TIMEOUT); outer deadlines propagate untouched.
   halt()                       → marks the VM for disposal, terminate_execution            [_halt]
   docsOff()                    → the host stops sending doc reuse plans to this VM (§6.6 J11)
+  blob(i)                      → the text of the run's room blob i | undefined (§6.6; put together on first use)
   heapStats()                  → isolated-vm's 10 fields in order, `adjustment` rule       [ENV-HEAP-STATS]
   nativeMod = {version: 11, loadTerrain(){}, search(origin, goals, cb, plainCost, swampCost, maxRooms, maxOps,
                maxCost, flee, heuristicWeight)}   — exact pf.cc argument list; runs crates/pathfinder on this
@@ -1431,8 +1456,9 @@ _init(natives) — captured in closures by js/host/prelude.js, then `delete glob
   base64ToBuffer(b64)          → Uint8Array with the internal Buffer prototype            [ENV-BINARY-BUFFER]
   shardName, profile           → strings
   setupList                    → boolean, runner.setupList (§2.9 "What differs in a match")
-host → JS:  __tick(meta, blobs, eventLogs, memory|undefined, segments /*{id: string}*/,
-            foreignSegment /*{username,id,data}|undefined*/, modules /*{name: string|Uint8Array}|undefined*/) → outMessage
+host → JS:  __tick(meta, blobs /*true (a room: natives.blob(i)) | string | null*/, eventLogs, memory|undefined,
+            segments /*{id: string}*/, foreignSegment /*{username,id,data}|undefined*/,
+            modules /*{name: string|Uint8Array}|undefined*/, plans /*doc reuse, §6.6*/|undefined) → outMessage
 system isolate:  objectRoom(id) → roomName | undefined;  __store(out, userId) → JSON string (§4.2)
 ```
 `js/engine/game/map.js` and `js/driver/mapgrid.js` keep vanilla's algorithms (findRoute A* over a 60×60 window,
