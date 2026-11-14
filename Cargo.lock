@@ -25,7 +25,7 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
 name = "backend"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "engine",
  "util",
@@ -162,7 +162,7 @@ checksum = "0e9c71c2167ca323c882b99918929403426e2373ea17242ff5653e0d5e1058be"
 
 [[package]]
 name = "engine"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "pathfinder",
  "util",
@@ -363,7 +363,7 @@ dependencies = [
 
 [[package]]
 name = "modlist"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "backend",
 ]
@@ -395,7 +395,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pathfinder"
-version = "0.3.0"
+version = "0.3.1"
 
 [[package]]
 name = "potential_utf"
@@ -477,7 +477,7 @@ dependencies = [
 
 [[package]]
 name = "runtime"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "engine",
  "pathfinder",
@@ -536,7 +536,7 @@ dependencies = [
 
 [[package]]
 name = "server"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "backend",
  "engine",
@@ -670,7 +670,7 @@ checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
 
 [[package]]
 name = "util"
-version = "0.3.0"
+version = "0.3.1"
 
 [[package]]
 name = "v8"
