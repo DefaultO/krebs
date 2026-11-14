@@ -2,6 +2,8 @@
 # .crate (sha256 pinned) with the two pieces the crate leaves out and the toolchains the build downloads.
 /build/
 /buildtools/
+# One placeholder the profile build wants to exist (tools/v8-ptrcomp.ps1 writes it).
+/chrome/
 /third_party/
 /tools/
 /v8/

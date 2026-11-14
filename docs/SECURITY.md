@@ -112,17 +112,24 @@ These steps come from `tools/v8-ptrcomp.ps1`, `tools/v8-download.bat` and `vendo
 4. **Record a new builtins profile.** `tools/v8-ptrcomp.profile` is tied to one V8 and its GN args, and a changed builtin
    aborts the build. `docs/ARCHITECTURE.md` section 2.9 has the recipe. Set `v8_enable_builtins_profiling` in `GN_ARGS` while
    recording, and the script then leaves the old profile out.
-5. **Build.** Run `tools\v8-ptrcomp.ps1`, as its first lines describe. It takes about 40 minutes at `-j 4` the first time,
-   plus about 3 GB of toolchains that the build downloads. The library comes out at
+5. **Record a new C++ profile.** `tools\v8-ptrcomp.profdata` holds the counts V8's C++ is compiled with, and is worth about
+   a tenth of a tick. Old counts do not stop a build: the compiler drops those that no longer fit and says nothing, so the
+   gain goes quietly. `docs/ARCHITECTURE.md` section 2.9 has the recipe: a build with `GN_ARGS=chrome_pgo_phase=1` in a
+   target folder of its own, a recording, and a merge into `tools\v8-ptrcomp.profdata`. This is a second 40 minute build.
+   When there is no time for it, as with a security fix, build with the old file and record later.
+6. **Build.** Run `tools\v8-ptrcomp.ps1`, as its first lines describe. It takes about 40 minutes at `-j 4` the first time,
+   plus about 3 GB of toolchains that the build downloads. It uses the `tools\v8-ptrcomp.profdata` that is there, and
+   warns that it is not the published one, which is right after a new recording. The library comes out at
    `target\ptrcomp\release\gn_out\obj\rusty_v8.lib` and its bindings at `target\ptrcomp\release\gn_out\src_binding.rs`.
-6. **Keep the bindings.** Copy `src_binding.rs` over `vendor/v8/gen/src_binding_ptrcomp_release_x86_64-pc-windows-msvc.rs`,
+7. **Keep the bindings.** Copy `src_binding.rs` over `vendor/v8/gen/src_binding_ptrcomp_release_x86_64-pc-windows-msvc.rs`,
    which is what a build uses when it downloads the library.
-7. **Test.** Set `RUSTY_V8_ARCHIVE` and `RUSTY_V8_SRC_BINDING_PATH` to those two files and run
+8. **Test.** Set `RUSTY_V8_ARCHIVE` and `RUSTY_V8_SRC_BINDING_PATH` to those two files and run
    `cargo test --workspace --release --features runtime/ptrcomp -j 4 --no-fail-fast`. A new V8 can also add a new way to make
    memory outside the allocator, as resizable buffers did, and these tests only know the old ways. Read the release notes
    for anything new on `ArrayBuffer` or `WebAssembly.Memory`, and add it to `LOCK_BUFFERS` in `crates/runtime/src/host.rs`.
-8. **Publish.** Gzip the library as `rusty_v8.lib.gz` and take its sha256: the pin is the hash of the `.gz`. Put that same
-   file in a release with a new tag on both GitHub and Gitea, at `DefaultO/krebs/releases/download/<tag>/rusty_v8.lib.gz`.
-9. **Point the build at it.** Change `V8_TAG` and `V8_SHA256` in `tools/v8-download.bat`, and the tag in the test commands in
-   `README.md`.
-10. **Release Krebs,** and tell hosts to update.
+9. **Publish.** Gzip the library as `rusty_v8.lib.gz` and take its sha256: the pin is the hash of the `.gz`. Gzip the
+   profile as `v8-ptrcomp.profdata.gz`, whose pin is the sha256 of the file before it was gzipped. Put those same two files
+   in a release with a new tag on both GitHub and Gitea, at `DefaultO/krebs/releases/download/<tag>/`.
+10. **Point the build at it.** Change `V8_TAG` and `V8_SHA256` in `tools/v8-download.bat`, `$countsTag` and `$countsSha` in
+    `tools/v8-ptrcomp.ps1`, and the tag in the test commands and under "The fast V8" in `README.md`.
+11. **Release Krebs,** and tell hosts to update.

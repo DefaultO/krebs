@@ -381,6 +381,29 @@ or GN arg change needs a new profile: build through the recipe with `GN_ARGS=v8_
 truncating one file it never closes), and turn the concatenated logs into the profile with V8's
 `tools/builtins-pgo/get_hints.py` (not in the crate; from tag 15.2.124.1), default thresholds.
 
+**C++ PGO (in the opt-in build, from the library `v8-152.2.0-fast-2`).** The builtins are a part of V8's machine code. The
+rest is C++: the collectors, the IC and property runtime, JSON, the compilers. Clang lays that out and inlines it by
+counts too (`chrome_pgo_phase=2`, `-fprofile-use`), from `tools/v8-ptrcomp.profdata`: 400 ticks of a late world of one
+bot (545 creeps on 121 rooms) and 150 ticks of 30 generated bots, recorded on a library built with
+`chrome_pgo_phase=1`. Interleaved against the library without it, both with the builtins profile, ten other servers
+busy on the machine. On the world it was recorded on, 6 rounds of 200 ticks: 66.2 → 58.6 ms/tick (runs 64.9–68.4
+against 57.7–59.5), JS tick 57.9 → 51.3, of it input parse 6.0 → 5.1, Game setup 15.4 → 13.7 and the bot's loop 34.6 →
+30.9, and the CPU of the whole process 98.8 → 88.7 ms a tick. On a world it never saw (two bots, 501 creeps), 4 rounds
+of 150 ticks: 80.9 → 72.8 ms/tick (79.3–81.7 against 71.2–74.2), JS tick 75.3 → 66.6, process CPU 131.8 → 120.5. With
+the same seed both libraries print the same console lines and export the same world after 1,500 ticks: only the layout
+of the machine code changes, not what it computes. A changed V8 does not stop the build as a builtins profile does:
+clang drops the counts of functions whose shape changed and says nothing, so a V8 upgrade wants a new recording or
+loses the gain bit by bit.
+Recording one: build with `GN_ARGS=chrome_pgo_phase=1` and `V8_PTRCOMP_TARGET=target\pgo` (41 minutes; the second keeps
+the instrumented library away from `target\ptrcomp`), run that `krebs.exe bench` on the worlds with
+`LLVM_PROFILE_FILE=<dir>\%p.profraw`, and merge with the `llvm-profdata` of the same clang, which is in the package
+`llvm-code-coverage` beside the compiler's (`vendor/v8/tools/clang/scripts/update.py --package coverage_tools`):
+`llvm-profdata merge -o tools\v8-ptrcomp.profdata <dir>\*.profraw`. The file is 61.5 MB (9.7 MB with `--sparse`, which
+was not measured), too large for the repository: it is `v8-ptrcomp.profdata.gz` in the library's release, and the script
+fetches it when `tools\v8-ptrcomp.profdata` is not there and checks its sha256. A file that is there is used as it is, so
+a new recording goes in by that name. The build also wants `vendor/v8/chrome/build/win64.pgo.txt` to exist, which the
+script sees to.
+
 **Room processing** (same bench, 27 players: 429 rooms per tick, ≈ 105 objects each). A room cost 554 µs of CPU, on 16
 threads with 15.2 busy, so 15.6 ms of tick. The time went to converting every doc into the live heap and freeing it
 (~20 %), small allocations (~11 %), SipHash lookups behind every `_.filter(roomObjects, …)` scan (~11 %) and the map

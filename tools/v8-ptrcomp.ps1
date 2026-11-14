@@ -3,7 +3,8 @@
 #   powershell -ExecutionPolicy Bypass -File tools\v8-ptrcomp.ps1 [cargo args]   # default: build --release -j 4 -p server
 # Cargo runs with --features runtime/ptrcomp and its own target dir, target\ptrcomp, so the library built here never
 # replaces the prebuilt one in target\release. The result is target\ptrcomp\release\chitin.exe. V8's builtins are
-# laid out by the profile in v8-ptrcomp.profile (builtins PGO); v8-ptrcomp.patch holds chitin's changes to V8's source.
+# laid out by the profile in v8-ptrcomp.profile (builtins PGO) and its C++ is compiled with the counts in
+# v8-ptrcomp.profdata (Clang PGO); v8-ptrcomp.patch holds chitin's changes to V8's source.
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $v8 = [IO.Path]::GetFullPath("$PSScriptRoot\..\vendor\v8")
@@ -17,6 +18,14 @@ function Check($what, $actual, $expected) {
     if ($actual -ne $expected) { throw "$what`: sha256 $actual, expected $expected" }
 }
 function Sha256($bytes) { -join ([Security.Cryptography.SHA256]::Create().ComputeHash($bytes) | ForEach-Object { $_.ToString('x2') }) }
+function Gunzip($from, $to) {
+    $in = [IO.File]::OpenRead($from)
+    try {
+        $gz = New-Object IO.Compression.GZipStream($in, [IO.Compression.CompressionMode]::Decompress)
+        $out = [IO.File]::Create($to)
+        try { $gz.CopyTo($out) } finally { $out.Dispose(); $gz.Dispose() }
+    } finally { $in.Dispose() }
+}
 # A tar from gitiles stamps every entry with the download time, so the files are checked, not the archive.
 function TreeDigest($dir) {
     $n = (Get-Item $dir).FullName.Length + 1
@@ -72,11 +81,55 @@ if ($env:GN_ARGS -notmatch 'v8_enable_builtins_profiling') {
     $env:GN_ARGS = "$env:GN_ARGS v8_builtins_profiling_log_file=`"$hints`" v8_enable_builtins_reordering=false"
 }
 
+# Clang PGO (docs/ARCHITECTURE.md 2.9): V8's C++ (GC, runtime, JSON, compilers) is compiled with the counts in
+# v8-ptrcomp.profdata, recorded on grown worlds, which makes a tick about a tenth shorter. The file is too large for the
+# repository, so it is a file of the library's release, fetched here once from GitHub, or from Gitea if that fails, and
+# checked against its sha256. A file that is already here is used as it is, which is how a new recording gets in.
+# GN_ARGS=chrome_pgo_phase=1 builds the instrumented library instead, linked against the toolchain's profile runtime
+# (clang_rt.profile), which a build has to have fetched before. ARCHITECTURE.md has the steps from there to a new
+# v8-ptrcomp.profdata. GN_ARGS=chrome_pgo_phase=0 builds without the counts.
+# V8_PTRCOMP_TARGET names another target dir than target\ptrcomp, so that recording does not replace the library that
+# other builds on this PC link. Copy release\clang and release\ninja_gn_binaries into it first, or the build fetches
+# them again.
+$target = [IO.Path]::GetFullPath($(if ($env:V8_PTRCOMP_TARGET) { $env:V8_PTRCOMP_TARGET } else { "$PSScriptRoot\..\target\ptrcomp" }))
+$counts = "$PSScriptRoot\v8-ptrcomp.profdata"
+$countsTag = 'v8-152.2.0-fast-2'  # the release that holds v8-ptrcomp.profdata.gz
+$countsSha = 'a7826c2a9fb5fa6cb7a9a900edfd04beb603aab68f063fb56a16cbc9f694d331'  # of the unpacked file
+if ($env:GN_ARGS -match 'chrome_pgo_phase=1') {
+    $rt = (Get-ChildItem "$target\release\clang\lib\clang\*\lib\windows\clang_rt.profile-x86_64.lib").DirectoryName
+    $env:RUSTFLAGS = "$env:RUSTFLAGS -C link-arg=/LIBPATH:$rt"
+} elseif ($env:GN_ARGS -notmatch 'chrome_pgo_phase=') {
+    if (-not (Test-Path $counts)) {
+        # A wrong page with a good status counts as a failed site too, so the next one gets its turn.
+        $from = "DefaultO/krebs/releases/download/$countsTag/v8-ptrcomp.profdata.gz"
+        foreach ($site in 'https://github.com', 'https://gitea.defaul.to') {
+            curl.exe -fsSL --retry 3 -o "$counts.gz" "$site/$from"
+            if ($LASTEXITCODE) { continue }
+            try { Gunzip "$counts.gz" "$counts.part" } catch { continue }
+            if ((Get-FileHash -Algorithm SHA256 "$counts.part").Hash.ToLower() -ne $countsSha) { continue }
+            Move-Item "$counts.part" $counts
+            break
+        }
+        Remove-Item "$counts.gz", "$counts.part" -ErrorAction SilentlyContinue
+        if (-not (Test-Path $counts)) { throw "could not get the profile with sha256 $countsSha from GitHub or from Gitea: $from" }
+    } elseif ((Get-FileHash -Algorithm SHA256 $counts).Hash.ToLower() -ne $countsSha) {
+        Write-Warning "tools\v8-ptrcomp.profdata is not the profile of $countsTag. That is right after a new recording, whose sha256 then belongs in this script."
+    }
+    # The build lists Chrome's note of which profile to fetch among its inputs, and the crate has no such file. It only
+    # has to exist: the profile is named here.
+    $note = "$v8\chrome\build\win64.pgo.txt"
+    if (-not (Test-Path $note)) {
+        New-Item -ItemType Directory -Force (Split-Path $note) | Out-Null
+        Set-Content -Path $note -Value 'The profile is named by pgo_data_path (tools/v8-ptrcomp.ps1).'
+    }
+    $env:GN_ARGS = "$env:GN_ARGS chrome_pgo_phase=2 pgo_data_path=`"$($counts -replace '\\', '/')`""
+}
+
 $env:V8_FROM_SOURCE = '1'
 Remove-Item Env:RUSTY_V8_ARCHIVE -ErrorAction SilentlyContinue
 # V8's ICU step fails under the Store's python3.exe alias, so the build gets a real interpreter.
 if (-not $env:PYTHON) { $env:PYTHON = py -3 -c 'import sys; print(sys.executable)' }
-$env:CARGO_TARGET_DIR = [IO.Path]::GetFullPath("$PSScriptRoot\..\target\ptrcomp")
+$env:CARGO_TARGET_DIR = $target
 $sub, $rest = if ($args.Count) { $args } else { 'build', '--release', '-j', '4', '-p', 'server' }
 Push-Location "$PSScriptRoot\.."
 try {

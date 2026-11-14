@@ -3,8 +3,8 @@ rem Gets the fast V8 library and points the build at it. run.bat and tools\dist.
 rem The same file is a release on GitHub and on Gitea, so that either site can be gone. RUSTY_V8_ARCHIVE can only name one
 rem address, so the file is fetched here and the build reads it from disk. It stays in CARGO_TARGET_DIR, so it downloads once.
 rem The sha256 pins it, whichever site it came from, and the build checks it again. A new library means a new tag and sha256 here.
-set "V8_TAG=v8-152.2.0-fast"
-set "V8_SHA256=104c007dafbc047dbd048ec4ae9c9e2b14feda2309c97f014a3973c8ea1c1812"
+set "V8_TAG=v8-152.2.0-fast-2"
+set "V8_SHA256=2bf41c9dc63828900d74fb9421f089e023d441f35a66a32952a7615f9d35cfec"
 set "V8_PATH=DefaultO/krebs/releases/download/%V8_TAG%/rusty_v8.lib.gz"
 set "V8_DIR=%CARGO_TARGET_DIR%\v8-download"
 set "V8_FILE=%V8_DIR%\rusty_v8.lib.gz"

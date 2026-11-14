@@ -181,9 +181,10 @@ is not in the repository. Set `KREBS_ALLOW_DIRTY=1` for a trial build, which is 
 ### The fast V8
 
 Bots run on V8. Krebs uses its own build with pointer compression and profile-guided builtins, which makes ticks about 25%
-faster. `run.bat` downloads that library once, as a prebuilt, and the matching bindings are in `vendor/v8/gen`. You do not
-have to build it. `tools/v8-ptrcomp.ps1` is how it was made, which takes about 40 minutes. `tools/v8-download.bat` fetches it
-from GitHub, or from Gitea if that fails, and a pinned sha256 has to match either way.
+faster. Since the library `v8-152.2.0-fast-2`, V8's C++ is compiled with a recorded profile too, which takes about another
+tenth off a tick. `run.bat` downloads that library once, as a prebuilt, and the matching bindings are in `vendor/v8/gen`.
+You do not have to build it. `tools/v8-ptrcomp.ps1` is how it was made, which takes about 40 minutes.
+`tools/v8-download.bat` fetches it from GitHub, or from Gitea if that fails, and a pinned sha256 has to match either way.
 
 That library is built for Windows only. On macOS and Linux, `run.sh` and `tools/dist.sh` use the plain prebuilt that the
 v8 crate downloads once from [denoland/rusty_v8](https://github.com/denoland/rusty_v8/releases), without pointer
@@ -196,7 +197,7 @@ is there. `tools/v8-env.sh` says which, and pins the sha256 of the plain prebuil
 
 ```
 cargo test
-set RUSTY_V8_ARCHIVE=https://github.com/DefaultO/krebs/releases/download/v8-152.2.0-fast/rusty_v8.lib.gz
+set RUSTY_V8_ARCHIVE=https://github.com/DefaultO/krebs/releases/download/v8-152.2.0-fast-2/rusty_v8.lib.gz
 cargo test --workspace --release --features runtime/ptrcomp -j 4 --no-fail-fast
 ```
 

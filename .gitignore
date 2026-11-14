@@ -6,6 +6,8 @@
 /chitin.json
 *.log
 /.claude/
+# The counts V8's C++ is compiled with: 61.5 MB, so tools/v8-ptrcomp.ps1 fetches it from the library's release.
+/tools/v8-ptrcomp.profdata
 # Private, and not a submodule. tools\package.bat and tools\dist.bat keep it out of a release.
 /mods/platform/
 # Files that can hold a password or a key.
