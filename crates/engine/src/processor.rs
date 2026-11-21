@@ -878,6 +878,10 @@ fn run_steps(scope: &mut RoomScope, intents: RoomIntents, ticks: &[(&str, TickFn
     }
     scope.energy_available = lodash_sum(&energies);
 
+    for f in &ctx.hooks.pre_tick {
+        f(scope);
+    }
+
     // PROC-TICK-LOOP (processor.js:342-483).
     let kinds: Vec<K> = ticks.iter().map(|(t, _)| K::named(t)).collect();
     let quiet_ok = std::ptr::eq(ticks.as_ptr(), OBJECT_TICKS.as_ptr()) && !ctx.config.history && ctx.hooks.object_ticks.is_empty() && ctx.hooks.post_object.is_empty();

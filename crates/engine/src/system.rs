@@ -37,11 +37,47 @@ pub enum FieldType {
     UserText,
 }
 
+impl FieldType {
+    /// Its `transforms` key in system.js.
+    pub fn js_name(self) -> &'static str {
+        match self {
+            FieldType::String => "string",
+            FieldType::Number => "number",
+            FieldType::Boolean => "boolean",
+            FieldType::Price => "price",
+            FieldType::StringArr => "string[]",
+            FieldType::NumberArr => "number[]",
+            FieldType::BodypartArr => "bodypart[]",
+            FieldType::UserString => "userString",
+            FieldType::UserText => "userText",
+        }
+    }
+}
+
 /// One `intentTypes` entry: field → transform, in output order.
 pub type IntentType = &'static [(&'static str, FieldType)];
 
 /// `customIntentTypes` (mods, `hooks::ProcessorHooks::intent_types`), in key order.
 pub type CustomIntentTypes<'a> = &'a [(&'static str, IntentType)];
+
+/// The mods' intent types as `config.engine.customIntentTypes` ends up after each mod assigned its own
+/// (driver/lib/index.js:28): one entry per name, at the place the name first came, holding what came last.
+pub fn merge_custom_intent_types(registered: CustomIntentTypes) -> Vec<(&'static str, IntentType)> {
+    let mut merged: Vec<(&'static str, IntentType)> = Vec::with_capacity(registered.len());
+    for &(name, fields) in registered {
+        match merged.iter_mut().find(|(n, _)| *n == name) {
+            Some(entry) => entry.1 = fields,
+            None => merged.push((name, fields)),
+        }
+    }
+    merged
+}
+
+/// `customIntentTypes` as the object host/system.js takes: `{"<intent>": {"<field>": "<transform>"}}`.
+pub fn custom_intent_types_json(custom: CustomIntentTypes) -> Json {
+    let fields = |t: IntentType| Json::Obj(t.iter().map(|&(f, ty)| (f.to_string(), Json::Str(ty.js_name().into()))).collect());
+    Json::Obj(custom.iter().map(|&(name, t)| (name.to_string(), fields(t))).collect())
+}
 
 use FieldType::{
     Boolean as B, BodypartArr as BP, Number as N, NumberArr as NA, Price as P, String as S, StringArr as SA,

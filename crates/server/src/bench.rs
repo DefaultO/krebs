@@ -535,7 +535,8 @@ pub fn run(cfg: Config, args: &Args) {
 
     let rcfg = crate::runtime_config(&cfg, w.compat.profile);
     println!("runner threads: {}", rcfg.runner_threads);
-    let rt = Arc::new(runtime::Runtime::new(rcfg, runtime::Bundle { files: runtime::bundle::FILES, mod_game_js: game_js }));
+    let custom_intent_types = registry.engine.processor.intent_types.clone();
+    let rt = Arc::new(runtime::Runtime::new(rcfg, runtime::Bundle { files: runtime::bundle::FILES, mod_game_js: game_js, custom_intent_types }));
     let (tx, rx) = std::sync::mpsc::channel();
     let published = Arc::new(backend::Published::new(w.view()));
     let backend = backend::start(backend::BackendDeps {

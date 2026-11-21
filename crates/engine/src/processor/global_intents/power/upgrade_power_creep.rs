@@ -20,9 +20,10 @@ pub(crate) fn run(intent: &V, user: &O, s: &mut Scope) {
     if ge(&pc.get(atom!("level")), &V::Num(POWER_CREEP_MAX_LEVEL as f64)) {
         return;
     }
-    // C.POWER_INFO[intent.power]: keys "1".."19"
+    // C.POWER_INFO[intent.power]: keys "1".."19", then the powers mods add
     let key = to_js_string(&get_or_undef(intent, atom!("power")));
-    let Some(info) = key.parse::<u32>().ok().filter(|p| p.to_string() == *key).and_then(power_info) else { return };
+    let pwr = key.parse::<u32>().ok().filter(|p| p.to_string() == *key);
+    let Some(info) = pwr.and_then(|p| power_info(p).or_else(|| s.powers.iter().copied().find(|i| i.power == p))) else { return };
     if !strict_eq(&V::str(info.class_name), &pc.get(atom!("className"))) {
         return;
     }

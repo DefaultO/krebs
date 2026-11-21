@@ -150,7 +150,7 @@ fn config(heap_mb: usize, hard_timeout_ms: u64, meter: Meter) -> RuntimeConfig {
 
 fn new_runtime(cfg: RuntimeConfig) -> Runtime {
     runtime::init_v8();
-    Runtime::new(cfg, Bundle { files: FILES, mod_game_js: Vec::new() })
+    Runtime::new(cfg, Bundle { files: FILES, mod_game_js: Vec::new(), custom_intent_types: Vec::new() })
 }
 
 /// The shared runtime; every test uses its own user indexes.

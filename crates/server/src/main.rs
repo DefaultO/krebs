@@ -247,7 +247,7 @@ fn serve(mut cfg: Config, args: &Args) {
 
     let rt = Arc::new(runtime::Runtime::new(
         runtime_config(&cfg, w.compat.profile),
-        runtime::Bundle { files: runtime::bundle::FILES, mod_game_js: game_js },
+        runtime::Bundle { files: runtime::bundle::FILES, mod_game_js: game_js, custom_intent_types: hooks.processor.intent_types.clone() },
     ));
     let (tx, rx) = std::sync::mpsc::channel();
     let published = Arc::new(Published::new(w.view()));

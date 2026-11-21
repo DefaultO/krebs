@@ -113,6 +113,9 @@ pub(crate) struct Scope<'w> {
     pub user_power_creeps: Vec<O>,
     /// market.orders, collection order.
     pub orders: Vec<O>,
+    /// Power classes and `POWER_INFO` entries the mods add (`ProcessorHooks::power_classes`, `powers`).
+    pub power_classes: Vec<&'static str>,
+    pub powers: Vec<&'static crate::constants::PowerInfo>,
     /// roomObjects (terminal/powerSpawn/powerCreep docs), converted on first touch, by seq.
     room_objects: HashMap<u64, O>,
     rng: Option<Rng>,
@@ -189,6 +192,8 @@ impl<'w> Scope<'w> {
             user_intents,
             user_power_creeps,
             orders,
+            power_classes: ctx.hooks.power_classes.clone(),
+            powers: ctx.hooks.powers.clone(),
             room_objects: HashMap::new(),
             rng: None,
             seed: w.seed,

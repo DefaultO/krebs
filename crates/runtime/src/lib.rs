@@ -161,6 +161,8 @@ pub struct Bundle {
     pub files: &'static [(&'static str, &'static str)],
     /// (mod name, game-slot JS) in load order.
     pub mod_game_js: Vec<(Box<str>, Box<str>)>,
+    /// The mods' `ProcessorHooks::intent_types` in load order, which storeIntents sanitizes as `customIntentTypes`.
+    pub custom_intent_types: Vec<(&'static str, engine::system::IntentType)>,
 }
 
 /// VMs, snapshot blobs, system isolates per worker, watchdog, scheduler.
@@ -172,6 +174,10 @@ pub struct Runtime {
     sys: Mutex<HashMap<std::thread::ThreadId, host::SysVm>>,
     /// store.rs ports the shipped host/system.js and common/system.js; a bundle with others runs them.
     native_store: bool,
+    /// `customIntentTypes` for storeIntents, one entry per name, and the same as the JSON text a system isolate is
+    /// given (`__setCustomIntentTypes`); `None` without any, when the system isolate keeps its `{}`.
+    custom_intent_types: Vec<(&'static str, engine::system::IntentType)>,
+    custom_intent_types_json: Option<String>,
     resets: AtomicU64,
     migrations: AtomicU64,
     server: ServerIsolate,
@@ -200,12 +206,16 @@ impl Runtime {
             file(bundle.files).is_some() && file(bundle.files) == file(bundle::FILES)
         };
         let native_store = shipped("host/system.js") && shipped("common/system.js");
+        let custom_intent_types = engine::system::merge_custom_intent_types(&bundle.custom_intent_types);
+        let custom_intent_types_json = (!custom_intent_types.is_empty()).then(|| engine::system::custom_intent_types_json(&custom_intent_types).stringify());
         Runtime {
             cfg,
             snapshots,
             vms: Mutex::new(HashMap::new()),
             sys: Mutex::new(HashMap::new()),
             native_store,
+            custom_intent_types,
+            custom_intent_types_json,
             resets: AtomicU64::new(0),
             migrations: AtomicU64::new(0),
             server: ServerIsolate::default(),

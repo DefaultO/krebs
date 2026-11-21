@@ -14,9 +14,9 @@ pub(crate) fn run(intent: &V, user: &O, s: &mut Scope) {
     if no_level_left(user, &pcs) {
         return;
     }
-    // Object.values(C.POWER_CLASS).indexOf(intent.className) === -1
+    // Object.values(C.POWER_CLASS).indexOf(intent.className) === -1, with the classes mods add
     let class_name = get_or_undef(intent, atom!("className"));
-    if !matches!(&class_name, V::Str(c) if &**c == POWER_CLASS_OPERATOR) {
+    if !matches!(&class_name, V::Str(c) if &**c == POWER_CLASS_OPERATOR || s.power_classes.contains(&&**c)) {
         return;
     }
     let Some(name) = name50(&get_or_undef(intent, atom!("name"))) else { return };

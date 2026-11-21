@@ -1786,6 +1786,9 @@ pub struct ProcessorHooks {
     pub room_end: Vec<fn(&mut RoomScope)>,                                               // processRoom
     pub activation_rules: Vec<fn(&O, &RoomScope) -> bool>,
     pub global_stage: Vec<fn(&mut World, &GlobalCtx)>,                                   // after market
+    pub power_classes: Vec<&'static str>,                                                // createPowerCreep, besides operator
+    pub powers: Vec<&'static PowerInfo>,                                                 // upgradePowerCreep, besides POWER_INFO
+    pub pre_tick: Vec<fn(&mut RoomScope)>,                                               // after intents + movement check
 }
 #[derive(Default)]
 pub struct EngineHooks {
@@ -1838,7 +1841,9 @@ of the result, and `socketUpdateThrottle` is the broadcaster's wait (lodash `_.t
   connection threads under the server-isolate mutex (50 ms deadline); crons run in CRON-STAGE with a scoped world
   API and `random()` from their cron stream.
 * `intentTypes` feed both sanitizers (`customIntentTypes`); handlers for custom intents need a Rust mod (no JS in
-  the room/global phase).
+  the room/global phase). Today the Rust mods' `ProcessorHooks::intent_types` are what feeds them: `runtime::Bundle`
+  carries them, merged as `config.engine.customIntentTypes` would be (one entry per name, the last one wins), to
+  `store.rs` and to each system isolate's `__setCustomIntentTypes`.
 
 ### 10.3 Load order
 

@@ -9,7 +9,7 @@
 //! reach Object.prototype (vanilla's prototype pollution); and every throw (the JS error text and stack).
 //! In the subset both paths give the same Json (tests::matches_the_system_isolate).
 
-use engine::system::{sanitize_intent, sanitize_user_intents, INTENT_TYPES};
+use engine::system::{sanitize_intent, sanitize_user_intents, CustomIntentTypes, INTENT_TYPES};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use util::json::Json;
@@ -58,14 +58,14 @@ const OBJECT_PROTOTYPE: &[&str] = &[
 const SCAN: usize = 16;
 
 /// `__store(out, userId)` for a subset outMessage: the Json host/system.js returns (after JSON.parse), or `None`
-/// for the system isolate. `object_room` is the objectRoom native.
-pub(crate) fn store(bytes: &[u8], object_room: impl Fn(&str) -> Option<String>) -> Option<Json> {
+/// for the system isolate. `object_room` is the objectRoom native, `custom` the mods' `customIntentTypes`.
+pub(crate) fn store(bytes: &[u8], object_room: impl Fn(&str) -> Option<String>, custom: CustomIntentTypes) -> Option<Json> {
     let out = Wire::new(bytes)?.value(0)?;
     if !matches!(out, Js::Obj(_)) {
         return None;
     }
     let list = out.get("intentsList");
-    let intents = store_intents(list, &object_room)?;
+    let intents = store_intents(list, &object_room, custom)?;
     let count = intents_count(list);
     // JSON.stringify of host/system.js's literal: undefined members are left out
     let mut o = Vec::new();
@@ -154,7 +154,7 @@ fn node_json(n: Node) -> Option<Json> {
 }
 
 // vanilla: utils.js:405 storeIntents (host/system.js)
-fn store_intents(user_intents: &Js, object_room: &impl Fn(&str) -> Option<String>) -> Option<Json> {
+fn store_intents(user_intents: &Js, object_room: &impl Fn(&str) -> Option<String>, custom: CustomIntentTypes) -> Option<Json> {
     let mut intents = Map::default();
 
     let entries = match user_intents {
@@ -178,12 +178,12 @@ fn store_intents(user_intents: &Js, object_room: &impl Fn(&str) -> Option<String
         }
 
         if i == "room" {
-            sanitize_user_room_intents(value, &mut intents)?;
+            sanitize_user_room_intents(value, &mut intents, custom)?;
             continue;
         }
 
         if i == "global" {
-            let global = sanitize_user_intents(&input_json(value)?, &[]).ok()?;
+            let global = sanitize_user_intents(&input_json(value)?, custom).ok()?;
             assign(&mut intents, "global", Node::Json(engine::doc::Val::Obj(global).to_json()));
             continue;
         }
@@ -195,15 +195,16 @@ fn store_intents(user_intents: &Js, object_room: &impl Fn(&str) -> Option<String
             None => continue,
         };
 
-        let sanitized = sanitize_user_intents(&input_json(value)?, &[]).ok()?;
+        let sanitized = sanitize_user_intents(&input_json(value)?, custom).ok()?;
         assign(map_at(&mut intents, &room)?, i, Node::Json(engine::doc::Val::Obj(sanitized).to_json()));
     }
 
     node_json(Node::Map(intents))
 }
 
-// vanilla: system.js:116 sanitizeUserRoomIntents (built-in names; customIntentTypes is always `{}` here)
-fn sanitize_user_room_intents(input: &Js, result: &mut Map) -> Option<()> {
+// vanilla: system.js:116 sanitizeUserRoomIntents: the built-in names, then the mods' (`intentTypes[name]` comes first
+// in sanitizeIntent, so passing `custom` for a built-in name changes nothing)
+fn sanitize_user_room_intents(input: &Js, result: &mut Map, custom: CustomIntentTypes) -> Option<()> {
     match input {
         // `input[name]` throws
         Js::Undef | Js::Null => return None,
@@ -211,7 +212,7 @@ fn sanitize_user_room_intents(input: &Js, result: &mut Map) -> Option<()> {
         // primitives and arrays have no own intent names; inherited ones are not intent names either
         _ => return Some(()),
     }
-    for &(name, _) in INTENT_TYPES {
+    for &(name, _) in INTENT_TYPES.iter().chain(custom) {
         let list = input.get(name);
         if !list.truthy() {
             continue;
@@ -219,7 +220,7 @@ fn sanitize_user_room_intents(input: &Js, result: &mut Map) -> Option<()> {
         // `for(let intent of input[name])`: only arrays here (strings iterate, other values throw)
         let Js::Arr(items) = list else { return None };
         for intent in items {
-            let sanitized = sanitize_intent(name, &input_json(intent)?, &[]).ok()?;
+            let sanitized = sanitize_intent(name, &input_json(intent)?, custom).ok()?;
             // `"" + roomName` for types with a roomName field, `undefined` (the key "undefined") without one
             let grouping_value = match sanitized.get(engine::doc::Atom::intern("roomName")) {
                 Some(engine::doc::Val::Str(s)) => s.to_string(),
@@ -486,7 +487,7 @@ mod tests {
     }
 
     fn native(src: &str) -> Option<String> {
-        store(&serialize(src), room_of).map(|j| j.stringify())
+        store(&serialize(src), room_of, &[]).map(|j| j.stringify())
     }
 
     /// The world the system isolate's objectRoom native sees, as room_of.
@@ -544,6 +545,10 @@ mod tests {
     }
 
     fn runtime() -> crate::Runtime {
+        runtime_with(Vec::new())
+    }
+
+    fn runtime_with(custom_intent_types: Vec<(&'static str, engine::system::IntentType)>) -> crate::Runtime {
         crate::init_v8();
         let cfg = crate::RuntimeConfig {
             runner_threads: 1,
@@ -558,7 +563,49 @@ mod tests {
             profile: engine::policy::Profile::Private,
             shard_name: "shard0".into(),
         };
-        crate::Runtime::new(cfg, crate::Bundle { files: crate::bundle::FILES, mod_game_js: Vec::new() })
+        crate::Runtime::new(cfg, crate::Bundle { files: crate::bundle::FILES, mod_game_js: Vec::new(), custom_intent_types })
+    }
+
+    /// A mod's intent types: `glow` twice (the second wins, at the first one's place), `plant` grouped by room.
+    const CUSTOM: &[(&str, engine::system::IntentType)] = {
+        use engine::system::FieldType::*;
+        &[
+            ("glow", &[("id", String)]),
+            ("plant", &[("roomName", String), ("x", Number), ("y", Number), ("label", UserString)]),
+            ("glow", &[("id", String), ("power", Number), ("colors", StringArr)]),
+        ]
+    };
+
+    /// Intents of the mods' types reach `intents` on both paths, the same; without them both drop the same intents.
+    #[test]
+    fn custom_intent_types_reach_both_paths() {
+        let src = "({type: 'done', usedTime: 1, intentsList: {
+            obj1: {glow: {id: 7, power: '3', colors: ['red', 2], extra: 1}, move: {direction: 2}, unknown: {a: 1}},
+            obj2: {glow: [{id: 'a'}, {power: 1.5}]},
+            global: {glow: {id: 'g'}, createPowerCreep: {name: 'p', className: 'commander'}},
+            room: {plant: [{roomName: 'W3N3', x: '4', y: 5, label: 'x'.repeat(120)}], createFlag: [{roomName: 'W3N3', x: 1, y: 1, name: 'f', color: 1, secondaryColor: 1}]}},
+            console: {log: [], results: []}})";
+        let bytes = serialize(src);
+        let merged = engine::system::merge_custom_intent_types(CUSTOM);
+        assert_eq!(merged.iter().map(|m| (m.0, m.1.len())).collect::<Vec<_>>(), [("glow", 3), ("plant", 4)]);
+
+        let with = store(&bytes, room_of, &merged).expect("the native path").stringify();
+        assert_eq!(Ok(with.clone()), system_store(&runtime_with(CUSTOM.to_vec()), &bytes));
+        let intents = Json::parse(&with).unwrap();
+        let intents = intents.get("intents").unwrap();
+        assert_eq!(
+            intents.get("W1N1").unwrap().get("obj1").unwrap().stringify(),
+            r#"{"move":{"id":"undefined","direction":2},"glow":{"id":"7","power":3,"colors":["red","2"]}}"#
+        );
+        // a missing number field is NaN, which the transport writes as null; a missing array is left out
+        assert_eq!(intents.get("W2N1").unwrap().get("obj2").unwrap().stringify(), r#"{"glow":[{"id":"a","power":null},{"id":"undefined","power":1}]}"#);
+        assert_eq!(intents.get("global").unwrap().get("glow").unwrap().stringify(), r#"{"id":"g","power":null}"#);
+        let plant = intents.get("W3N3").unwrap().get("room").unwrap().get("plant").unwrap().stringify();
+        assert_eq!(plant, format!(r#"[{{"roomName":"W3N3","x":4,"y":5,"label":"{}"}}]"#, "x".repeat(100)));
+
+        let without = store(&bytes, room_of, &[]).expect("the native path").stringify();
+        assert_eq!(Ok(without.clone()), system_store(&runtime(), &bytes));
+        assert!(!without.contains("glow") && !without.contains("plant"), "{without}");
     }
 
     #[test]
@@ -611,7 +658,7 @@ mod tests {
         for src in [object, visuals, groups] {
             let bytes = serialize(&src);
             let t = std::time::Instant::now();
-            assert!(store(&bytes, room_of).is_some());
+            assert!(store(&bytes, room_of, &[]).is_some());
             assert!(t.elapsed().as_secs_f64() < 60.0, "{:?}", t.elapsed());
         }
     }
@@ -673,7 +720,7 @@ mod tests {
         let mut native_taken = 0;
         for src in &cases {
             let bytes = serialize(src);
-            let Some(n) = store(&bytes, room_of) else { continue };
+            let Some(n) = store(&bytes, room_of, &[]) else { continue };
             native_taken += 1;
             assert_eq!(Ok(n.stringify()), system_store(&rt, &bytes), "{src}");
         }

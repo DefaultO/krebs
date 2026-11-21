@@ -389,7 +389,8 @@ pub(crate) struct SysVm {
     raw: usize,
 }
 
-fn create_sys(snapshot: &'static [u8]) -> Result<SysVm, String> {
+/// `custom_intent_types`: the mods' `customIntentTypes` as JSON, handed to host/system.js's `__setCustomIntentTypes`.
+fn create_sys(snapshot: &'static [u8], custom_intent_types: Option<&str>) -> Result<SysVm, String> {
     let mut iso = v8::Isolate::new(v8::CreateParams::default().snapshot_blob(v8::StartupData::from(snapshot)));
     let booted = (|| {
         v8::scope!(let scope, &mut iso);
@@ -403,6 +404,14 @@ fn create_sys(snapshot: &'static [u8]) -> Result<SysVm, String> {
         let init = get_fn(tc, global, "_initSystem").ok_or("the system bundle defines no _initSystem")?;
         if init.call(tc, global.into(), &[nat.into()]).is_none() {
             return Err(tc.exception().map(|e| natives::error_text(tc, e)).unwrap_or_default());
+        }
+        if let Some(text) = custom_intent_types {
+            let set = get_fn(tc, global, "__setCustomIntentTypes").ok_or("the system bundle defines no __setCustomIntentTypes")?;
+            let text = v8::String::new(tc, text).ok_or("customIntentTypes do not fit in a string")?;
+            let types = v8::json::parse(tc, text).ok_or("customIntentTypes are not JSON")?;
+            if set.call(tc, global.into(), &[types]).is_none() {
+                return Err(tc.exception().map(|e| natives::error_text(tc, e)).unwrap_or_default());
+            }
         }
         let store = get_fn(tc, global, "__store").ok_or("the system bundle defines no __store")?;
         Ok((v8::Global::new(tc, context), v8::Global::new(tc, store)))
@@ -424,7 +433,7 @@ pub(crate) fn store(rt: &Runtime, bytes: &[u8], user_id: &str) -> Result<String,
     let taken = rt.sys.lock().unwrap_or_else(|e| e.into_inner()).remove(&me);
     let sys = match taken {
         Some(s) => s,
-        None => create_sys(rt.snapshots.blob)?,
+        None => create_sys(rt.snapshots.blob, rt.custom_intent_types_json.as_deref())?,
     };
     let r = {
         let mut locker = lock(&sys.iso, sys.raw as _);
@@ -583,7 +592,7 @@ pub(crate) fn run(rt: &Runtime, world: &dyn WorldAccess, input: RunInput) -> Run
             // §4.2 step 4 in Rust when the outMessage allows it (store.rs), else on the system isolate, whose
             // objectRoom reads the run context again.
             let object_room = |id: &str| world.object_room(id, user, &ctx.visible).map(|r| world.room_name(r).to_string());
-            let native = if rt.native_store { crate::store::store(&cap.bytes, object_room) } else { None };
+            let native = if rt.native_store { crate::store::store(&cap.bytes, object_room, &rt.custom_intent_types) } else { None };
             let stored = match native {
                 Some(j) => Ok(j),
                 None => {

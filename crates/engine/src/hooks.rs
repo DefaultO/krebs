@@ -1,6 +1,7 @@
 //! Engine-side mod hooks (ARCHITECTURE.md §10.1, FROZEN). Engine cannot see backend types; the full mod
 //! registry is `backend::mods::Registry`.
 
+use crate::constants::PowerInfo;
 use crate::cron::CronCtx;
 use crate::live::{Crash, O, V};
 use crate::mapgen;
@@ -26,6 +27,15 @@ pub struct ProcessorHooks {
     pub activation_rules: Vec<fn(&O, &RoomScope) -> bool>,
     /// After market.
     pub global_stage: Vec<fn(&mut World, &GlobalCtx)>,
+    /// Power classes besides `operator`, which createPowerCreep then accepts. The mod that adds one handles the
+    /// `usePower` intents of its powers itself (`object_intents` for `powerCreep`): vanilla's handler leaves a power
+    /// it does not know alone.
+    pub power_classes: Vec<&'static str>,
+    /// `POWER_INFO` entries besides vanilla's, for upgradePowerCreep, which reads their `class_name` and `level`.
+    pub powers: Vec<&'static PowerInfo>,
+    /// After every intent and the movement check, before the tick loop, which has no vanilla event: what creeps and
+    /// power creeps take this tick is complete in their `_damageToApply` and `_healToApply`.
+    pub pre_tick: Vec<fn(&mut RoomScope)>,
 }
 
 #[derive(Default)]

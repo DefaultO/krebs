@@ -12,6 +12,7 @@ Each mod is a repository of its own, added here as a git submodule, and the core
 | `mods/matchrun` | krebs-matchrun, on [GitHub](https://github.com/DefaultO/krebs-matchrun) and [Gitea](https://gitea.defaul.to/DefaultO/krebs-matchrun) | Runs inside a match's own server. `mods/bare` needs it. |
 | `mods/matchrules` | krebs-matchrules, on [GitHub](https://github.com/DefaultO/krebs-matchrules) and [Gitea](https://gitea.defaul.to/DefaultO/krebs-matchrules) | Match rules and stats. Nothing enables it yet. |
 | `mods/example` | krebs-example, on [GitHub](https://github.com/DefaultO/krebs-example) and [Gitea](https://gitea.defaul.to/DefaultO/krebs-example) | Shows every kind of registration. Copy it to start a mod. |
+| `mods/powerclasses` | not published yet | The Commander and the Executor, the power creep classes Screeps planned besides the Operator. Nothing enables it. |
 
 A clone without submodules leaves empty folders here, which is fine: the workspace does not list `mods/*`, and the
 block in `crates/modlist/Cargo.toml` is empty in the repository. A mod becomes a workspace member through the line
@@ -39,8 +40,12 @@ cannot load a manifest whose dependency folder is gone, so build.rs never gets t
 
 `backend::mods::Registry` (ARCHITECTURE.md §10.1):
 
-* `engine`: engine hooks. Processor hooks (custom intents, object ticks, room and global stages), crons,
-  world-generation hooks, main-loop stage events. Hooks are plain `fn`s; state kept between calls lives in statics.
+* `engine`: engine hooks. Processor hooks (custom intents, object ticks, room and global stages, a room's last step
+  before its tick loop, power classes and powers), crons, world-generation hooks, main-loop stage events. Hooks are
+  plain `fn`s; state kept between calls lives in statics. `intent_types` are vanilla's `customIntentTypes`: the
+  runner's storeIntents keeps a player's intent of such a name, its fields sanitized as declared, and an
+  `object_intents` handler for it then gets it (`mods/powerclasses` sends its powers as `classPower`). A built-in name
+  keeps its own fields. No mod hook reads a custom global or room intent yet.
 * `routes`: HTTP routes, `fn(&Request, &ApiCtx) -> Response`. `ctx.published.get()` is the last published world;
   `backend::call(&ctx.commands, |w| …)` runs a change on the tick thread before the next tick.
 * `server_data`: `config.backend` assignments as vanilla mods make them, `(path, value)` meaning
