@@ -10,3 +10,6 @@
 [submodule "mods/example"]
 	path = mods/example
 	url = ../krebs-example.git
+[submodule "mods/powerclasses"]
+	path = mods/powerclasses
+	url = ../krebs-powerclasses.git

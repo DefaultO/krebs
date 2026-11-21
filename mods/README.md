@@ -12,7 +12,7 @@ Each mod is a repository of its own, added here as a git submodule, and the core
 | `mods/matchrun` | krebs-matchrun, on [GitHub](https://github.com/DefaultO/krebs-matchrun) and [Gitea](https://gitea.defaul.to/DefaultO/krebs-matchrun) | Runs inside a match's own server. `mods/bare` needs it. |
 | `mods/matchrules` | krebs-matchrules, on [GitHub](https://github.com/DefaultO/krebs-matchrules) and [Gitea](https://gitea.defaul.to/DefaultO/krebs-matchrules) | Match rules and stats. Nothing enables it yet. |
 | `mods/example` | krebs-example, on [GitHub](https://github.com/DefaultO/krebs-example) and [Gitea](https://gitea.defaul.to/DefaultO/krebs-example) | Shows every kind of registration. Copy it to start a mod. |
-| `mods/powerclasses` | not published yet | The Commander and the Executor, the power creep classes Screeps planned besides the Operator. Nothing enables it. |
+| `mods/powerclasses` | krebs-powerclasses, on [GitHub](https://github.com/DefaultO/krebs-powerclasses) and [Gitea](https://gitea.defaul.to/DefaultO/krebs-powerclasses) | The Commander and the Executor, the power creep classes Screeps planned besides the Operator. Nothing enables it. |
 
 A clone without submodules leaves empty folders here, which is fine: the workspace does not list `mods/*`, and the
 block in `crates/modlist/Cargo.toml` is empty in the repository. A mod becomes a workspace member through the line
