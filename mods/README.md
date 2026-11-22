@@ -58,6 +58,11 @@ cannot load a manifest whose dependency folder is gone, so build.rs never gets t
 * `js_game`: game-slot JS, evaluated in every player VM after the game API as module `mods/<mod>.js`. Its exports
   may carry `customObjectPrototypes` (`[[objectType, name, opts], …]`, vanilla's `registerCustomObjectPrototype`
   arguments) and `customIntentTypes`.
+* `client_js`: scripts that run in the game client's page, with its globals (`GameRenderer`, `angular`, …), for what
+  `server_data` cannot reach. `/api/version` carries them in one `serverData.features` menu item that runs them and
+  hides itself, each script in a function of its own, every time the client connects, so a script must leave alone what
+  an earlier run already changed. `mods/powerclasses` uses one to show its powers' icons as the client shows an
+  Operator's. A mod that replaces the client's menu, as `mods/bare` does, removes them.
 * `data_dir`: the server's data directory, for files the mod keeps.
 
 `mods/example` uses each of these. `krebs bench --mods <names>` runs a benchmark with mods enabled.

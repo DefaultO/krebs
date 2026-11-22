@@ -179,7 +179,7 @@ mod e2e {
             server_password: password.map(Into::into),
             steam: "single-user:alice".into(),
         };
-        let b = start(BackendDeps { published: p.clone(), commands: tx, cli: Arc::new(NoCli), config, routes: vec![], socket_channels: vec![], server_data: vec![] });
+        let b = start(BackendDeps { published: p.clone(), commands: tx, cli: Arc::new(NoCli), config, routes: vec![], socket_channels: vec![], server_data: vec![], client_js: vec![] });
         (b, p)
     }
 

@@ -98,5 +98,29 @@ const add = (s) => cases.push(s.build());
   s.globalIntents('u1', { spawnPowerCreep: [{ id: ps, name: 'Op' }] });
   add(s);
 }
+{
+  // Spawns run before upgrades, the room object is a copy taken at the spawn, and roomObjectsByType is the stage's start:
+  // the upgrade reaches users.power_creeps alone, and the spawned power creep keeps the old level and powers.
+  const s = globalScenario('spawnPowerCreep and upgradePowerCreep of one creep in one tick', {
+    tags: ['global-intents/power/spawnPowerCreep.js', 'global-intents/power/upgradePowerCreep.js'] });
+  s.addRoom('W1N1');
+  s.user('u1', { power: 100000 });
+  const ps = s.object('powerSpawn', 22, 22, { user: 'u1', store: { energy: 0, power: 0 }, hits: 5000, hitsMax: 5000 });
+  const pc = s.powerCreep('u1', 'Op', { level: 1, hitsMax: 2000, storeCapacity: 200, powers: { 1: { level: 1 } } });
+  s.globalIntents('u1', { spawnPowerCreep: [{ id: ps, name: 'Op' }], upgradePowerCreep: [{ id: pc, power: 2 }] });
+  add(s);
+}
+{
+  const s = globalScenario('upgradePowerCreep of a spawned power creep updates the room object too', {
+    tags: ['global-intents/power/upgradePowerCreep.js'] });
+  s.addRoom('W1N1');
+  s.user('u1', { power: 100000 });
+  const fields = { level: 1, hitsMax: 2000, storeCapacity: 200, powers: { 1: { level: 1 } } };
+  const pc = s.powerCreep('u1', 'Op', Object.assign({ shard: '', spawnCooldownTime: null }, fields));
+  s.object('powerCreep', 22, 23, Object.assign({ _id: pc, user: 'u1', name: 'Op', className: 'operator', hits: 2000, store: {},
+    ageTime: s.gameTime + 5000 }, fields));
+  s.globalIntents('u1', { upgradePowerCreep: [{ id: pc, power: 2 }] });
+  add(s);
+}
 
 module.exports = cases;

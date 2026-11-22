@@ -1809,6 +1809,7 @@ pub struct Registry {
     pub server_data: Vec<(&'static str, util::json::Json)>,  // /api/version features, customObjectTypes, renderer
     pub socket_channels: Vec<(&'static str /*prefix*/, ChannelFn)>,
     pub js_game: Vec<&'static str>,                          // JS appended to the game slot
+    pub client_js: Vec<&'static str>,                        // JS run in the game client's page
 }
 ```
 `server/src/mods.rs`: `static MODS: &[&dyn Mod] = &[&mods::history::MOD, …]`, each behind a cargo feature. With
@@ -1826,7 +1827,10 @@ order to vanilla's defaults (game/server.js:31-44, socket/server.js:17-25); `/ap
 of the result, and `socketUpdateThrottle` is the broadcaster's wait (lodash `_.throttle` coercion).
 `socket_channels` are offered every subscribe after the built-ins (socket/server.js calls every module's
 `onSubscribe`) and polled for each subscriber after every broadcast. `js_game` entries become the §10.2 game slots
-`mods/<mod>.js`, `mods/<mod>.2.js`, …
+`mods/<mod>.js`, `mods/<mod>.2.js`, … `client_js` entries, when there are any, become one more `serverData.features`
+entry, `krebs-mods`, whose single menu item's template the client compiles with Angular: an invisible image whose
+`(load)` handler hands the scripts, joined, to `CONFIG.constructor.constructor` (the page's `Function`), each in its own
+function and try/catch, and hides the item's row.
 
 ### 10.2 JS mods
 

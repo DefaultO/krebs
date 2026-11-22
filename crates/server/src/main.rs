@@ -284,6 +284,7 @@ fn serve(mut cfg: Config, args: &Args) {
         routes: registry.routes,
         socket_channels: registry.socket_channels,
         server_data: registry.server_data,
+        client_js: registry.client_js,
     });
     let port = backend.local_addr().port();
     if args.flag("announce-port").is_some() {

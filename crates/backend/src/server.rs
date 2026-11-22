@@ -136,7 +136,8 @@ pub struct ModBackend {
 impl ModBackend {
     /// `assignments`: `(path, value)` is `config.backend.<path> = value` (`"welcomeText"`,
     /// `"customObjectTypes.myobject"`, `"renderer.metadata.myobject"`, …); missing objects on the path are made.
-    pub fn new(assignments: &[(&str, Json)], channels: Vec<(&'static str, crate::socket::server::ChannelFn)>) -> ModBackend {
+    /// `client_js`: the mods' scripts for the game client (`Registry::client_js`), which `client_feature` delivers.
+    pub fn new(assignments: &[(&str, Json)], channels: Vec<(&'static str, crate::socket::server::ChannelFn)>, client_js: &[&str]) -> ModBackend {
         let empty = || Json::Obj(vec![]);
         let mut backend = obj(vec![
             ("welcomeText", Json::Str(WELCOME_TEXT.into())),
@@ -157,7 +158,7 @@ impl ModBackend {
         };
         let wait = if wait > 0.0 { wait } else { 0.0 };
         ModBackend {
-            server_data: server_data(&backend),
+            server_data: server_data(&backend, client_js),
             throttle: std::time::Duration::from_secs_f64(wait.min(1e9) / 1000.0),
             channels,
         }
@@ -201,9 +202,9 @@ fn active_users(view: &WorldView) -> usize {
         .count()
 }
 
-/// `getServerData()` (game/server.js:46-54) of `config.backend`, plus `features` (the client's own fallback list) and
-/// `shards: []`.
-fn server_data(backend: &Json) -> Json {
+/// `getServerData()` (game/server.js:46-54) of `config.backend`, plus `features` (the client's own fallback list, and the
+/// mods' client scripts when there are any) and `shards: []`.
+fn server_data(backend: &Json, client_js: &[&str]) -> Json {
     let get = |k: &str| backend.get(k).cloned().unwrap_or(Json::Null);
     let market = Json::parse(r#"{"name":"market","version":1,"menuData":[{"section":0,"after":"World","item":{"label":"Market","routerLink":"/market","svg":"market"}}]}"#).expect("static json");
     let auth = obj(vec![("name", Json::Str("auth".into())), ("version", Json::Num(1.0))]);
@@ -213,9 +214,46 @@ fn server_data(backend: &Json) -> Json {
         ("historyChunkSize", get("historyChunkSize")),
         ("socketUpdateThrottle", get("socketUpdateThrottle")),
         ("renderer", get("renderer")),
-        ("features", Json::Arr(vec![market, auth])),
+        ("features", Json::Arr([market, auth].into_iter().chain((!client_js.is_empty()).then(|| client_feature(client_js))).collect())),
         ("shards", Json::Arr(vec![])),
     ])
+}
+
+/// An image that loads without a request: a 1×1 transparent GIF.
+const BLANK_GIF: &str = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
+/// The `features` entry that runs the mods' client scripts. The client compiles the `template` of a menu item with Angular
+/// when it starts (menu.service.ts `extend`, compile-content.component.ts), with its `CONFIG` in scope: an image in it whose
+/// `load` hands the scripts to `CONFIG.constructor.constructor`, the page's `Function`, runs them once each time the client
+/// connects. They hide that menu item first, and each runs in a function of its own, so one that throws leaves the others to
+/// run.
+fn client_feature(scripts: &[&str]) -> Json {
+    let mut code = String::from("var i=arguments[0],l=i&&i.closest&&i.closest('li');if(l)l.style.display='none';\n");
+    for script in scripts {
+        code += "try{(function(){\n";
+        code += script;
+        code += "\n})()}catch(e){console.error('A Krebs mod\\'s client script:',e)}\n";
+    }
+    let template = format!(r#"<img hidden src="{BLANK_GIF}" (load)="CONFIG.constructor.constructor({})($event.target)">"#, angular_string(&code));
+    let item = obj(vec![("template", Json::Str(template))]);
+    let entry = obj(vec![("section", Json::Num(0.0)), ("start", Json::Num(0.0)), ("item", item)]);
+    obj(vec![("name", Json::Str("krebs-mods".into())), ("version", Json::Num(1.0)), ("menuData", Json::Arr(vec![entry]))])
+}
+
+/// `text` as a single-quoted string of an Angular expression that needs nothing escaped inside an HTML attribute either:
+/// every UTF-16 unit but letters, digits, space and `.,;:()[]=+-*/!?_$` is written `\uXXXX`, which Angular's lexer reads
+/// back.
+fn angular_string(text: &str) -> String {
+    let mut out = String::with_capacity(text.len() + 2);
+    out.push('\'');
+    for unit in text.encode_utf16() {
+        match char::from_u32(u32::from(unit)) {
+            Some(c) if c.is_ascii_alphanumeric() || " .,;:()[]=+-*/!?_$".contains(c) => out.push(c),
+            _ => out += &format!("\\u{unit:04x}"),
+        }
+    }
+    out.push('\'');
+    out
 }
 
 /// POST /api/servers/list (stub).
@@ -1162,6 +1200,7 @@ mod mod_backend {
                 ("socketUpdateThrottle", Json::Num(100.0)),
             ],
             Vec::new(),
+            &[],
         );
         assert_eq!(
             m.server_data.get("welcomeText").unwrap().stringify(),
@@ -1171,10 +1210,53 @@ mod mod_backend {
         assert_eq!(m.server_data.get("renderer").unwrap().stringify(), r#"{"resources":{},"metadata":{"a":{}}}"#);
         assert_eq!(m.throttle, std::time::Duration::from_millis(100));
         // _.throttle: `+wait`, negative or NaN is 0
-        let throttle = |v: Json| ModBackend::new(&[("socketUpdateThrottle", v)], Vec::new()).throttle;
+        let throttle = |v: Json| ModBackend::new(&[("socketUpdateThrottle", v)], Vec::new(), &[]).throttle;
         assert_eq!(throttle(Json::Str("x".into())), std::time::Duration::ZERO);
         assert_eq!(throttle(Json::Str(" 50".into())), std::time::Duration::from_millis(50));
         assert_eq!(throttle(Json::Num(-5.0)), std::time::Duration::ZERO);
-        assert_eq!(ModBackend::new(&[], Vec::new()).throttle, crate::broadcast::THROTTLE);
+        assert_eq!(ModBackend::new(&[], Vec::new(), &[]).throttle, crate::broadcast::THROTTLE);
+    }
+
+    /// Without client scripts the features are the client's own two. With them there is one more menu item, whose template
+    /// holds the scripts in a string that Angular reads back exactly and that holds nothing HTML or Angular would take for
+    /// markup.
+    #[test]
+    fn client_scripts_arrive_as_one_menu_item() {
+        let names = |m: &ModBackend| {
+            let features = m.server_data.get("features").unwrap().as_array().unwrap().clone();
+            features.iter().map(|f| f.get("name").unwrap().as_str().unwrap().to_string()).collect::<Vec<_>>()
+        };
+        assert_eq!(names(&ModBackend::new(&[], Vec::new(), &[])), ["market", "auth"]);
+        let scripts = ["window.a = '{{x}}' + \"<b>&amp;</b>\";", "throw new Error(`é😀\\`)"];
+        let m = ModBackend::new(&[], Vec::new(), &scripts);
+        assert_eq!(names(&m), ["market", "auth", "krebs-mods"]);
+        let features = m.server_data.get("features").unwrap();
+        let entry = features.at(2).unwrap().get("menuData").unwrap().at(0).unwrap();
+        assert_eq!((entry.get("section").unwrap().as_f64(), entry.get("start").unwrap().as_f64()), (Some(0.0), Some(0.0)));
+        let template = entry.get("item").unwrap().get("template").unwrap().as_str().unwrap();
+        let call = r#"(load)="CONFIG.constructor.constructor('"#;
+        let start = template.find(call).unwrap() + call.len();
+        let literal = &template[start..start + template[start..].find('\'').unwrap()];
+        assert!(!literal.contains(['"', '&', '<', '>', '{', '}', '\n', '`', '\'']), "{literal}");
+        // what Angular's lexer makes of the literal
+        let mut units = Vec::new();
+        let mut rest = literal;
+        while let Some(c) = rest.chars().next() {
+            match rest.strip_prefix("\\u") {
+                Some(hex) => {
+                    units.push(u16::from_str_radix(&hex[..4], 16).unwrap());
+                    rest = &hex[4..];
+                }
+                None => {
+                    units.push(c as u16);
+                    rest = &rest[c.len_utf8()..];
+                }
+            }
+        }
+        let code = String::from_utf16(&units).unwrap();
+        assert!(code.starts_with("var i=arguments[0],l=i&&i.closest&&i.closest('li');"), "{code}");
+        for script in scripts {
+            assert!(code.contains(&format!("try{{(function(){{\n{script}\n}})()}}")), "{code}");
+        }
     }
 }

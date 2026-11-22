@@ -150,8 +150,30 @@ pub fn place_bots(w: &mut World, count: usize, modules: &Json) -> usize {
     count
 }
 
+/// A scenario player's `users` doc. `badge`, which screeps-sim scenarios do not have, is the badge the game client draws
+/// for them; its room view stays empty while an owner of something in the room has none.
+fn scenario_user(p: &Json) -> Json {
+    let num = |k: &str| p.get(k).and_then(Json::as_f64).unwrap_or(0.0);
+    let text = |k: &str| p.get(k).and_then(Json::as_str).unwrap_or("").to_string();
+    let name = text("username");
+    let mut doc = vec![
+        ("_id".into(), s(&text("id"))),
+        ("username".into(), s(&name)),
+        ("usernameLower".into(), s(&name.to_lowercase())),
+        ("cpu".into(), n(num("cpu"))),
+        ("cpuAvailable".into(), n(num("bucket"))),
+        ("gcl".into(), n(num("gcl"))),
+        ("power".into(), n(num("power"))),
+        ("active".into(), n(10000.0)),
+    ];
+    if let Some(badge) = p.get("badge") {
+        doc.push(("badge".into(), badge.clone()));
+    }
+    Json::Obj(doc)
+}
+
 /// `--scenario <file>`: a screeps-sim scenario (`{gameTime, rooms: [{name, terrain, objects}], players: [{username,
-/// id, code, cpu, bucket, gcl, power, memory}]}`, e.g. screeps-sim/private/e10s30-e30s50) as an official db.json
+/// id, code, cpu, bucket, gcl, power, memory, badge}]}`, e.g. screeps-sim/private/e10s30-e30s50) as an official db.json
 /// for `chitin import`'s path: room docs shaped like generated ones (mapgen's highway `bus`/`depositType`, keeper
 /// `sourceKeepers`), every room active, walled `out of borders` rooms around and between them, flag objects folded
 /// into `rooms.flags` docs, Invader and Source Keeper
@@ -226,17 +248,8 @@ fn load_scenario(cfg: &Config, path: &str, copies: usize) -> World {
     let (mut users, mut code) = (vec![npc("2", "Invader"), npc("3", "Source Keeper")], Vec::new());
     let mut env = vec![("gameTime".into(), n(num(&sc, "gameTime"))), ("activeRooms".into(), Json::Arr(active))];
     for p in sc.get("players").and_then(Json::as_array).map_or(&[][..], |a| a.as_slice()) {
-        let (id, name) = (text(p, "id"), text(p, "username"));
-        users.push(Json::Obj(vec![
-            ("_id".into(), s(&id)),
-            ("username".into(), s(&name)),
-            ("usernameLower".into(), s(&name.to_lowercase())),
-            ("cpu".into(), n(num(p, "cpu"))),
-            ("cpuAvailable".into(), n(num(p, "bucket"))),
-            ("gcl".into(), n(num(p, "gcl"))),
-            ("power".into(), n(num(p, "power"))),
-            ("active".into(), n(10000.0)),
-        ]));
+        let id = text(p, "id");
+        users.push(scenario_user(p));
         code.push(Json::Obj(vec![
             ("user".into(), s(&id)),
             ("modules".into(), load_bot(&dir.join(text(p, "code")).to_string_lossy())),
@@ -556,6 +569,7 @@ pub fn run(cfg: Config, args: &Args) {
         routes: registry.routes,
         socket_channels: registry.socket_channels,
         server_data: registry.server_data,
+        client_js: registry.client_js,
     });
     let hooks: &'static engine::hooks::EngineHooks = Box::leak(Box::new(registry.engine));
     let mut lp = crate::tick::TickLoop::new(crate::tick::Live { runtime: rt.clone(), pool, published, backend }, hooks, rx);
@@ -658,5 +672,16 @@ mod tests {
             )
         );
         assert!(super::tile(&Json::parse(r#"{"rooms":[{"name":"E1S1"},{"name":"W1S1"}]}"#).unwrap(), 2).is_err());
+    }
+
+    #[test]
+    fn scenario_users_keep_their_badge() {
+        use util::json::Json;
+        let badge = r##"{"type":9,"color1":"#f4e383","color2":"#cc3d3e","color3":"#2b2b2b","param":0,"flip":false}"##;
+        let with = Json::parse(&format!(r##"{{"username":"Pat","id":"p1","cpu":100,"power":1000,"badge":{badge}}}"##)).unwrap();
+        let doc = super::scenario_user(&with);
+        assert_eq!(doc.get("badge").map(Json::stringify), Some(badge.to_string()));
+        assert_eq!((doc.get("usernameLower").and_then(Json::as_str), doc.get("power").and_then(Json::as_f64)), (Some("pat"), Some(1000.0)));
+        assert!(super::scenario_user(&Json::parse(r#"{"username":"Pat","id":"p1"}"#).unwrap()).get("badge").is_none());
     }
 }

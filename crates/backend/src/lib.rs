@@ -110,7 +110,7 @@ impl Published {
     }
     /// What the mods changed (vanilla's defaults when `start` has not run, as in handler tests).
     pub(crate) fn mods(&self) -> &server::ModBackend {
-        self.mods.get_or_init(|| server::ModBackend::new(&[], Vec::new()))
+        self.mods.get_or_init(|| server::ModBackend::new(&[], Vec::new(), &[]))
     }
     pub fn get(&self) -> WorldView {
         self.view.lock().unwrap_or_else(|e| e.into_inner()).0.clone()
@@ -203,6 +203,8 @@ pub struct BackendDeps {
     pub socket_channels: Vec<(&'static str, socket::server::ChannelFn)>,
     /// Mods' `config.backend` assignments (`Registry::server_data`), in mod load order.
     pub server_data: Vec<(&'static str, Json)>,
+    /// Mods' scripts for the game client (`Registry::client_js`), in mod load order.
+    pub client_js: Vec<&'static str>,
 }
 
 /// Running listeners, broadcaster and CLI server.
@@ -303,7 +305,7 @@ pub fn start(deps: BackendDeps) -> Backend {
         .unwrap_or_else(|e| panic!("cannot listen on {}:{}: {e}", deps.config.host, deps.config.port));
     let addr = listener.local_addr().expect("bound socket has an address");
     let _ = deps.published.steam.set(deps.config.steam.clone());
-    let _ = deps.published.mods.set(server::ModBackend::new(&deps.server_data, deps.socket_channels));
+    let _ = deps.published.mods.set(server::ModBackend::new(&deps.server_data, deps.socket_channels, &deps.client_js));
     let shared = Arc::new(Shared { published: deps.published, commands: deps.commands, config: deps.config, routes: deps.routes, conns: AtomicUsize::new(0), callers: Mutex::default(), large_body: Mutex::default() });
     let ticks = Arc::new(broadcast::TickSlot::default());
     let published = shared.published.clone();
